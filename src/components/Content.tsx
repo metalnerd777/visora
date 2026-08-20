@@ -1,56 +1,64 @@
 import { useState } from "react";
 import PhotoViewer from "./PhotoViewer";
-
-const photos = [
-  {
-    id: 1,
-    url: "https://images.unsplash.com/photo-1519741497674-611481863552",
-    title: "Wedding",
-  },
-  {
-    id: 2,
-    url: "https://images.unsplash.com/photo-1517841905240-472988babdf9",
-    title: "Portrait",
-  },
-  {
-    id: 3,
-    url: "https://images.unsplash.com/photo-1500534623283-312aade485b7",
-    title: "Landscape",
-  },
-  {
-    id: 4,
-    url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc",
-    title: "Moment",
-  },
-  {
-    id: 5,
-    url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
-    title: "Portrait",
-  },
-  {
-    id: 6,
-    url: "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
-    title: "Nature",
-  },
-];
+import { galleries, favorites, photographer } from "../data/portfolio";
 
 function Content() {
+  const [selectedGallery, setSelectedGallery] = useState<string | null>(null);
+
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
 
-  const selectedIndex = photos.findIndex((photo) => photo.id === selectedPhoto);
+  const [viewerPhotos, setViewerPhotos] = useState<typeof favorites>([]);
 
-  const selectedPhotoData = selectedIndex !== -1 ? photos[selectedIndex] : null;
+  const currentGallery = galleries.find(
+    (gallery) => gallery.id === selectedGallery,
+  );
+
+  const currentPhotos = currentGallery?.photos ?? [];
+
+  const selectedIndex = viewerPhotos.findIndex(
+    (photo) => photo.id === selectedPhoto,
+  );
+
+  const selectedPhotoData =
+    selectedIndex !== -1 ? viewerPhotos[selectedIndex] : null;
+
+  const openGallery = (galleryId: string) => {
+    const gallery = galleries.find((gallery) => gallery.id === galleryId);
+
+    if (!gallery) return;
+
+    setViewerPhotos(gallery.photos);
+    setSelectedGallery(galleryId);
+  };
+
+  const closeGallery = () => {
+    setSelectedGallery(null);
+    setSelectedPhoto(null);
+    setViewerPhotos([]);
+  };
+
+  const openFavorite = (photoId: number) => {
+    setViewerPhotos(favorites);
+    setSelectedPhoto(photoId);
+  };
+
+  const openGalleryPhoto = (photoId: number) => {
+    setViewerPhotos(currentPhotos);
+    setSelectedPhoto(photoId);
+  };
 
   const goToPrevious = () => {
     if (selectedIndex <= 0) return;
 
-    setSelectedPhoto(photos[selectedIndex - 1].id);
+    setSelectedPhoto(viewerPhotos[selectedIndex - 1].id);
   };
 
   const goToNext = () => {
-    if (selectedIndex === -1 || selectedIndex >= photos.length - 1) return;
+    if (selectedIndex === -1 || selectedIndex >= viewerPhotos.length - 1) {
+      return;
+    }
 
-    setSelectedPhoto(photos[selectedIndex + 1].id);
+    setSelectedPhoto(viewerPhotos[selectedIndex + 1].id);
   };
 
   return (
@@ -62,16 +70,15 @@ function Content() {
       >
         <div className="max-w-3xl text-center">
           <p className="mb-6 text-sm uppercase tracking-[0.3em] text-neutral-500">
-            Fotógrafo
+            {photographer.profession}
           </p>
 
           <h1 className="text-5xl font-light tracking-tight md:text-7xl">
-            Alex Morgan
+            {photographer.name}
           </h1>
 
           <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-neutral-500">
-            Fotografía documental, retratos y momentos que merecen ser
-            recordados.
+            {photographer.description}
           </p>
 
           <a
@@ -83,7 +90,7 @@ function Content() {
         </div>
       </section>
 
-      {/* Galería */}
+      {/* Galerías */}
       <section
         id="gallery"
         className="border-t border-neutral-200 px-6 py-24 md:px-10"
@@ -94,26 +101,124 @@ function Content() {
               Portfolio
             </p>
 
-            <h2 className="text-3xl font-light md:text-4xl">
-              Selección de trabajos
-            </h2>
+            <h2 className="text-3xl font-light md:text-4xl">Galerías</h2>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {photos.map((photo) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {galleries.map((gallery) => (
+              <button
+                key={gallery.id}
+                type="button"
+                onClick={() => openGallery(gallery.id)}
+                className="group text-left"
+              >
+                <div className="overflow-hidden">
+                  <img
+                    src={`${gallery.cover}?auto=format&fit=crop&w=1200&q=85`}
+                    alt={gallery.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+
+                <h3 className="mt-5 text-xl font-light">{gallery.title}</h3>
+
+                <p className="mt-2 text-sm text-neutral-500">
+                  {gallery.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Galería seleccionada */}
+      {currentGallery && (
+        <section className="border-t border-neutral-200 bg-neutral-50 px-6 py-24 md:px-10">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-12 flex items-end justify-between gap-6">
+              <div>
+                <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500">
+                  Galería
+                </p>
+
+                <h2 className="text-3xl font-light md:text-4xl">
+                  {currentGallery.title}
+                </h2>
+
+                <p className="mt-3 text-neutral-500">
+                  {currentGallery.description}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeGallery}
+                className="shrink-0 border border-neutral-300 px-5 py-2 text-sm transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {currentPhotos.map((photo) => (
+                <button
+                  key={photo.id}
+                  type="button"
+                  onClick={() => openGalleryPhoto(photo.id)}
+                  className="group overflow-hidden text-left"
+                >
+                  <img
+                    src={`${photo.url}?auto=format&fit=crop&w=1200&q=85`}
+                    alt={photo.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Favoritas */}
+      <section
+        id="favorites"
+        className="border-t border-neutral-200 px-6 py-24 md:px-10"
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 max-w-2xl">
+            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500">
+              Selección personal
+            </p>
+
+            <h2 className="text-3xl font-light md:text-4xl">Mis favoritas</h2>
+
+            <p className="mt-4 leading-relaxed text-neutral-500">
+              Una selección de fotografías que representan especialmente mi
+              trabajo y mi forma de ver el mundo.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {favorites.map((photo) => (
               <button
                 key={photo.id}
                 type="button"
-                onClick={() => setSelectedPhoto(photo.id)}
-                className="group block w-full overflow-hidden text-left"
+                onClick={() => openFavorite(photo.id)}
+                className="group overflow-hidden text-left"
               >
                 <img
                   src={`${photo.url}?auto=format&fit=crop&w=1200&q=85`}
                   alt={photo.title}
-                  className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
                   decoding="async"
+                  className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+
+                <p className="mt-4 text-sm text-neutral-600">{photo.title}</p>
               </button>
             ))}
           </div>
@@ -131,13 +236,11 @@ function Content() {
           </p>
 
           <h2 className="text-3xl font-light md:text-4xl">
-            Historias contadas a través de imágenes.
+            {photographer.aboutTitle}
           </h2>
 
           <p className="mt-6 leading-relaxed text-neutral-600">
-            Soy fotógrafo especializado en capturar momentos auténticos,
-            personas y lugares. Mi objetivo es crear imágenes que conserven la
-            emoción de cada historia.
+            {photographer.aboutDescription}
           </p>
         </div>
       </section>
@@ -154,7 +257,7 @@ function Content() {
         <h2 className="text-3xl font-light md:text-4xl">¿Trabajamos juntos?</h2>
 
         <a
-          href="mailto:hello@example.com"
+          href={`mailto:${photographer.email}`}
           className="mt-8 inline-block border border-neutral-900 px-8 py-3 text-sm uppercase tracking-widest transition-colors hover:bg-neutral-900 hover:text-white"
         >
           Escribirme
@@ -170,9 +273,9 @@ function Content() {
           onPrevious={goToPrevious}
           onNext={goToNext}
           hasPrevious={selectedIndex > 0}
-          hasNext={selectedIndex < photos.length - 1}
+          hasNext={selectedIndex < viewerPhotos.length - 1}
           currentIndex={selectedIndex}
-          totalPhotos={photos.length}
+          totalPhotos={viewerPhotos.length}
         />
       )}
     </main>
