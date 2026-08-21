@@ -1,6 +1,14 @@
 import { useState } from "react";
 import PhotoViewer from "./PhotoViewer";
-import { galleries, favorites, photographer } from "../data/portfolio";
+import {
+  galleries,
+  favorites,
+  photographer,
+  featuredPhotos,
+} from "../data/portfolio";
+import MasonryGallery from "./MasonryGallery";
+import Hero from "./Hero";
+import GalleryCard from "./GalleryCard";
 
 function Content() {
   const [selectedGallery, setSelectedGallery] = useState<string | null>(null);
@@ -64,70 +72,71 @@ function Content() {
   return (
     <main>
       {/* Hero */}
+      <Hero />
+
+      {/* Destacadas */}
       <section
-        id="home"
-        className="flex min-h-[80vh] items-center justify-center px-6"
+        id="featured"
+        className="border-t border-neutral-200 px-6 py-24 md:px-10"
       >
-        <div className="max-w-3xl text-center">
-          <p className="mb-6 text-sm uppercase tracking-[0.3em] text-neutral-500">
-            {photographer.profession}
-          </p>
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 max-w-2xl">
+            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500">
+              Selección destacada
+            </p>
 
-          <h1 className="text-5xl font-light tracking-tight md:text-7xl">
-            {photographer.name}
-          </h1>
+            <h2 className="text-3xl font-light md:text-4xl">
+              Una mirada a mi trabajo
+            </h2>
 
-          <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-neutral-500">
-            {photographer.description}
-          </p>
+            <p className="mt-4 leading-relaxed text-neutral-500">
+              Una selección de fotografías que representan mi estilo y mi forma
+              de trabajar.
+            </p>
+          </div>
 
-          <a
-            href="#gallery"
-            className="mt-10 inline-block border border-neutral-900 px-8 py-3 text-sm uppercase tracking-widest transition-colors hover:bg-neutral-900 hover:text-white"
-          >
-            Ver portfolio
-          </a>
+          <MasonryGallery
+            photos={featuredPhotos}
+            onPhotoClick={(photoId) => {
+              setViewerPhotos(featuredPhotos);
+              setSelectedPhoto(photoId);
+            }}
+          />
         </div>
       </section>
-
       {/* Galerías */}
       <section
         id="gallery"
         className="border-t border-neutral-200 px-6 py-24 md:px-10"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="mb-12">
+          {/* Encabezado */}
+          <div className="mb-14 max-w-2xl">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500">
               Portfolio
             </p>
 
-            <h2 className="text-3xl font-light md:text-4xl">Galerías</h2>
+            <h2 className="text-3xl font-light tracking-tight md:text-4xl">
+              Todas mis historias
+            </h2>
+
+            <p className="mt-5 leading-relaxed text-neutral-500">
+              Explora mis diferentes trabajos y descubre las historias detrás de
+              cada fotografía.
+            </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Galerías */}
+          <div className="grid gap-6 md:grid-cols-2">
             {galleries.map((gallery) => (
-              <button
+              <GalleryCard
                 key={gallery.id}
-                type="button"
-                onClick={() => openGallery(gallery.id)}
-                className="group text-left"
-              >
-                <div className="overflow-hidden">
-                  <img
-                    src={`${gallery.cover}?auto=format&fit=crop&w=1200&q=85`}
-                    alt={gallery.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                </div>
-
-                <h3 className="mt-5 text-xl font-light">{gallery.title}</h3>
-
-                <p className="mt-2 text-sm text-neutral-500">
-                  {gallery.description}
-                </p>
-              </button>
+                gallery={gallery}
+                onClick={() => {
+                  setViewerPhotos(gallery.photos);
+                  setSelectedPhoto(gallery.photos[0].id);
+                }}
+              />
             ))}
           </div>
         </div>

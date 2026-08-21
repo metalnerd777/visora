@@ -93,3 +93,46 @@ export const favorites: Photo[] = [
     title: 'Paisaje',
   },
 ]
+
+export const featuredPhotos: Photo[] = [
+  {
+    id: 201,
+    url: 'https://images.unsplash.com/photo-1519741497674-611481863552',
+    title: 'Ceremonia',
+  },
+  {
+    id: 202,
+    url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce',
+    title: 'Retrato',
+  },
+  {
+    id: 203,
+    url: 'https://images.unsplash.com/photo-1500534623283-312aade485b7',
+    title: 'Paisaje',
+  },
+  {
+    id: 204,
+    url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc',
+    title: 'Celebración',
+  },
+  {
+    id: 205,
+    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9',
+    title: 'Retrato II',
+  },
+  {
+    id: 206,
+    url: 'https://images.unsplash.com/photo-1504150558240-0b4fd8946624',
+    title: 'Paisaje II',
+  },
+  {
+    id: 207,
+    url: 'https://images.unsplash.com/photo-1507504031003-b417219a0fde',
+    title: 'Arquitectura',
+  },
+  {
+    id: 208,
+    url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f',
+    title: 'Editorial',
+  },
+]
