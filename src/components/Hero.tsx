@@ -8,13 +8,13 @@ function Hero() {
     >
       {/* Imagen de fondo */}
       <img
-        src="https://www.sigma-global.com/shooting-with-sigma/24_14_dg_dn_a022_Impression_BTS_Francesco-Riccardo-Iacomino_2.jpg"
+        src={photographer.heroImage}
         alt=""
         className="absolute inset-0 h-full w-full object-cover"
         fetchPriority="high"
       />
 
-      {/* Oscurecimiento lateral para mejorar la lectura del texto */}
+      {/* Oscurecimiento lateral */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
 
       {/* Degradado inferior */}
@@ -40,14 +40,14 @@ function Hero() {
               href="#gallery"
               className="inline-flex min-w-44 items-center justify-center bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
             >
-              Ver portfolio
+              {photographer.heroPrimaryButton ?? "Ver portfolio"}
             </a>
 
             <a
               href="#contact"
               className="inline-flex min-w-44 items-center justify-center border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-sm transition-all duration-300 hover:border-white hover:bg-white/10"
             >
-              Contacto
+              {photographer.heroSecondaryButton ?? "Contacto"}
             </a>
           </div>
         </div>

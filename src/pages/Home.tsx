@@ -5,7 +5,7 @@ import MasonryGallery from "../components/MasonryGallery";
 import GalleryCard from "../components/GalleryCard";
 import PhotoViewer from "../components/PhotoViewer";
 
-import { galleries, favorites, featuredPhotos } from "../data/portfolio";
+import { galleries, featuredPhotos } from "../data/portfolio";
 
 import type { Photo } from "../types/portfolio";
 
@@ -28,7 +28,9 @@ function Home() {
 
   const showPrevious = () => {
     setViewerIndex((current) => {
-      if (current === null || current <= 0) return current;
+      if (current === null || current <= 0) {
+        return current;
+      }
 
       return current - 1;
     });
@@ -46,9 +48,10 @@ function Home() {
 
   return (
     <>
+      {/* Hero */}
       <Hero />
 
-      {/* Selección destacada */}
+      {/* Destacadas */}
       <section
         id="featured"
         className="border-t border-neutral-200 px-6 py-24 transition-colors dark:border-[#27243A] md:px-10"
@@ -105,34 +108,7 @@ function Home() {
         </div>
       </section>
 
-      {/* Favoritas */}
-      <section
-        id="favorites"
-        className="border-t border-neutral-200 px-6 py-24 transition-colors dark:border-[#27243A] md:px-10"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 max-w-2xl">
-            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-              Selección personal
-            </p>
-
-            <h2 className="text-3xl font-light text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
-              Mis favoritas
-            </h2>
-
-            <p className="mt-4 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              Algunas fotografías que tienen un significado especial para mí.
-            </p>
-          </div>
-
-          <MasonryGallery
-            photos={favorites}
-            onPhotoClick={(photoId) => openViewer(favorites, photoId)}
-          />
-        </div>
-      </section>
-
-      {/* PhotoViewer */}
+      {/* Photo Viewer */}
       {viewerIndex !== null && viewerPhotos[viewerIndex] && (
         <PhotoViewer
           imageUrl={viewerPhotos[viewerIndex].url}

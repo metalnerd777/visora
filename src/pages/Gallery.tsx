@@ -31,20 +31,20 @@ function Gallery({ gallery, onBack }: GalleryProps) {
   };
 
   return (
-    <main className="min-h-screen bg-white px-6 py-16 text-neutral-900 transition-colors dark:bg-[#0B0A14] dark:text-[#F5F3FF] md:px-10 md:py-24">
+    <main className="bg-white px-6 pt-10 pb-20 text-neutral-900 transition-colors dark:bg-[#0B0A14] dark:text-[#F5F3FF] md:px-10 md:pt-5 md:pb-24">
       <div className="mx-auto max-w-7xl">
         {/* Volver */}
         <button
           type="button"
           onClick={onBack}
-          className="mb-16 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-[#7C6CFF]"
+          className="mb-10 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-[#7C6CFF]"
         >
           ← Volver al portfolio
         </button>
 
         {/* Encabezado */}
-        <header className="mb-16 max-w-3xl">
-          <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+        <header className="mb-12 max-w-3xl">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
             Portfolio
           </p>
 
@@ -53,12 +53,12 @@ function Gallery({ gallery, onBack }: GalleryProps) {
           </h1>
 
           {gallery.description && (
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
               {gallery.description}
             </p>
           )}
 
-          <p className="mt-6 text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
+          <p className="mt-5 text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
             {gallery.photos.length} fotografías
           </p>
         </header>
