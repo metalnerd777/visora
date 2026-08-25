@@ -7,14 +7,21 @@ import ScrollToTop from "../../components/ScrollToTop";
 import AppRouter from "../../router";
 
 function MinimalTheme() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    return window.localStorage.getItem("visora-theme") === "dark";
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
+
+    window.localStorage.setItem(
+      "visora-theme",
+      darkMode ? "dark" : "light"
+    );
   }, [darkMode]);
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 transition-colors duration-300 dark:bg-[#0B0A14] dark:text-[#F5F3FF]">
+    <div className="flex min-h-screen flex-col text-neutral-900 transition-colors dark:text-[#F5F3FF]">
       <ScrollToTop />
 
       <Header
@@ -22,7 +29,9 @@ function MinimalTheme() {
         onToggleDarkMode={() => setDarkMode((current) => !current)}
       />
 
-      <AppRouter />
+      <div className="flex-1">
+        <AppRouter />
+      </div>
 
       <Footer />
     </div>

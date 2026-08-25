@@ -2,9 +2,9 @@
 
 ## 1. Concepto
 
-Visora es una aplicación web/plantilla de portfolios profesionales orientada principalmente a fotógrafos.
+Visora es una aplicación web/plantilla de portfolios profesionales orientada a fotógrafos, diseñadores, ilustradores y cualquier persona que quiera mostrar su trabajo profesional.
 
-La idea comercial es crear sitios web completos y profesionales que puedan venderse rápidamente a fotógrafos y eventualmente a otros profesionales/PYMEs.
+La idea comercial es crear sitios web completos y profesionales que puedan venderse rápidamente y eventualmente a otros profesionales/PYMEs.
 
 El modelo de negocio será:
 
@@ -50,11 +50,12 @@ El objetivo es mantener los costos iniciales bajos y vender sitios mediante pago
 
 Frontend:
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router DOM (instalado, todavía no configurado)
+- React 19.2.8
+- TypeScript 6.0.2
+- Vite 8.2.2
+- Tailwind CSS 4.3.3 (con custom dark variant)
+- React Router DOM 7.18.2 (configurado)
+- Google Fonts: Montserrat (200–600)
 
 Backend futuro:
 
@@ -79,95 +80,88 @@ C:\Users\Skogardraugur\Desktop\visora (windows)
 
 ---
 
-# 4. Versiones actuales
-
-Actualmente el proyecto fue creado con Vite.
-
-Dependencias comprobadas:
-
-- React 19.2.8
-- React DOM 19.2.8
-- Vite 8.2.2
-- @vitejs/plugin-react 6.1.0
-
-React Router DOM fue instalado recientemente y está listo para configurarse.
-
-El proyecto compila correctamente.
-
----
-
-# 5. Estado actual del frontend
-
-La aplicación ya tiene una primera versión visual funcional.
-
-Tema actual:
-
-MinimalTheme
-
-La estructura actual aproximada:
+# 4. Estructura actual del proyecto
 
 src/
 ├── components/
-│ ├── Content.tsx
-│ ├── Header.tsx
-│ ├── Hero.tsx
-│ ├── GalleryCard.tsx
-│ ├── MasonryGallery.tsx
-│ ├── PhotoViewer.tsx
-│ ├── Footer.tsx
-│ └── otros componentes
+│   ├── About.tsx              (bloque visual reutilizable, data-driven)
+│   ├── BlogCard.tsx           (tarjeta de publicación del blog)
+│   ├── DocumentHead.tsx       ( título dinámico + favicon)
+│   ├── EmbedBlock.tsx         (renderiza embeds de YouTube/Vimeo/redes)
+│   ├── Footer.tsx             (fijo abajo, links reales, admin button)
+│   ├── Header.tsx             (sticky, glass, Links, dark mode toggle)
+│   ├── Hero.tsx               (imagen fondo, botones Link, scroll glass)
+│   ├── MasonryGallery.tsx     (grid masonry con aspect-ratios móviles)
+│   ├── PhotoViewer.tsx        (visor fullscreen, click fuera, SVGs)
+│   ├── ProjectCard.tsx        (tarjeta de proyecto, sombra en textos)
+│   └── ScrollToTop.tsx        (scroll a top en cambio de ruta)
 │
 ├── pages/
-│ ├── Home.tsx
-│ └── Gallery.tsx
+│   ├── About.tsx              (página /sobre-mi)
+│   ├── AdminLogin.tsx         (página /admin, UI login placeholder)
+│   ├── Blog.tsx               (listado /blog)
+│   ├── BlogPost.tsx           (artículo individual /blog/:slug)
+│   ├── Contact.tsx            (página /contacto)
+│   ├── Home.tsx               (secciones: Hero, Featured, Projects)
+│   ├── NotFound.tsx           (404 reutilizable con título configurable)
+│   └── Project.tsx            (página /proyecto/:slug)
 │
 ├── themes/
-│ └── MinimalTheme.tsx
+│   └── minimal/
+│       └── MinimalTheme.tsx   (layout flex, dark mode persistente)
 │
 ├── data/
-│ └── portfolio.ts
+│   └── portfolio.ts           (datos demo: photographer, projects, blogPosts, siteTexts)
+│
+├── lib/
+│   ├── embeds.ts              (detección de proveedor + URLs embed seguras)
+│   └── socials.ts             (utilidades instagramUrl, behanceUrl)
 │
 ├── types/
-│ └── portfolio.ts
+│   └── portfolio.ts           (Photographer, Photo, Project, BlogPost, SiteTexts, etc.)
 │
-└── App.tsx
-
-También existe:
+├── App.tsx                    (BrowserRouter → DocumentHead + MinimalTheme)
+├── main.tsx                   (entry point React StrictMode)
+├── router.tsx                 (todas las rutas + catch-all 404)
+└── index.css                  (Tailwind v4 + font Montserrat + gradientes de fondo)
 
 public/
-└── camera.svg
+├── favicon.svg
+└── icons.svg
 
 ---
 
-# 6. Arquitectura actual
+# 5. Arquitectura actual
 
-App.tsx actualmente carga:
+App.tsx:
 
-DocumentHead
+```
+BrowserRouter
+├── DocumentHead
+└── MinimalTheme
+    ├── ScrollToTop
+    ├── Header (sticky, glass, Links)
+    ├── AppRouter (flex-1)
+    │   ├── /              → Home
+    │   ├── /proyecto/:slug → Project
+    │   ├── /sobre-mi      → AboutPage
+    │   ├── /blog          → BlogPage
+    │   ├── /blog/:slug    → BlogPostPage
+    │   ├── /contacto      → ContactPage
+    │   ├── /admin         → AdminLoginPage
+    │   └── *              → NotFound (404)
+    └── Footer (fijo abajo, mt-auto)
+```
 
-- MinimalTheme
+El layout de MinimalTheme es flex min-h-screen flex-col, lo que garantiza que el footer siempre quede pegado al fondo de la pantalla (sticky footer).
 
-MinimalTheme actualmente utiliza Content.
-
-Content fue convertido en un puente temporal:
-
-import Home from '../pages/Home'
-
-function Content() {
-return <Home />
-}
-
-export default Content
-
-Esto permite mantener funcionando MinimalTheme mientras migramos correctamente a pages.
-
-En el futuro se puede eliminar Content y hacer que MinimalTheme utilice directamente Home.
+Los fondos sólidos de las páginas se eliminaron para que se vean los gradientes sutiles del body (§10).
 
 ---
 
-# 7. DocumentHead
+# 5. DocumentHead
 
-Existe un componente:
+Existe:
 
 src/components/DocumentHead.tsx
 
@@ -179,15 +173,15 @@ Por ejemplo:
 
 Alex Morgan - Fotógrafo
 
-Esto está pensado para que posteriormente el cliente pueda modificar estos valores desde el administrador.
-
 También establece el favicon:
 
-/camera.svg
+/favicon.svg
+
+En el futuro debería poder ser configurable desde el administrador.
 
 ---
 
-# 8. Favicon
+# 6. Favicon
 
 Existe:
 
@@ -201,241 +195,385 @@ En el futuro debería poder ser configurable desde la información del sitio si 
 
 ---
 
-# 9. Datos actuales
+# 7. Datos actuales
 
 Existe:
 
 src/data/portfolio.ts
 
-Aquí actualmente viven los datos de demostración del fotógrafo.
+Contiene los datos de demostración (fotógrafo ficticio "Alex Morgan"):
 
-Entre ellos:
+- photographer — información personal, hero, about, contacto, redes
+- siteTexts — textos configurables de secciones + workNoun (sustantivo profesional)
+- projects — proyectos con fotos (antes "galleries")
+- favorites — fotos favoritas del fotógrafo (datos existentes, sin renderizar aún)
+- featuredPhotos — selección destacada para el masonry del Home
+- blogPosts — 3 publicaciones demo con bloques mixtos (texto, imágenes, embeds)
 
-photographer
+siteTexts es clave para la genericidad multi-profesión. Incluye:
 
-featuredPhotos
+- workNounSingular / workNounPlural ("fotografía"/"fotografías")
+- textos de secciones: featuredLabel, featuredTitle, featuredDescription, projectsLabel, projectsTitle, projectsDescription
 
-favorites
+La intención es que estos datos estáticos sean reemplazados progresivamente por datos provenientes de Supabase.
 
-galleries
-
-La intención es que estos datos actualmente estáticos sean reemplazados progresivamente por datos provenientes de Supabase.
+IMPORTANTE:
+Los componentes NO deben contener textos ligados a una profesión específica.
+Todo texto visible viene de los datos (photographer o siteTexts).
 
 ---
 
-# 10. Hero
+# 8. Tipos
 
-El Hero ya está terminado visualmente para la primera versión del tema Minimal.
+Existe:
+
+src/types/portfolio.ts
+
+Tipos principales:
+
+- Photographer — información del profesional (identidad + hero + about + contacto + redes)
+- Photo — foto individual (id: number temporal, url, title)
+- Project — proyecto con fotos (id: string como slug, title, description, cover, photos[])
+- SiteTexts — textos configurables de secciones (workNoun, títulos, descripciones)
+- BlogPost — publicación del blog (slug, title, excerpt, cover, date, blocks[])
+- BlogBlock — bloque de contenido (type: text|image|embed, payload con url/text/alt/caption/provider)
+- EmbedProvider — proveedores soportados: youtube, vimeo, instagram, facebook, behance, flickr
+
+IMPORTANTE:
+- Photo.id es number por ahora; cambiará a string (UUID) cuando se conecte Supabase.
+- BlogPost.blocks es un array ordenado de bloques. Cada post puede contener: párrafos de texto, imágenes con caption, y embeds de redes/YouTube/Vimeo.
+
+---
+
+# 9. Hero
+
+El Hero ya está terminado visualmente para el tema Minimal.
 
 Características:
 
-- Imagen horizontal de fondo.
-- Fotógrafo ubicado visualmente hacia la derecha.
-- Texto alineado a la izquierda.
-- Overlay degradado para facilitar lectura.
-- Nombre dinámico.
-- Profesión dinámica.
-- Descripción dinámica.
-- Botón "Ver portfolio".
-- Botón "Contacto".
-- Indicador de scroll.
-- Altura aproximada:
-  h-[70vh]
-  min-h-[520px]
-  max-h-[760px]
+- Imagen horizontal de fondo
+- Texto alineado a la izquierda
+- Overlay degradado para facilitar lectura
+- Nombre dinámico (font-extralight Montserrat grande)
+- Profesión dinámica
+- Descripción dinámica
+- Botón "Ver portfolio" (pill blanco sólido, Link a #projects)
+- Botón "Contacto" (pill glass, Link a /contacto)
+- Indicador de scroll (círculo glass con flecha rebotante)
+- Altura aproximada: h-[70vh] min-h-[520px] max-h-[760px]
 
-El Hero utiliza actualmente una imagen externa.
-
-Para prototipo se decidió utilizar URLs externas en lugar de descargar imágenes al proyecto.
+Las imágenes actualmente son URLs externas (Unsplash).
 
 En producción, las imágenes deberán venir desde Supabase Storage o una fuente con licencia apropiada.
 
 ---
 
-# 11. Masonry / selección destacada
+# 10. Fondos y estética
 
-Existe una sección de selección destacada.
+El tema Minimal utiliza gradientes sutiles en el body (no fondos sólidos en las páginas).
+
+Light mode:
+- Color base: #f7f7fa
+- Gradiente radial lavanda sutil arriba-derecha (rgba(124,108,255,0.07))
+- Gradiente radial melocotón abajo-izquierda (rgba(255,150,120,0.05))
+
+Dark mode:
+- Color base: #0b0a14
+- Gradiente radial violeta arriba-derecha (rgba(124,108,255,0.14))
+- Gradiente radial índigo abajo-izquierda (rgba(64,60,140,0.20))
+
+Los gradientes están en index.css con background-attachment: fixed.
+
+Las páginas (Home, About, Blog, etc.) NO tienen bg sólido propio — se ven los gradientes a través.
+
+Excepciones que conservan su propio fondo:
+- Header (glass con backdrop-blur)
+- Hero (imagen de fondo + overlay negro)
+- PhotoViewer (bg-black/95)
+- Secciones internas de Home (usan solo border-t)
+
+Estilo visual general:
+- Glass sutil en header, menú móvil, botones secundarios, PhotoViewer controls, pills de fecha/info
+- Esquinas redondeadas: rounded-3xl en portadas, rounded-2xl en imágenes/masonry/embeds, rounded-full en botones
+- Tipografía: Montserrat 200–600 (delgada y geométrica), font-extralight para títulos grandes
+- Color de acento: #7C6CFF (violeta)
+- Selección de texto: rgba(124,108,255,0.25)
+
+---
+
+# 11. Navegación (Header)
+
+El Header es sticky con glass (backdrop-blur-xl/2xl) y se intensifica al hacer scroll.
+
+Enlaces del menú:
+- Destacadas → Link a / con state.scrollTo: "featured"
+- Proyectos → Link a / con state.scrollTo: "projects"
+- Sobre mí → Link a /sobre-mi
+- Blog → Link a /blog
+- Contacto → Link a /contacto
+
+Los enlaces de ancla (Destacadas, Proyectos) funcionan desde CUALQUIER página gracias al state.scrollTo:
+- Si ya estás en Home: hace scroll suave a la sección
+- Si estás en otra página: navega a Home y luego hace scroll
+
+El logo (nombre del fotógrafo) es un Link a /, en versalitas con tracking amplio.
+
+Dark mode toggle: pill en desktop, botón en menú móvil.
+
+Menú móvil: panel glass con esquina redondeada (rounded-l-[2rem]) que se desliza desde la derecha.
+
+---
+
+# 12. MasonryGallery / Selección destacada
+
+Existe una sección de selección destacada en Home.
 
 Utiliza:
 
 MasonryGallery
 
-El objetivo fue crear un masonry controlado.
+Características:
 
-Inicialmente se probaron muchos elementos, pero se decidió limitar la cantidad de imágenes para evitar:
+- Grid controlado: 2 columnas móvil, 4 columnas desktop
+- Altura fija en desktop: md:h-[720px] md:grid-rows-3
+- Primer tile: col-span-2 aspect-square (móvil) / row-span-2 (desktop)
+- Tile ancho (posición 5): col-span-2 aspect-video
+- Resto: aspect-[4/3] en móvil, aspect-auto en desktop
+- Tiles redondeados (rounded-2xl) con gap-4
+- Hover: scale 1.03 + overlay sutil
 
-- deformaciones
-- espacios vacíos
-- alturas exageradas
-- apariencia de grid accidental
-
-Actualmente se utiliza una cantidad definida de fotografías.
-
-La sección muestra una selección rápida del trabajo del fotógrafo.
-
----
-
-# 12. Galerías
-
-Existe una sección:
-
-"Todas mis historias"
-
-Las galerías actualmente se muestran mediante:
-
-GalleryCard
-
-Cada tarjeta contiene:
-
-- imagen de portada
-- nombre de la galería
-- cantidad de fotografías
-- descripción
-- enlace visual "Ver galería →"
-
-Actualmente el click de las tarjetas todavía abre directamente el PhotoViewer como solución temporal.
-
-Esto debe cambiarse.
-
-El comportamiento definitivo será:
-
-GalleryCard
-→ ruta /galeria/:slug
-→ Gallery.tsx
-→ fotografías de la galería
-→ click en fotografía
-→ PhotoViewer
+El componente limita silenciosamente a 8 fotos (slice(0, 8)).
 
 ---
 
-# 13. Gallery.tsx
+# 13. Proyectos (antes "Galerías")
 
-Ya existe:
+La sección de proyectos en Home se llama "Proyectos" (siteTexts.projectsTitle).
 
-src/pages/Gallery.tsx
+Cada proyecto se muestra mediante:
 
-Es una página independiente que recibe:
+ProjectCard
 
-gallery
-onBack
+Características:
+- Tarjeta completa clickeable, navega a /proyecto/:slug
+- Imagen de portada con rounded-3xl
+- Overlay degradado ascendente (from-black/45)
+- Textos con sombra ([text-shadow]) para legibilidad sobre fotos
+- Contador usa siteTexts.workNounPlural/Singular (ej: "3 fotografías")
+- Hover: scale 1.04 en imagen
 
-Actualmente contiene:
-
-- botón volver
-- título
-- descripción
-- cantidad de fotografías
-- grid de fotografías
-- PhotoViewer
-- navegación anterior/siguiente
-
-Actualmente NO está conectada al router.
-
-El siguiente paso es conectarla a React Router.
+El concepto de "galería" fue renombrado a "proyecto" en toda la aplicación.
 
 ---
 
-# 14. PhotoViewer
+# 14. Página de Proyecto
+
+Existe:
+
+src/pages/Project.tsx
+
+Recibe props:
+
+interface ProjectPageProps {
+  project: Project;
+  onBack: () => void;
+}
+
+Contiene:
+- Botón volver (Link a /)
+- Encabezado (título, descripción, contador de fotos con workNoun)
+- Grid de fotos: 1 columna móvil, 2 tablet, 3 desktop
+- PhotosViewer integrado
+
+El router (/proyecto/:slug) busca el proyecto por su id en portfolio.ts.
+Si no existe, muestra NotFound con título "Proyecto no encontrado".
+
+---
+
+# 15. PhotoViewer
 
 Existe:
 
 src/components/PhotoViewer.tsx
 
-Su interfaz REAL es:
+Su interfaz es:
 
 interface PhotoViewerProps {
-imageUrl: string;
-title?: string;
-onClose: () => void;
-onPrevious?: () => void;
-onNext?: () => void;
-hasPrevious?: boolean;
-hasNext?: boolean;
-currentIndex: number;
-totalPhotos: number;
+  imageUrl: string;
+  title?: string;
+  onClose: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
+  currentIndex: number;
+  totalPhotos: number;
 }
 
 Funciones actuales:
-
-- imagen en alta resolución
-- fondo negro
-- botón cerrar
-- fotografía anterior
-- fotografía siguiente
-- contador
-- teclado:
-  - Escape
-  - ArrowLeft
-  - ArrowRight
-- bloqueo del scroll del body mientras está abierto
+- Imagen en alta resolución (w=2400&q=85)
+- Fondo negro con bg-black/95
+- Controles circulares glass (cerrar, anterior, siguiente) con SVGs centrados
+- Contador/título en pill glass (border-white/10 bg-white/10 backdrop-blur-md)
+- Imagen con rounded-xl
+- Teclado: Escape, ArrowLeft, ArrowRight
+- Bloqueo del scroll del body mientras está abierto
+- Click fuera de la imagen cierra el visor (onClick en backdrop + stopPropagation en controles/contenido)
+- aria-label genérico ("Visor de imágenes") — sin palabras ligadas a fotografía
 
 IMPORTANTE:
-
 NO modificar la API del PhotoViewer sin necesidad.
-
-Home.tsx y Gallery.tsx fueron adaptados a esta interfaz.
+Home.tsx, Project.tsx y BlogPost.tsx se adaptan a esta interfaz.
 
 ---
 
-# 15. Home.tsx
+# 16. Home.tsx
 
 Existe:
 
 src/pages/Home.tsx
 
 Actualmente contiene:
-
 - Hero
-- Selección destacada
-- MasonryGallery
-- sección de galerías
-- GalleryCard
-- sección de favoritas
-- MasonryGallery
-- PhotoViewer
+- Sección "Destacadas" (siteTexts.featuredLabel/Title/Description)
+  - MasonryGallery con featuredPhotos
+- Sección "Proyectos" (siteTexts.projectsLabel/Title/Description)
+  - Grid con ProjectCard por cada proyecto
+- PhotoViewer (estado compartido: viewerPhotos, viewerIndex)
 
 Home maneja el estado del PhotoViewer:
+- viewerPhotos: Photo[]
+- viewerIndex: number | null
+- openViewer, closeViewer, showPrevious, showNext
 
-viewerPhotos
-viewerIndex
+Home tiene scrollTo por state:
+- useLocation lee location.state.scrollTo
+- useEffect hace scroll suave al elemento por id
+- Esto permite que los enlaces de ancla del Header funcionen desde cualquier página
 
-También tiene navegación anterior/siguiente.
-
-El proyecto compila correctamente después de esta reorganización.
-
----
-
-# 16. Gallery.tsx
-
-Gallery maneja su propio:
-
-viewerIndex
-
-Y abre PhotoViewer utilizando:
-
-imageUrl
-title
-currentIndex
-totalPhotos
-hasPrevious
-hasNext
-onPrevious
-onNext
-onClose
-
-El layout actual de Gallery es un grid:
-
-1 columna móvil
-2 columnas tablet
-3 columnas escritorio
-
-Esto es provisional.
-
-En el futuro cada Theme podrá tener su propio layout.
+NO contiene: sección favoritas (datos existen en portfolio.ts pero no se renderizan).
 
 ---
 
-# 17. Filosofía de temas
+# 17. About
+
+Existe como doble uso:
+
+1. Componente: src/components/About.tsx
+   - Bloque visual reutilizable
+   - Importa photographer directamente de data/portfolio.ts
+   - Muestra: label "Sobre mí", aboutTitle, aboutDescription, ubicación, Instagram
+   - Genérico: sin palabras ligadas a una profesión
+
+2. Página: src/pages/About.tsx
+   - Ruta: /sobre-mi
+   - Envuelve el componente About con espaciado propio
+
+El componente About está diseñado para poder ser incrustado también dentro de Home si un tema lo desea (misma data, layout diferente).
+
+---
+
+# 18. Blog
+
+El blog está implementado con arquitectura por bloques.
+
+Rutas:
+- /blog → listado de publicaciones
+- /blog/:slug → artículo individual
+
+Tipos:
+- BlogPost: slug, title, excerpt, cover, date, blocks[]
+- BlogBlock: type (text|image|embed) + payload
+
+Tipos de bloques:
+- text: párrafo de texto libre
+- image: imagen con URL, alt y caption opcional
+- embed: URL de redes + caption; proveedor detectado automáticamente
+
+Soporte de embeds (src/lib/embeds.ts):
+- YouTube → iframe seguro (youtube-nocookie.com, sin cookies)
+- Vimeo → iframe seguro (player.vimeo.com)
+- Instagram, Facebook, Behance, Flickr → tarjeta-enlace elegante (upgrade a oEmbed futuro)
+
+Componentes:
+- BlogCard: tarjeta con portada rounded-3xl, fecha en pill glass sobre imagen
+- EmbedBlock: renderiza iframe (YouTube/Vimeo) o tarjeta-enlace (otras redes)
+- BlogPostPage: renderiza bloques secuencialmente
+
+Los 3 posts de demostración incluyen: historia con fotos+captions, video YouTube, embeds de Instagram y Behance.
+
+---
+
+# 19. Contacto
+
+Ruta: /contacto
+Página: src/pages/Contact.tsx
+
+Contiene:
+- Encabezado: label "Contacto", contactTitle/description del fotógrafo
+- Botón mailto grande (rounded-full, con sombra)
+- Email visible
+- Ubicación
+- Instagram (link real a instagram.com/handle)
+- Behance (link real a behance.net/user)
+
+contactTitle y contactDescription son campos opcionales en Photographer.
+Si no existen, usa defaults: "Hablemos." y descripción genérica.
+
+Las URLs de redes se construyen desde los handles usando src/lib/socials.ts.
+
+---
+
+# 20. Página 404
+
+Existe:
+
+src/pages/NotFound.tsx
+
+Componente reutilizable con prop title opcional (default: "Página no encontrada").
+
+Se usa en 3 situaciones:
+1. Ruta catch-all (*): "Página no encontrada"
+2. Proyecto inexistente: "Proyecto no encontrado"
+3. Artículo inexistente: "Artículo no encontrado"
+
+---
+
+# 21. Administrador
+
+Existe:
+
+src/pages/AdminLogin.tsx
+
+Ruta: /admin
+
+Es una UI placeholder para el futuro login con Supabase Authentication.
+
+Contiene:
+- Formulario de email/contraseña
+- Botón "Entrar"
+- Nota: "El acceso se activará al conectar Supabase Authentication"
+- Diseño glass card (rounded-3xl, border, backdrop-blur-xl)
+
+Accesible desde el botón "Administrador" en el Footer (pill con ícono de candado SVG).
+
+---
+
+# 22. Footer
+
+El Footer es fijo abajo de la pantalla (mt-auto en layout flex de MinimalTheme).
+
+Contenido:
+- Columna izquierda: nombre (Link, versalitas), profesión, redes sociales (pills con links reales)
+- Columna central: "Explora" con links internos (Inicio, Sobre mí, Blog, Contacto)
+- Columna derecha: botón "Administrador" (pill con candado SVG → /admin)
+- Barra inferior: © año + nombre · "Impulsado por Visora"
+
+Border-t con opacidad reducida para integrarse con los gradientes de fondo.
+
+---
+
+# 23. Filosofía de temas
 
 Una de las ideas principales del producto es que los clientes NO puedan modificar libremente el diseño.
 
@@ -445,10 +583,10 @@ El cliente elige un tema.
 
 Por ejemplo:
 
-Minimal
-Editorial
-Cinematic
-etc.
+- Minimal (actual)
+- Editorial
+- Cinematic
+- etc.
 
 Los temas pueden tener distintos niveles de trabajo/diseño y por tanto distintos precios.
 
@@ -456,403 +594,154 @@ Los datos son los mismos.
 
 El diseño cambia.
 
-Ejemplo:
-
-Minimal:
-
-- blanco
-- espacios amplios
-- tipografía limpia
-- grid/masonry controlado
-
-Editorial:
-
-- composición más artística
-- tipografía más elaborada
-- layouts asimétricos
-
-Cinematic:
-
-- fondos oscuros
-- imágenes grandes
-- transiciones
-- estética más inmersiva
-
-La arquitectura debe favorecer esta separación.
+La arquitectura actual favorece esta separación:
+- Los datos (portfolio.ts) son independientes del tema
+- El tema (MinimalTheme) decide layout, colores, componentes
+- Los componentes (About, ProjectCard, etc.) pueden reutilizarse entre temas
+- SiteTexts contiene los textos UI configurables por tema
 
 ---
 
-# 18. Futuras páginas
+# 24. Funciones completadas
 
-La estructura prevista:
+La estructura pública de Visora está terminada:
 
-/
-→ Home
+Rutas funcionales:
+- / → Home (Hero + Destacadas + Proyectos)
+- /proyecto/:slug → Página de proyecto con fotos
+- /sobre-mi → Sobre mí
+- /blog → Listado de publicaciones
+- /blog/:slug → Artículo individual con bloques
+- /contacto → Contacto con email/redes
+- /admin → Login placeholder
+- * → 404
 
-/galeria/:slug
-→ Gallery
+Componentes funcionales:
+- Header con Links, glass, dark mode toggle, menú móvil
+- Hero con Links, glass scroll indicator
+- PhotoViewer con click fuera, SVGs, aria-labels genéricos
+- MasonryGallery responsive con aspect-ratios estables
+- ProjectCard con sombras de texto y gradiente
+- BlogCard con fecha pill glass
+- EmbedBlock con iframe seguro
+- Footer fijo con admin button
+- About reutilizable (componente + página)
+- NotFound reutilizable
 
-/blog
-→ Blog
-
-/blog/:slug
-→ BlogPost
-
-/contacto
-→ Contact
-
-Posiblemente:
-
-/sobre-mi
-→ About
-
-Aunque algunas de estas secciones podrían permanecer dentro de Home dependiendo del tema.
-
----
-
-# 19. Blog
-
-Se decidió agregar una sección Blog.
-
-El fotógrafo podrá escribir:
-
-- experiencias
-- historias
-- sesiones
-- viajes
-- detrás de cámaras
-- reflexiones
-- artículos
-- contenido relacionado con su trabajo
-
-Posteriormente esto será administrable desde un panel.
+Estética:
+- Montserrat 200–600
+- Glass sutil (header, menú, controles, pills)
+- Esquinas redondeadas (3xl/2xl/full)
+- Gradientes sutiles en body
+- Dark mode persistente (localStorage)
+- lang="es" en index.html
 
 ---
 
-# 20. Favoritas del fotógrafo
+# 25. Pendientes conocidos
 
-Existe una sección:
+Falta para completar la estructura pública:
 
-"Mis favoritas"
+- Sección favoritas en Home (datos existen, no se renderizan)
+- Footer con enlaces sociales a href="#" placeholders (Instagram/Behance en About y Footer usan links reales, pero otros/socials adicionales quedan pendientes)
+- Vercel.json: rewrite para SPA routing (todas las rutas → index.html) — necesario antes de deploy
+- SEO: metadata por página (title, description, Open Graph) — puede usar react-helmet-async o efectos manuales
+- index.html: título estático "visora" — DocumentHead lo sobreescribe al montar
 
-Su propósito es que el fotógrafo pueda seleccionar manualmente algunas fotografías que considere especialmente representativas.
+Pendientes técnicos:
 
-Posteriormente deberá ser administrable.
-
----
-
-# 21. Funciones futuras del producto
-
-El sitio completo debería eventualmente incluir:
-
-## Portfolio
-
-- fotografías destacadas
-- múltiples galerías
-- galerías individuales
-- fotografías en alta resolución
-- visor de fotografías
-- navegación anterior/siguiente
-- favoritos del fotógrafo
-- masonry/grid según tema
-
-## Protección de fotografías
-
-Se planea:
-
-- bloquear descarga directa tanto como sea razonable
-- deshabilitar ciertas acciones del navegador
-- usar imágenes optimizadas para web
-- aplicar marca de agua cuando corresponda
-- posibilidad de entregar versiones con watermark
-- evitar servir archivos originales directamente
-
-IMPORTANTE:
-No existe protección absoluta contra guardar una imagen que se muestra en un navegador.
-El objetivo es dificultar la descarga casual y proteger los originales.
-
-## Contacto
-
-- formulario de contacto
-- email
-- redes sociales
-- teléfono/WhatsApp opcional
-- ubicación opcional
-
-## Blog
-
-- listado de artículos
-- artículo individual
-- imágenes
-- título
-- fecha
-- contenido
-
-## SEO
-
-- title dinámico
-- description
-- Open Graph
-- favicon
-- URLs amigables
-- metadata por galería
-- metadata por artículo
-- sitemap
-- robots.txt
-
-## Responsive
-
-- móvil
-- tablet
-- desktop
+- Photo.id cambiará de number a string (UUID) cuando se conecte Supabase
+- SiteTexts será editable desde el administrador
+- Blog con oEmbed completo para Instagram/Facebook (requiere tokens o scripts externos)
+- Dark mode flash en carga (estado leído de localStorage, pero un frame de light antes de aplicar clase .dark)
+- MasonryGallery limita a 8 fotos silenciosamente — documentar o hacer configurable
 
 ---
 
-# 22. Futuro administrador
+# 26. Modelo de datos Supabase
 
-Más adelante se desarrollará un panel de administración.
-
-El cliente debería poder cambiar:
-
-## Identidad
-
-- nombre
-- profesión
-- descripción
-- favicon
-- título del sitio
-- SEO
-
-## Hero
-
-- imagen
-- texto
-- botones
-
-## Galerías
-
-- crear
-- editar
-- eliminar
-- cambiar nombre
-- cambiar descripción
-- cambiar portada
-- ordenar fotografías
-- subir fotografías
-
-## Fotografías
-
-- subir
-- eliminar
-- ordenar
-- título
-- descripción
-- alt text
-- marcar como favorita
-- watermark
-
-## Blog
-
-- crear artículo
-- editar
-- publicar
-- eliminar
-- imagen destacada
-
-## Contacto
-
-- email
-- teléfono
-- WhatsApp
-- redes
-- ubicación
-
-## Tema
-
-El cliente podrá elegir entre los temas disponibles.
-
-No podrá editar directamente el diseño.
-
----
-
-# 23. Supabase futuro
-
-Cada cliente tendrá inicialmente su propio proyecto Supabase.
-
-Posibles tablas:
+La estructura que emergió del frontend (estática por ahora) confirma estas tablas necesarias:
 
 photographer/profile
+- name, profession, description
+- heroImage, heroPrimaryButton, heroSecondaryButton
+- aboutTitle, aboutDescription
+- contactTitle, contactDescription
+- email, location, instagram, behance
+
 site_settings
-galleries
+- workNounSingular, workNounPlural
+- featuredLabel, featuredTitle, featuredDescription
+- projectsLabel, projectsTitle, projectsDescription
+- theme, primaryColor, secondaryColor
+- watermarkEnabled, downloadsEnabled
+
+projects (antes "galleries")
+- id (slug string), title, description, cover
+
 photos
-favorites
+- id (UUID), project_id (FK), url, title, position
+- is_featured (boolean), is_favorite (boolean)
+
 blog_posts
-contact_settings
-social_links
+- slug, title, excerpt, cover, date
+
+blog_post_blocks
+- id, post_id (FK), position (integer)
+- type: text | image | embed
+- payload: jsonb (text, url, alt, caption, provider)
 
 Storage:
+- portfolio-images (fotos de proyectos)
+- blog-images (portadas e imágenes inline del blog)
 
-portfolio-images
-blog-images
-possibly avatars
-
-La estructura exacta todavía NO está definida.
-
-No crear todavía las tablas definitivas hasta definir correctamente el modelo de datos.
-
----
-
-# 24. Vercel futuro
-
-Cada cliente tendrá su propio proyecto/deployment.
-
-El sitio podrá utilizar:
-
-- dominio personalizado
-- variables de entorno
-- Supabase URL
-- Supabase anon key
-
-La configuración será específica por cliente.
-
----
-
-# 25. Modelo de datos futuro
-
-La aplicación actualmente usa datos estáticos.
-
-Objetivo:
-
-ANTES:
-
-portfolio.ts
-↓
-React
-
-DESPUÉS:
-
-Supabase
-↓
-servicios/API
-↓
-datos
-↓
-Theme
-↓
-componentes
-
-Los componentes visuales no deberían depender directamente de Supabase.
-
----
-
-# 26. Estado actual del desarrollo
-
-COMPLETADO:
-
-- proyecto Vite
-- React + TypeScript
-- Tailwind
-- GitHub
-- estructura inicial
-- Header
-- Hero
-- favicon
-- título dinámico
-- Masonry controlado
-- selección destacada
-- favoritas
-- GalleryCard
-- PhotoViewer
-- navegación del PhotoViewer
-- Home.tsx
-- Gallery.tsx
-- Content como puente
-- React Router DOM instalado
-
-EN PROGRESO:
-
-- reorganización de páginas
-- configuración de React Router
-- rutas dinámicas para galerías
-
-PRÓXIMO PASO INMEDIATO:
-
-Configurar React Router.
-
-Objetivo:
-
-/
-→ Home
-
-/galeria/:slug
-→ Gallery
-
-El slug debe buscar la galería correspondiente desde portfolio.ts.
-
-Ejemplo:
-
-/galeria/bodas
-
-busca:
-
-galleries.find(
-gallery => gallery.slug === "bodas"
-)
-
-y entrega esa galería a:
-
-Gallery.tsx
-
-Después se reemplazará portfolio.ts por Supabase.
+La estructura exacta debe definirse con cuidado antes de crear las tablas.
+Los componentes NO dependen directamente de Supabase — usan interfaces TypeScript que serán alimentadas por servicios.
 
 ---
 
 # 27. Arquitectura objetivo
 
-La arquitectura final debería parecerse a:
+La arquitectura actual:
 
+```
 App
-│
+├── BrowserRouter
 ├── DocumentHead
-│
-└── Theme
-│
-├── Header
-│
-├── Router
-│ ├── Home
-│ ├── Gallery
-│ ├── Blog
-│ └── BlogPost
-│
-└── Footer
+└── MinimalTheme (o cualquier otro tema)
+    ├── ScrollToTop
+    ├── Header (Links, glass, dark mode)
+    ├── Router
+    │   ├── Home (Hero, Destacadas, Proyectos)
+    │   ├── Project (/proyecto/:slug)
+    │   ├── About (/sobre-mi)
+    │   ├── Blog (/blog)
+    │   ├── BlogPost (/blog/:slug)
+    │   ├── Contact (/contacto)
+    │   ├── AdminLogin (/admin)
+    │   └── NotFound (*)
+    └── Footer (fijo, admin button)
+```
 
-Datos:
+Flujo de datos futuro:
 
+```
 Supabase
 ↓
-services
+services (fetch, transform)
 ↓
-pages
+pages (reciben props)
 ↓
-theme components
-
-Tema:
-
-MinimalTheme
-EditorialTheme
-CinematicTheme
-...
-
-Los temas deberían compartir la misma estructura de datos.
+components (reutilizables por tema)
+↓
+Theme (layout, colores, estética)
+```
 
 ---
 
 # 28. Principio de desarrollo
 
 El usuario necesita instrucciones claras y paso a paso.
-
-Evitar cambiar muchos archivos simultáneamente sin explicar qué cambia.
 
 Preferir:
 
@@ -866,6 +755,8 @@ Cuando sea posible, entregar archivos completos en lugar de fragmentos ambiguos.
 No asumir interfaces de componentes existentes: revisar el código actual antes de cambiar cómo se comunican.
 
 El usuario utiliza un agente IA para acelerar el desarrollo, por lo que el código debe mantenerse suficientemente estructurado y claro para que otros agentes puedan entenderlo.
+
+IMPORTANTE: El agente debe ejecutar npm run build y npm run lint después de cada cambio significativo para verificar que todo compila correctamente.
 
 ---
 
@@ -892,24 +783,16 @@ Se busca crear sitios profesionales que puedan venderse individualmente de forma
 
 # 30. Próximo objetivo técnico
 
-Configurar React Router DOM.
+ESTADO ACTUAL: La estructura pública está terminada. La estructura de datos está definida por los tipos TypeScript.
+
+PRÓXIMO PASO: Definir y crear el modelo de datos en Supabase.
 
 Después:
 
-1. rutas
-2. slug de galerías
-3. navegación Home → Gallery
-4. botón volver
-5. probar URLs directas
-6. mejorar diseño de Gallery
-7. crear página Blog
-8. crear Contact
-9. completar Home
-10. definir modelo de datos Supabase
-11. conectar Supabase
-12. Storage
-13. autenticación
-14. administrador
-15. selección de tema
-16. deployment en Vercel
-17. dominios personalizados
+1. Conectar Supabase (lectura de datos)
+2. Storage (subida de imágenes)
+3. Autenticación (login del administrador)
+4. Panel de administrador (CRUD de contenido)
+5. Selección de tema
+6. Deployment en Vercel
+7. Dominios personalizados

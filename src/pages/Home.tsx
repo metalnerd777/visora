@@ -1,17 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { useLocation } from "react-router-dom";
 
 import Hero from "../components/Hero";
 import MasonryGallery from "../components/MasonryGallery";
-import GalleryCard from "../components/GalleryCard";
+import ProjectCard from "../components/ProjectCard";
 import PhotoViewer from "../components/PhotoViewer";
 
-import { galleries, featuredPhotos } from "../data/portfolio";
+import { projects, featuredPhotos, siteTexts } from "../data/portfolio";
 
 import type { Photo } from "../types/portfolio";
 
 function Home() {
+  const location = useLocation();
   const [viewerPhotos, setViewerPhotos] = useState<Photo[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const target = (location.state as { scrollTo?: string } | null)
+      ?.scrollTo;
+
+    if (!target) return;
+
+    const el = document.getElementById(target);
+
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth" }));
+    }
+  }, [location.state]);
 
   const openViewer = (photos: Photo[], photoId: number) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
@@ -59,16 +75,15 @@ function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 max-w-2xl">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-              Selección destacada
+              {siteTexts.featuredLabel}
             </p>
 
             <h2 className="text-3xl font-light text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
-              Una mirada a mi trabajo
+              {siteTexts.featuredTitle}
             </h2>
 
             <p className="mt-4 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              Una selección de fotografías que representan mi estilo y mi forma
-              de trabajar.
+              {siteTexts.featuredDescription}
             </p>
           </div>
 
@@ -79,36 +94,35 @@ function Home() {
         </div>
       </section>
 
-      {/* Galerías */}
+      {/* Proyectos */}
       <section
-        id="gallery"
+        id="projects"
         className="border-t border-neutral-200 px-6 py-24 transition-colors dark:border-[#27243A] md:px-10"
       >
         <div className="mx-auto max-w-7xl">
           <div className="mb-14 max-w-2xl">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-              Portfolio
+              {siteTexts.projectsLabel}
             </p>
 
             <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
-              Todas mis historias
+              {siteTexts.projectsTitle}
             </h2>
 
             <p className="mt-5 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              Explora mis diferentes trabajos y descubre las historias detrás de
-              cada fotografía.
+              {siteTexts.projectsDescription}
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {galleries.map((gallery) => (
-              <GalleryCard key={gallery.id} gallery={gallery} />
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Photo Viewer */}
+      {/* Visor */}
       {viewerIndex !== null && viewerPhotos[viewerIndex] && (
         <PhotoViewer
           imageUrl={viewerPhotos[viewerIndex].url}

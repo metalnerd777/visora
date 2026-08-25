@@ -53,40 +53,72 @@ function PhotoViewer({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={title || "Visor de fotografía"}
+      aria-label={title || "Visor de imágenes"}
+      onClick={onClose}
     >
       {/* Cerrar */}
       <button
         type="button"
-        onClick={onClose}
-        className="absolute right-6 top-5 z-20 text-4xl font-light text-white transition-opacity hover:opacity-60"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
         aria-label="Cerrar"
       >
-        ×
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+        >
+          <path d="M18 6L6 18" />
+
+          <path d="M6 6l12 12" />
+        </svg>
       </button>
 
       {/* Anterior */}
       {hasPrevious && (
         <button
           type="button"
-          onClick={onPrevious}
-          className="absolute left-4 top-1/2 z-20 -translate-y-1/2 p-4 text-5xl font-light text-white transition-opacity hover:opacity-60"
-          aria-label="Fotografía anterior"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrevious?.();
+          }}
+          className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          aria-label="Imagen anterior"
         >
-          ‹
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
       )}
 
-      {/* Fotografía */}
-      <div className="flex max-h-full max-w-full flex-col items-center">
+      {/* Imagen */}
+      <div
+        className="flex max-h-full max-w-full flex-col items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
         <img
           src={`${imageUrl}?auto=format&w=2400&q=85`}
-          alt={title || "Fotografía"}
-          className="max-h-[82vh] max-w-[90vw] object-contain"
+          alt={title || "Imagen"}
+          className="max-h-[82vh] max-w-[90vw] rounded-xl object-contain"
         />
 
-        <div className="mt-4 flex items-center gap-4 text-sm text-white/70">
-          {title && <span>{title}</span>}
+        <div className="mt-4 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-xs tracking-wider text-white/85 backdrop-blur-md">
+          {title && <span className="mr-3">{title}</span>}
 
           <span>
             {currentIndex + 1} / {totalPhotos}
@@ -98,11 +130,24 @@ function PhotoViewer({
       {hasNext && (
         <button
           type="button"
-          onClick={onNext}
-          className="absolute right-4 top-1/2 z-20 -translate-y-1/2 p-4 text-5xl font-light text-white transition-opacity hover:opacity-60"
-          aria-label="Siguiente fotografía"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext?.();
+          }}
+          className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          aria-label="Siguiente imagen"
         >
-          ›
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
       )}
     </div>

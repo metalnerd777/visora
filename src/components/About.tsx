@@ -1,0 +1,41 @@
+import { photographer } from "../data/portfolio";
+
+function About() {
+  return (
+    <div className="mx-auto max-w-7xl">
+      <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+        Sobre mí
+      </p>
+
+      <h2 className="max-w-2xl text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] sm:text-4xl md:text-5xl">
+        {photographer.aboutTitle}
+      </h2>
+
+      {/* Texto + ubicación / redes */}
+      <div className="mt-12 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
+        <p className="max-w-xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+          {photographer.aboutDescription}
+        </p>
+
+        <div className="flex flex-col gap-1 md:items-end md:text-right">
+          {photographer.location && (
+            <p className="text-sm text-neutral-500 dark:text-[#A8A3B8]">
+              {photographer.location}
+            </p>
+          )}
+
+          {photographer.instagram && (
+            <a
+              href="#"
+              className="text-sm text-neutral-900 transition-colors hover:text-[#7C6CFF] dark:text-[#F5F3FF]"
+            >
+              {photographer.instagram}
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default About;

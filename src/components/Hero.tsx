@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { photographer } from "../data/portfolio";
 
 function Hero() {
@@ -27,7 +29,7 @@ function Hero() {
             {photographer.profession}
           </p>
 
-          <h1 className="text-5xl font-light tracking-tight sm:text-6xl md:text-7xl">
+          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl">
             {photographer.name}
           </h1>
 
@@ -37,18 +39,18 @@ function Hero() {
 
           <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
             <a
-              href="#gallery"
-              className="inline-flex min-w-44 items-center justify-center bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
+              href="#projects"
+              className="inline-flex min-w-44 items-center justify-center rounded-full bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
             >
               {photographer.heroPrimaryButton ?? "Ver portfolio"}
             </a>
 
-            <a
-              href="#contact"
-              className="inline-flex min-w-44 items-center justify-center border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-sm transition-all duration-300 hover:border-white hover:bg-white/10"
+            <Link
+              to="/contacto"
+              className="inline-flex min-w-44 items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
             >
               {photographer.heroSecondaryButton ?? "Contacto"}
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -57,9 +59,11 @@ function Hero() {
       <a
         href="#featured"
         aria-label="Desplazarse hacia abajo"
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-white/60 transition-colors hover:text-white"
+        className="absolute bottom-8 left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/80 backdrop-blur-md transition-colors hover:text-white"
       >
-        <span className="block animate-bounce text-lg">↓</span>
+        <span className="block translate-y-[1px] animate-bounce text-base leading-none">
+          ↓
+        </span>
       </a>
     </section>
   );
