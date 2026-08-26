@@ -57,6 +57,7 @@ Frontend:
 - React Router DOM 7.18.2 (configurado)
 - Google Fonts: Montserrat (200–600)
 - @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (drag-and-drop en admin)
+- react-easy-crop (crop de imágenes con focal point)
 
 Backend futuro:
 
@@ -85,38 +86,52 @@ C:\Users\Skogardraugur\Desktop\visora (windows)
 
 src/
 ├── components/
-│   ├── About.tsx              (bloque visual reutilizable, importa profile)
+│   ├── About.tsx              (bloque visual reutilizable, consume usePortfolio)
 │   ├── BlogCard.tsx           (tarjeta de publicación del blog)
-│   ├── DocumentHead.tsx       (título dinámico + favicon, importa profile)
+│   ├── DocumentHead.tsx       (título dinámico + favicon, consume usePortfolio)
 │   ├── EmbedBlock.tsx         (renderiza embeds de YouTube/Vimeo/redes)
-│   ├── Footer.tsx             (fijo abajo, socialLinks[], admin button)
-│   ├── Header.tsx             (sticky, glass, Links, dark mode toggle)
-│   ├── Hero.tsx               (imagen fondo, botones Link, scroll glass)
+│   ├── Field.tsx              (input de texto reutilizable para admin)
+│   ├── Footer.tsx             (sticky, consume usePortfolio, botón logout cuando autenticado)
+│   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
+│   ├── Hero.tsx               (imagen fondo dual desktop/móvil, object-position, consume usePortfolio)
+│   ├── ImageCropModal.tsx     (cropper react-easy-crop, focal point como porcentaje)
+│   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar)
 │   ├── MasonryGallery.tsx     (grid masonry dinámico, columnas por count)
+│   ├── Modal.tsx              (reutilizable, responsive, Escape, scroll lock)
 │   ├── PhotoViewer.tsx        (visor fullscreen, click fuera, SVGs)
 │   ├── ProjectCard.tsx        (tarjeta de proyecto, navega por slug)
-│   └── ScrollToTop.tsx        (scroll a top en cambio de ruta)
+│   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
+│   ├── SocialLinksEditor.tsx  (editor de redes sociales reutilizable)
+│   └── Toggle.tsx             (switch toggle reutilizable)
 │
 ├── pages/
-│   ├── About.tsx              (página /sobre-mi)
+│   ├── About.tsx              (página /sobre-mi, edit control cuando autenticado)
 │   ├── AdminLogin.tsx         (página /admin, UI login mock)
-│   ├── Blog.tsx               (listado /blog)
-│   ├── BlogPost.tsx           (artículo individual /blog/:slug)
-│   ├── Contact.tsx            (página /contacto, lee WhatsApp de localStorage)
-│   ├── Home.tsx               (secciones: Hero, Featured, Projects)
+│   ├── Blog.tsx               (listado /blog, "Nueva publicación" cuando autenticado)
+│   ├── BlogPost.tsx           (artículo individual, edit/delete cuando autenticado)
+│   ├── Contact.tsx            (página /contacto, edit control cuando autenticado)
+│   ├── Home.tsx               (Hero + Featured + Projects con edit controls)
 │   ├── NotFound.tsx           (404 reutilizable con título configurable)
 │   ├── Project.tsx            (página /proyecto/:slug)
 │   └── admin/
-│       ├── AdminLayout.tsx    (sidebar + auth guard + Outlet)
-│       ├── Dashboard.tsx      (stats + quick actions)
-│       ├── Profile.tsx        (nombre, profesión, avatar, redes)
-│       ├── HeroAdmin.tsx      (imagen, título, botones)
-│       ├── AboutAdmin.tsx     (título, descripción, imagen)
-│       ├── ContactAdmin.tsx   (contenido, contacto, redes, WhatsApp, formulario)
-│       ├── Featured.tsx       (selector de proyectos destacados con DnD)
+│       ├── edit/
+│       │   ├── EditableSection.tsx    (wrapper con botones [Editar] / [+ Agregar])
+│       │   ├── EditHeroModal.tsx      (imagen desktop + móvil + focal points + botones)
+│       │   ├── EditProfileModal.tsx   (nombre, profesión, descripción, avatar, redes)
+│       │   ├── EditAboutModal.tsx     (título, descripción, imagen)
+│       │   ├── EditFeaturedModal.tsx   (selección proyectos con DnD)
+│       │   ├── EditProjectsModal.tsx   (lista + form, DnD, imágenes)
+│       │   └── EditContactModal.tsx    (contacto, WhatsApp, formulario)
+│       ├── AdminLayout.tsx    (sidebar legacy, ya no enrutado)
+│       ├── Dashboard.tsx      (legacy, ya no enrutado)
+│       ├── Profile.tsx        (legacy, ya no enrutado)
+│       ├── HeroAdmin.tsx      (legacy, ya no enrutado)
+│       ├── AboutAdmin.tsx     (legacy, ya no enrutado)
+│       ├── ContactAdmin.tsx   (legacy, ya no enrutado)
+│       ├── Featured.tsx       (legacy, ya no enrutado)
 │       └── projects/
-│           ├── ProjectList.tsx    (lista con DnD reorder)
-│           └── ProjectForm.tsx    (crear/editar proyecto + fotos)
+│           ├── ProjectList.tsx    (legacy, ya no enrutado)
+│           └── ProjectForm.tsx    (legacy, ya no enrutado)
 │
 ├── themes/
 │   └── minimal/
@@ -128,14 +143,19 @@ src/
 ├── lib/
 │   ├── auth.ts                (login, logout, isAuthenticated — mock localStorage)
 │   ├── embeds.ts              (detección de proveedor + URLs embed seguras)
-│   └── socials.ts             (socialUrl(), socialLabel() genéricos)
+│   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
+│   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh)
+│   ├── usePortfolio.ts        (hook usePortfolio)
+│   ├── socials.ts             (socialUrl(), socialLabel() genéricos)
+│   ├── storage.ts             (loadJSON, saveJSON helpers)
+│   └── platforms.ts           (PLATFORM_OPTIONS compartido)
 │
 ├── types/
 │   └── portfolio.ts           (PortfolioProfile, Photo, Project, SocialLink, etc.)
 │
 ├── App.tsx                    (BrowserRouter → DocumentHead + MinimalTheme)
 ├── main.tsx                   (entry point React StrictMode)
-├── router.tsx                 (todas las rutas + catch-all 404)
+├── router.tsx                 (rutas públicas + /admin login + catch-all 404)
 └── index.css                  (Tailwind v4 + font Montserrat + gradientes de fondo)
 
 public/
@@ -151,34 +171,22 @@ BrowserRouter
 ├── DocumentHead
 └── MinimalTheme
     ├── ScrollToTop
-    ├── Header (sticky, glass, Links)
+    ├── Header (sticky, glass, Links, logout button cuando autenticado)
     ├── AppRouter (flex-1)
-    │   ├── /                → Home
+    │   ├── /                → Home (con edit controls si autenticado)
     │   ├── /proyecto/:slug  → Project
-    │   ├── /sobre-mi        → AboutPage
-    │   ├── /blog            → BlogPage
-    │   ├── /blog/:slug      → BlogPostPage
-    │   ├── /contacto        → ContactPage
+    │   ├── /sobre-mi        → AboutPage (con edit control si autenticado)
+    │   ├── /blog            → BlogPage (con "Nueva publicación" si autenticado)
+    │   ├── /blog/:slug      → BlogPostPage (con edit/delete si autenticado)
+    │   ├── /contacto        → ContactPage (con edit control si autenticado)
     │   ├── /admin           → AdminLoginPage (standalone)
-    │   ├── /admin           → AdminLayout (protegido)
-    │   │   ├── /dashboard   → Dashboard
-    │   │   ├── /perfil      → Profile
-    │   │   ├── /hero        → HeroAdmin
-    │   │   ├── /sobre-mi    → AboutAdmin
-    │   │   ├── /proyectos   → ProjectList
-    │   │   ├── /proyectos/nuevo        → ProjectForm
-    │   │   ├── /proyectos/:slug/editar → ProjectForm
-    │   │   ├── /destacadas  → Featured
-    │   │   ├── /blog        → AdminPlaceholder
-    │   │   ├── /contacto    → ContactAdmin
-    │   │   └── /apariencia  → AdminPlaceholder
     │   └── *                → NotFound (404)
-    └── Footer (fijo abajo, mt-auto)
+    └── Footer (fijo abajo, mt-auto, logout cuando autenticado)
 ```
 
-El layout de MinimalTheme es flex min-h-screen flex-col, lo que garantiza que el footer siempre quede pegado al fondo de la pantalla (sticky footer).
+No hay rutas admin anidadas. El sitio público ES el admin cuando hay sesión activa.
 
-Los fondos sólidos de las páginas se eliminaron para que se vean los gradientes sutiles del body (§10).
+Las páginas /admin legacy (Dashboard, Profile, HeroAdmin, etc.) existen como archivos pero ya no se enrutan.
 
 ---
 
@@ -189,7 +197,10 @@ src/types/portfolio.ts
 - **PortfolioProfile** — información del profesional:
   - name, profession, description
   - avatar? (string URL)
-  - heroImage?, heroPrimaryButton?, heroSecondaryButton?
+  - heroImage?, heroImageMobile? (URLs)
+  - heroImageFocusX?, heroImageFocusY? (0-100, focal point desktop)
+  - heroImageMobileFocusX?, heroImageMobileFocusY? (0-100, focal point móvil)
+  - heroPrimaryButton?, heroSecondaryButton?
   - aboutTitle, aboutDescription
   - contactTitle?, contactDescription?
   - email, location
@@ -233,7 +244,7 @@ Exporta `profile` (antes era `photographer`):
 - profile — información personal, hero, about, contacto, socialLinks[]
 - siteTexts — textos configurables de secciones + workNoun
 - projects — proyectos con fotos (slug como id)
-- favorites — fotos favoritas (datos existentes, sin renderizar aún)
+- favorites — fotos favoritas (datos existentes, no renderizan aún)
 - featuredPhotos — selección destacada para el masonry del Home
 - blogPosts — 3 publicaciones demo con bloques mixtos
 
@@ -253,9 +264,21 @@ Todo texto visible viene de los datos (profile o siteTexts).
 El admin guarda datos temporalmente en localStorage antes de conectar Supabase.
 
 Keys:
-- `visora-admin-auth` — estado de autenticación mock
-- `visora-admin-profile` — perfil completo (name, profession, description, avatar, email, location, socialLinks)
-- `visora-admin-hero` — hero config (heroImage, title, description, primaryText/Link, secondaryText/Link, showSecondary)
+- `visora-admin-auth` — estado de autenticación mock ("true" o null)
+- `visora-admin-profile` — perfil completo:
+  - name, profession, description, avatar, email, location, socialLinks
+  - heroImage, heroImageMobile, heroImageFocusX/Y, heroImageMobileFocusX/Y
+  - heroPrimaryButton, heroSecondaryButton
+  - aboutTitle, aboutDescription
+  - contactTitle, contactDescription
+- `visora-admin-hero` — config hero:
+  - heroImage, heroImageMobile
+  - heroImageFocusX/Y (0-100, default 50)
+  - heroImageMobileFocusX/Y (0-100, default 50)
+  - title, description
+  - primaryText, primaryLink
+  - secondaryText, secondaryLink
+  - showSecondary (boolean)
 - `visora-admin-about` — sobre mí (title, description, image?)
 - `visora-admin-contact` — contacto config:
   - title, description
@@ -265,104 +288,195 @@ Keys:
   - whatsappMessage: string (mensaje predefinido)
   - formEnabled: boolean
   - formEmail: string
-- `visora-admin-projects` — array de proyectos con fotos, alt text, etc.
+- `visora-admin-projects` — array de proyectos con images[], alt text, etc.
+  - Importante: usa campo `images` (no `photos`) con estructura { id, url, alt }
 - `visora-admin-featured` — array de slugs de proyectos destacados
+- `visora-admin-texts` — siteTexts configurables (pendiente de implementar admin)
 
 Credenciales mock: `admin@visora.com` / `admin123`
 
 ---
 
-# 9. Administrador — Login y Auth
+# 9. Modelo de edición (sin "modo edición")
 
-**Login:** src/pages/AdminLogin.tsx
-- Ruta: /admin (standalone, sin AdminLayout)
-- Formulario email/contraseña
-- Usa `login()` de src/lib/auth.ts
-- Redirige a /admin/dashboard al autenticarse
+El sitio público ES el admin cuando hay sesión activa. No hay barra extra ni toggle.
 
-**Auth:** src/lib/auth.ts
-- `login(email, password)` — valida credenciales mock, guarda en localStorage
-- `logout()` — limpia localStorage
-- `isAuthenticated()` — verifica estado en localStorage
+**Flujo:**
+1. Admin inicia sesión en /admin → redirige a /
+2. El sitio público muestra botones de editar/agregar en cada sección
+3. Los botones son visibles permanentemente mientras haya sesión
+4. "Cerrar sesión" en Header (pills rojo) y Footer (pill rojo)
+5. Al cerrar sesión, los botones desaparecen y el sitio queda como público
 
----
+**Detección de sesión:**
+- `isAuthenticated()` de `src/lib/auth.ts` lee `visora-admin-auth` de localStorage
+- Header y Footer polling cada 500ms con `setInterval` para detectar cambios
+- Cada página (Home, About, Contact, Blog) tiene su propio estado `admin`
 
-# 10. Administrador — Layout y Sidebar
+**Componentes de edición:**
+- `EditableSection` — wrapper con botones `[✏ Editar]` y opcionalmente `[+ Agregar]`
+  - Botones siempre visibles (no hover-to-reveal)
+  - posicionamiento absolute top-right
+- `Modal` — responsive (bottom sheet móvil / centrado desktop), Escape, scroll lock
+- `Field` — input de texto reutilizable
+- `Toggle` — switch toggle
+- `ImageUpload` — upload con preview
+- `SocialLinksEditor` — editor de redes sociales
+- `ImageCropModal` — cropper con react-easy-crop, focal point como porcentaje
 
-**Layout:** src/pages/admin/AdminLayout.tsx
-- Auth guard: si no está autenticado, renderiza solo el Outlet (login)
-- Sidebar fijo en desktop, overlay en móvil
-- Barra superior móvil con hamburguesa
-- Botón cerrar sesión en footer del sidebar
+**Controles por página:**
 
-**Nav items (en orden):**
-1. Dashboard → /admin/dashboard (ícono casa)
-2. Perfil → /admin/perfil (ícono usuario)
-3. Hero → /admin/hero (ícono monitor)
-4. Sobre mí → /admin/sobre-mi (ícono usuario+)
-5. Proyectos → /admin/proyectos (ícono grid)
-6. Destacadas → /admin/destacadas (ícono estrella)
-7. Blog → /admin/blog (ícono plumilla)
-8. Contacto → /admin/contacto (ícono sobre)
-9. Apariencia → /admin/apariencia (ícono engranaje)
+| Página | Controles |
+|--------|-----------|
+| Home | Hero [Editar], Destacadas [Editar], Proyectos [Editar] + [+ Nuevo proyecto] |
+| About | [Editar sobre mí] |
+| Contact | [Editar contacto] |
+| Blog listing | [+ Nueva publicación] |
+| Blog post | [✏ Editar] + [🗑 Eliminar] |
 
----
-
-# 11. Administrador — Módulos completados
-
-## Dashboard
-- 4 stat cards (Proyectos, Fotos, Entradas blog, Destacadas)
-- 4 quick actions (nuevo proyecto, ver sitio, editar perfil, ver blog)
-
-## Perfil
-- Sección información principal: Nombre, Profesión, Descripción, Ubicación, Email
-- Sección imagen de perfil: upload con preview, cambiar/eliminar
-- Sección redes sociales: selector de plataforma + handle, agregar/eliminar
-
-## Hero
-- Sección imagen de fondo: upload con preview, cambiar/eliminar
-- Sección contenido: Título, Descripción
-- Sección botones: Principal (texto+enlace), Secundario (texto+enlace + toggle show/hide)
-
-## Sobre mí
-- Sección imagen: upload con preview, cambiar/eliminar (opcional)
-- Sección contenido: Título (input), Descripción (textarea)
-
-## Proyectos
-- **ProjectList:** lista con drag-and-drop (@dnd-kit), editar/eliminar por proyecto, empty state
-- **ProjectForm:** formulario compartido crear/editar:
-  - Título (auto-genera slug), Descripción
-  - Imagen de portada (upload preview)
-  - Grid de imágenes con drag reorder, alt text, set-as-cover, agregar/eliminar
-
-## Destacadas
-- Seleccionar/deseleccionar proyectos (checkboxes)
-- Lista de proyectos seleccionados con drag reorder
-- Guarda array de slugs en localStorage
-
-## Contacto
-- Sección contenido: Título, Descripción
-- Sección información de contacto: Email, Ubicación
-- Sección redes sociales: mismos PLATFORM_OPTIONS que Perfil
-- Sección WhatsApp: número de teléfono + mensaje predefinido
-- Sección formulario de contacto: toggle on/off + email de destino (solo config, sin envío real)
+**Modales de edición (6):**
+- EditHeroModal — imagen desktop + móvil + focal points + botones + toggle secundario
+- EditProfileModal — nombre, profesión, descripción, avatar, redes
+- EditAboutModal — título, descripción, imagen
+- EditFeaturedModal — selección de proyectos con DnD
+- EditProjectsModal — lista + formulario, DnD, imágenes
+- EditContactModal — título, descripción, email, ubicación, redes, WhatsApp, formulario
 
 ---
 
-# 12. Componente público — Contacto
+# 10. Hero — Imagen dual con focal point
 
-src/pages/Contact.tsx
+El Hero soporta dos imágenes: una para desktop y una para móvil (opcional).
 
-- Lee `visora-admin-contact` de localStorage para WhatsApp
-- Si hay `whatsappPhone` configurado, muestra botón WhatsApp (ícono SVG + link wa.me)
-- Link format: `https://wa.me/{phone}?text={encodedMessage}`
-- Botón WhatsApp: estilo outlined, hover verde #25D366
-- Se apila verticalmente con el botón de email
-- Si no hay teléfono, el botón WhatsApp no se muestra
+**Componente:** src/components/Hero.tsx
+
+- Dos `<img>` con Tailwind:
+  - Desktop: `hidden md:block` con `objectPosition` del focal point desktop
+  - Mobile: `md:hidden` con `objectPosition` del focal point mobile
+- Si no hay imagen móvil, una sola imagen con el focal point desktop
+- Focal point: `object-position: ${x}% ${y}%` (0-100, default 50% 50% = centrado)
+
+**EditHeroModal:** src/pages/admin/edit/EditHeroModal.tsx
+
+- Campo "Imagen de fondo (desktop)" + botón "Ajustar posición"
+- Campo "Imagen de fondo (móvil) — opcional" + botón "Ajustar posición"
+- Toggle mostrar/ocultar botón secundario
+- Coordenadas del focal point visibles junto al botón
+
+**ImageCropModal:** src/components/ImageCropModal.tsx
+
+- Wrapper de react-easy-crop
+- Arrastras para elegir qué parte de la imagen se ve
+- Slider de zoom (1x a 3x)
+- Botón "Centrar" (resetea a 50% 50%)
+- Botón "Aplicar" (guarda coordenadas como porcentajes)
+- Aspect ratio configurable (16/9 desktop, 9/16 mobile)
 
 ---
 
-# 13. MasonryGallery — Grid dinámico
+# 11. Fondos y estética
+
+El tema Minimal utiliza gradientes sutiles en el body.
+
+Light mode:
+- Color base: #f7f7fa
+- Gradiente radial lavanda sutil arriba-derecha (rgba(124,108,255,0.07))
+- Gradiente radial melocotón abajo-izquierda (rgba(255,150,120,0.05))
+
+Dark mode:
+- Color base: #0b0a14
+- Gradiente radial violeta arriba-derecha (rgba(124,108,255,0.14))
+- Gradiente radial índigo abajo-izquierda (rgba(64,60,140,0.20))
+
+Los gradientes están en index.css con background-attachment: fixed.
+
+Estilo visual general:
+- Glass sutil en header, menú móvil, botones secundarios, PhotoViewer controls, pills
+- Esquinas redondeadas: rounded-3xl en portadas, rounded-2xl en imágenes/masonry, rounded-full en botones
+- Tipografía: Montserrat 200–600, font-extralight para títulos grandes
+- Color de acento: #7C6CFF (violeta)
+- Selección de texto: rgba(124,108,255,0.25)
+
+---
+
+# 12. Navegación (Header)
+
+Header sticky con glass (backdrop-blur-xl/2xl) que se intensifica al hacer scroll.
+
+Enlaces:
+- Destacadas → Link a / con state.scrollTo: "featured"
+- Proyectos → Link a / con state.scrollTo: "projects"
+- Sobre mí → Link a /sobre-mi
+- Blog → Link a /blog
+- Contacto → Link a /contacto
+
+Los enlaces de ancla funcionan desde CUALQUIER página gracias al state.scrollTo.
+
+Logo: nombre del perfil (Link a /), versalitas con tracking amplio.
+Dark mode toggle: pill en desktop, botón en menú móvil.
+Menú móvil: panel glass rounded-l-[2rem] desde la derecha.
+Logout: pills rojos discretos en desktop y menú móvil cuando autenticado.
+
+---
+
+# 13. Componentes públicos reutilizables
+
+- **About** (componente + página): label, aboutTitle, aboutDescription, ubicación, socialLinks
+- **PhotoViewer**: visor fullscreen, teclado, click fuera, aria-labels genéricos
+- **ProjectCard**: tarjeta clickeable, navega por slug, sombras, gradiente
+- **BlogCard**: tarjeta con portada rounded-3xl, fecha pill glass
+- **EmbedBlock**: iframe YouTube/Vimeo, tarjeta-enlace para otras redes
+- **DocumentHead**: título dinámico `profile.name - profile.profession`, favicon
+- **Footer**: sticky, socialLinks[], links internos, copyright, logout cuando autenticado
+
+---
+
+# 14. Blog
+
+Arquitectura por bloques:
+- /blog → listado de publicaciones
+- /blog/:slug → artículo individual
+
+Tipos de bloques:
+- text: párrafo de texto libre
+- image: imagen con URL, alt y caption opcional
+- embed: URL de redes + caption; proveedor detectado automáticamente
+
+Soporte de embeds (src/lib/embeds.ts):
+- YouTube → iframe seguro (youtube-nocookie.com, sin cookies)
+- Vimeo → iframe seguro (player.vimeo.com)
+- Instagram, Facebook, Behance, Flickr → tarjeta-enlace elegante
+
+Los 3 posts de demo incluyen: historia con fotos, video YouTube, embeds de Instagram y Behance.
+
+Cuando autenticado:
+- Blog listing muestra botón [+ Nueva publicación]
+- Blog post muestra botones [✏ Editar] y [🗑 Eliminar]
+- Los botones son visibles pero funcionalidad de editor pendiente
+
+---
+
+# 15. Filosofía de temas
+
+Los clientes NO pueden modificar libremente el diseño. Eligen un tema:
+
+- Minimal (actual)
+- Editorial
+- Cinematic
+- etc.
+
+Los datos son los mismos. El diseño cambia.
+Temas más elaborados = mayor precio.
+
+La arquitectura favorece esta separación:
+- Los datos (portfolio.ts) son independientes del tema
+- El tema (MinimalTheme) decide layout, colores, componentes
+- Los componentes pueden reutilizarse entre temas
+- SiteTexts contiene textos UI configurables por tema
+
+---
+
+# 16. MasonryGallery — Grid dinámico
 
 src/components/MasonryGallery.tsx
 
@@ -396,123 +510,15 @@ El grid ajusta columnas y patrón de spans según la cantidad de imágenes.
 
 ---
 
-# 14. Hero
+# 17. Modelo de datos Supabase (futuro)
 
-Características:
-- Imagen horizontal de fondo
-- Texto alineado a la izquierda
-- Overlay degradado para facilitar lectura
-- Nombre dinámico (font-extralight Montserrat grande)
-- Profesión dinámica
-- Descripción dinámica
-- Botón "Ver portfolio" (pill blanco sólido, Link a #projects)
-- Botón "Contacto" (pill glass, Link a /contacto) — toggle show/hide desde admin
-- Indicador de scroll (círculo glass con flecha rebotante)
-- Altura aproximada: h-[70vh] min-h-[520px] max-h-[760px]
-
----
-
-# 15. Fondos y estética
-
-El tema Minimal utiliza gradientes sutiles en el body.
-
-Light mode:
-- Color base: #f7f7fa
-- Gradiente radial lavanda sutil arriba-derecha (rgba(124,108,255,0.07))
-- Gradiente radial melocotón abajo-izquierda (rgba(255,150,120,0.05))
-
-Dark mode:
-- Color base: #0b0a14
-- Gradiente radial violeta arriba-derecha (rgba(124,108,255,0.14))
-- Gradiente radial índigo abajo-izquierda (rgba(64,60,140,0.20))
-
-Los gradientes están en index.css con background-attachment: fixed.
-
-Estilo visual general:
-- Glass sutil en header, menú móvil, botones secundarios, PhotoViewer controls, pills
-- Esquinas redondeadas: rounded-3xl en portadas, rounded-2xl en imágenes/masonry, rounded-full en botones
-- Tipografía: Montserrat 200–600, font-extralight para títulos grandes
-- Color de acento: #7C6CFF (violeta)
-- Selección de texto: rgba(124,108,255,0.25)
-
----
-
-# 16. Navegación (Header)
-
-Header sticky con glass (backdrop-blur-xl/2xl) que se intensifica al hacer scroll.
-
-Enlaces:
-- Destacadas → Link a / con state.scrollTo: "featured"
-- Proyectos → Link a / con state.scrollTo: "projects"
-- Sobre mí → Link a /sobre-mi
-- Blog → Link a /blog
-- Contacto → Link a /contacto
-
-Los enlaces de ancla funcionan desde CUALQUIER página gracias al state.scrollTo.
-
-Logo: nombre del perfil (Link a /), versalitas con tracking amplio.
-Dark mode toggle: pill en desktop, botón en menú móvil.
-Menú móvil: panel glass rounded-l-[2rem] desde la derecha.
-
----
-
-# 17. Componentes públicos reutilizables
-
-- **About** (componente + página): label, aboutTitle, aboutDescription, ubicación, socialLinks
-- **PhotoViewer**: visor fullscreen, teclado, click fuera, aria-labels genéricos
-- **ProjectCard**: tarjeta clickeable, navega por slug, sombras, gradiente
-- **BlogCard**: tarjeta con portada rounded-3xl, fecha pill glass
-- **EmbedBlock**: iframe YouTube/Vimeo, tarjeta-enlace para otras redes
-- **DocumentHead**: título dinámico `profile.name - profile.profession`, favicon
-- **Footer**: sticky, socialLinks[], links internos, admin button, copyright
-
----
-
-# 18. Blog
-
-Arquitectura por bloques:
-- /blog → listado de publicaciones
-- /blog/:slug → artículo individual
-
-Tipos de bloques:
-- text: párrafo de texto libre
-- image: imagen con URL, alt y caption opcional
-- embed: URL de redes + caption; proveedor detectado automáticamente
-
-Soporte de embeds (src/lib/embeds.ts):
-- YouTube → iframe seguro (youtube-nocookie.com, sin cookies)
-- Vimeo → iframe seguro (player.vimeo.com)
-- Instagram, Facebook, Behance, Flickr → tarjeta-enlace elegante
-
-Los 3 posts de demo incluyen: historia con fotos, video YouTube, embeds de Instagram y Behance.
-
----
-
-# 19. Filosofía de temas
-
-Los clientes NO pueden modificar libremente el diseño. Eligen un tema:
-
-- Minimal (actual)
-- Editorial
-- Cinematic
-- etc.
-
-Los datos son los mismos. El diseño cambia.
-Temas más elaborados = mayor precio.
-
-La arquitectura favorece esta separación:
-- Los datos (portfolio.ts) son independientes del tema
-- El tema (MinimalTheme) decide layout, colores, componentes
-- Los componentes pueden reutilizarse entre temas
-- SiteTexts contiene textos UI configurables por tema
-
----
-
-# 20. Modelo de datos Supabase (futuro)
-
-photographer/profile
+profile
 - name, profession, description, avatar
-- heroImage, heroPrimaryButton, heroSecondaryButton
+- heroImage, heroImageMobile
+- heroImageFocusX, heroImageFocusY
+- heroImageMobileFocusX, heroImageMobileFocusY
+- heroPrimaryButton, heroSecondaryButton
+- showSecondary
 - aboutTitle, aboutDescription, aboutImage
 - contactTitle, contactDescription
 - email, location
@@ -549,7 +555,7 @@ Storage:
 
 ---
 
-# 21. Pendientes conocidos
+# 18. Pendientes conocidos
 
 Estructura pública:
 - Sección favoritas en Home (datos existen, no se renderizan)
@@ -558,18 +564,19 @@ Estructura pública:
 - index.html: título estático "visora" — DocumentHead lo sobreescribe
 
 Administrador:
-- Blog → placeholder (pendiente de implementar)
-- Apariencia → placeholder (pendiente de implementar)
-- Conectar datos admin → componente público (actualmente admin guarda en localStorage, público lee datos estáticos de portfolio.ts)
+- Blog: botones "Nueva publicación" / "Editar" / "Eliminar" visibles, pero sin editor implementado
+- Apariencia: sin implementar (selección de tema, colores)
+- Conectar admin → Supabase (actualmente todo en localStorage)
 
 Técnicos:
 - Blog con oEmbed completo para Instagram/Facebook
 - Dark mode flash en carga
 - Photo.id ya es string — listo para UUID de Supabase
+- Focal points del hero: crop inicia siempre en centro (no restaura posición previa al reabrir crop modal)
 
 ---
 
-# 22. Principio de desarrollo
+# 19. Principio de desarrollo
 
 Preferir:
 1. crear archivo
@@ -585,7 +592,7 @@ IMPORTANTE: Ejecutar npm run build y npm run lint después de cada cambio signif
 
 ---
 
-# 23. Estado de negocio
+# 20. Estado de negocio
 
 La idea es vender portfolios con pago único, infraestructura separada por cliente, varios temas a diferentes precios.
 
@@ -594,18 +601,17 @@ Se busca crear sitios profesionales que puedan venderse individualmente de forma
 
 ---
 
-# 24. Próximo objetivo técnico
+# 21. Próximo objetivo técnico
 
-ESTADO: Estructura pública terminada. Admin parcialmente implementado (6 de 9 módulos).
-Pendientes admin: Blog, Apariencia, conexión admin→público.
+ESTADO: Sitio público + inline editing completado. 6 modales de edición funcionales. Hero con imagen dual + crop.
 
-PRÓXIMO PASO: Completar módulos pendientes del admin o conectar Supabase.
+PRÓXIMO PASO: Conectar Supabase (lectura de datos, storage de imágenes, autenticación real).
 
 Después:
 1. Conectar Supabase (lectura de datos)
 2. Storage (subida de imágenes)
 3. Autenticación real (reemplazar mock)
-4. Conectar admin → componente público
-5. Selección de tema
+4. Editor de blog
+5. Selección de tema / Apariencia
 6. Deployment en Vercel
 7. Dominios personalizados

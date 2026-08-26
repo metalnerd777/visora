@@ -7,14 +7,34 @@ import MasonryGallery from "../components/MasonryGallery";
 import ProjectCard from "../components/ProjectCard";
 import PhotoViewer from "../components/PhotoViewer";
 
-import { projects, featuredPhotos, siteTexts } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
+import { isAuthenticated } from "../lib/auth";
+
+import EditableSection from "./admin/edit/EditableSection";
+import EditHeroModal from "./admin/edit/EditHeroModal";
+import EditFeaturedModal from "./admin/edit/EditFeaturedModal";
+import EditProjectsModal from "./admin/edit/EditProjectsModal";
 
 import type { Photo } from "../types/portfolio";
 
 function Home() {
+  const { projects, featuredPhotos, siteTexts } = usePortfolio();
   const location = useLocation();
   const [viewerPhotos, setViewerPhotos] = useState<Photo[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [admin, setAdmin] = useState(isAuthenticated());
+
+  const [heroOpen, setHeroOpen] = useState(false);
+  const [featuredOpen, setFeaturedOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAdmin(isAuthenticated());
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const target = (location.state as { scrollTo?: string } | null)
@@ -65,7 +85,13 @@ function Home() {
   return (
     <>
       {/* Hero */}
-      <Hero />
+      {admin ? (
+        <EditableSection label="Editar" onEdit={() => setHeroOpen(true)}>
+          <Hero />
+        </EditableSection>
+      ) : (
+        <Hero />
+      )}
 
       {/* Destacadas */}
       <section
@@ -73,19 +99,40 @@ function Home() {
         className="border-t border-neutral-200 px-6 py-24 transition-colors dark:border-[#27243A] md:px-10"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="mb-12 max-w-2xl">
-            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-              {siteTexts.featuredLabel}
-            </p>
+          {admin ? (
+            <EditableSection
+              label="Editar destacadas"
+              onEdit={() => setFeaturedOpen(true)}
+            >
+              <div className="mb-12 max-w-2xl">
+                <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+                  {siteTexts.featuredLabel}
+                </p>
 
-            <h2 className="text-3xl font-light text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
-              {siteTexts.featuredTitle}
-            </h2>
+                <h2 className="text-3xl font-light text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
+                  {siteTexts.featuredTitle}
+                </h2>
 
-            <p className="mt-4 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              {siteTexts.featuredDescription}
-            </p>
-          </div>
+                <p className="mt-4 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                  {siteTexts.featuredDescription}
+                </p>
+              </div>
+            </EditableSection>
+          ) : (
+            <div className="mb-12 max-w-2xl">
+              <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+                {siteTexts.featuredLabel}
+              </p>
+
+              <h2 className="text-3xl font-light text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
+                {siteTexts.featuredTitle}
+              </h2>
+
+              <p className="mt-4 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                {siteTexts.featuredDescription}
+              </p>
+            </div>
+          )}
 
           <MasonryGallery
             photos={featuredPhotos}
@@ -100,19 +147,42 @@ function Home() {
         className="border-t border-neutral-200 px-6 py-24 transition-colors dark:border-[#27243A] md:px-10"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="mb-14 max-w-2xl">
-            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-              {siteTexts.projectsLabel}
-            </p>
+          {admin ? (
+            <EditableSection
+              label="Editar proyectos"
+              onEdit={() => setProjectsOpen(true)}
+              addLabel="Nuevo proyecto"
+              onAdd={() => setProjectsOpen(true)}
+            >
+              <div className="mb-14 max-w-2xl">
+                <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+                  {siteTexts.projectsLabel}
+                </p>
 
-            <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
-              {siteTexts.projectsTitle}
-            </h2>
+                <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
+                  {siteTexts.projectsTitle}
+                </h2>
 
-            <p className="mt-5 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              {siteTexts.projectsDescription}
-            </p>
-          </div>
+                <p className="mt-5 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                  {siteTexts.projectsDescription}
+                </p>
+              </div>
+            </EditableSection>
+          ) : (
+            <div className="mb-14 max-w-2xl">
+              <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+                {siteTexts.projectsLabel}
+              </p>
+
+              <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-4xl">
+                {siteTexts.projectsTitle}
+              </h2>
+
+              <p className="mt-5 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                {siteTexts.projectsDescription}
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-6 md:grid-cols-2">
             {projects.map((project) => (
@@ -135,6 +205,21 @@ function Home() {
           onNext={showNext}
           onClose={closeViewer}
         />
+      )}
+
+      {/* Admin modals */}
+      {admin && (
+        <>
+          <EditHeroModal open={heroOpen} onClose={() => setHeroOpen(false)} />
+          <EditFeaturedModal
+            open={featuredOpen}
+            onClose={() => setFeaturedOpen(false)}
+          />
+          <EditProjectsModal
+            open={projectsOpen}
+            onClose={() => setProjectsOpen(false)}
+          />
+        </>
       )}
     </>
   );

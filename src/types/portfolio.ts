@@ -22,6 +22,11 @@ export interface PortfolioProfile {
   avatar?: string;
 
   heroImage?: string;
+  heroImageMobile?: string;
+  heroImageFocusX?: number;
+  heroImageFocusY?: number;
+  heroImageMobileFocusX?: number;
+  heroImageMobileFocusY?: number;
   heroPrimaryButton?: string;
   heroSecondaryButton?: string;
 

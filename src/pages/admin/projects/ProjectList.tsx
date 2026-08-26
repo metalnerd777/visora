@@ -27,6 +27,7 @@ interface AdminProject {
   description: string;
   cover: string;
   imageCount: number;
+  images?: Array<{ id: string; url: string; alt: string }>;
 }
 
 const STORAGE_KEY = "visora-admin-projects";
@@ -48,6 +49,7 @@ function getStoredProjects(): AdminProject[] {
     description: p.description,
     cover: p.cover,
     imageCount: p.photos.length,
+    images: p.photos.map((ph) => ({ id: ph.id, url: ph.url, alt: ph.title })),
   }));
 }
 

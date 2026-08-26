@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import PhotoViewer from "../components/PhotoViewer";
 
-import { siteTexts } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
 
 import type { Project } from "../types/portfolio";
 
@@ -12,6 +12,7 @@ interface ProjectPageProps {
 }
 
 function ProjectPage({ project, onBack }: ProjectPageProps) {
+  const { siteTexts } = usePortfolio();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const showPrevious = () => {

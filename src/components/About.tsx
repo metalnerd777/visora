@@ -1,6 +1,8 @@
-import { profile } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
 
 function About() {
+  const { profile } = usePortfolio();
+
   return (
     <div className="mx-auto max-w-7xl">
       <p className="mb-4 text-sm uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">

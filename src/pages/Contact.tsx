@@ -1,25 +1,22 @@
-import { profile } from "../data/portfolio";
+import { useEffect, useState } from "react";
+
+import { usePortfolio } from "../lib/usePortfolio";
 import { socialUrl, socialLabel } from "../lib/socials";
+import { loadJSON } from "../lib/storage";
+import { isAuthenticated } from "../lib/auth";
 
-function getContactConfig() {
-  try {
-    const raw = localStorage.getItem("visora-admin-contact");
-
-    if (raw) {
-      return JSON.parse(raw) as {
-        whatsappPhone?: string;
-        whatsappMessage?: string;
-      };
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
-}
+import EditableSection from "./admin/edit/EditableSection";
+import EditContactModal from "./admin/edit/EditContactModal";
 
 function ContactPage() {
-  const contactConfig = getContactConfig();
+  const { profile } = usePortfolio();
+  const [admin, setAdmin] = useState(isAuthenticated());
+  const [contactOpen, setContactOpen] = useState(false);
+
+  const contactConfig = loadJSON<{
+    whatsappPhone?: string;
+    whatsappMessage?: string;
+  }>("visora-admin-contact", {});
   const whatsappPhone = contactConfig?.whatsappPhone?.trim() ?? "";
   const whatsappMessage = contactConfig?.whatsappMessage?.trim() ?? "";
 
@@ -27,22 +24,51 @@ function ContactPage() {
     ? `https://wa.me/${whatsappPhone}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ""}`
     : null;
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAdmin(isAuthenticated());
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <main className="px-6 pt-10 pb-20 transition-colors md:px-10 md:pt-5 md:pb-24">
       <div className="mx-auto max-w-7xl">
-        <header className="max-w-3xl pt-16 md:pt-24">
-          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-            Contacto
-          </p>
+        {admin ? (
+          <EditableSection
+            label="Editar contacto"
+            onEdit={() => setContactOpen(true)}
+          >
+            <header className="max-w-3xl pt-16 md:pt-24">
+              <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+                Contacto
+              </p>
 
-          <h1 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-6xl">
-            {profile.contactTitle ?? "Hablemos."}
-          </h1>
+              <h1 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-6xl">
+                {profile.contactTitle ?? "Hablemos."}
+              </h1>
 
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-            {profile.contactDescription}
-          </p>
-        </header>
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                {profile.contactDescription}
+              </p>
+            </header>
+          </EditableSection>
+        ) : (
+          <header className="max-w-3xl pt-16 md:pt-24">
+            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
+              Contacto
+            </p>
+
+            <h1 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-6xl">
+              {profile.contactTitle ?? "Hablemos."}
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+              {profile.contactDescription}
+            </p>
+          </header>
+        )}
 
         {/* Acciones + información */}
         <div className="mt-14 grid gap-12 md:grid-cols-2">
@@ -105,6 +131,13 @@ function ContactPage() {
           </div>
         </div>
       </div>
+
+      {admin && (
+        <EditContactModal
+          open={contactOpen}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
     </main>
   );
 }

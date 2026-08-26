@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { profile } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
+import { isAuthenticated, logout } from "../lib/auth";
 
 interface HeaderProps {
   darkMode: boolean;
@@ -39,8 +40,11 @@ function HeaderLink({
 }
 
 function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
+  const { profile } = usePortfolio();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [admin, setAdmin] = useState(isAuthenticated);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,6 +59,21 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAdmin(isAuthenticated());
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setAdmin(false);
+    navigate("/");
+  };
+
   return (
     <>
       <header
@@ -83,6 +102,16 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
             {menuItems.map((item) => (
               <HeaderLink key={item.label} item={item} />
             ))}
+
+            {admin && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="ml-2 rounded-full border border-red-300/40 bg-red-50/80 px-3 py-1.5 text-xs text-red-500 backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+              >
+                Cerrar sesión
+              </button>
+            )}
 
             {/* Theme switch */}
             <button
@@ -174,6 +203,19 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
                 />
               ))}
             </nav>
+
+            {admin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="mt-2 rounded-xl border border-red-300/40 bg-red-50/80 px-3 py-3 text-left text-sm text-red-500 transition-colors hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+              >
+                Cerrar sesión
+              </button>
+            )}
 
             <button
               type="button"

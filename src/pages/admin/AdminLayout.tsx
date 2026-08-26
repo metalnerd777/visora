@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { profile } from "../../data/portfolio";
+import { usePortfolio } from "../../lib/usePortfolio";
 import { isAuthenticated, logout } from "../../lib/auth";
 
 const navItems = [
@@ -103,6 +103,7 @@ const navItems = [
 ];
 
 function AdminLayout() {
+  const { profile } = usePortfolio();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);

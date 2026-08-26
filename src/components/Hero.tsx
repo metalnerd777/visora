@@ -1,20 +1,63 @@
 import { Link } from "react-router-dom";
 
-import { profile } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
+import { loadJSON } from "../lib/storage";
+
+interface HeroConfig {
+  heroImageMobile?: string;
+  heroImageFocusX?: number;
+  heroImageFocusY?: number;
+  heroImageMobileFocusX?: number;
+  heroImageMobileFocusY?: number;
+  showSecondary?: boolean;
+}
 
 function Hero() {
+  const { profile } = usePortfolio();
+  const heroConfig = loadJSON<HeroConfig>("visora-admin-hero", {
+    showSecondary: true,
+    heroImageFocusX: 50,
+    heroImageFocusY: 50,
+    heroImageMobileFocusX: 50,
+    heroImageMobileFocusY: 50,
+  });
+
+  const showSecondary = heroConfig.showSecondary ?? true;
+  const mobileImage = heroConfig.heroImageMobile || profile.heroImage;
+  const desktopImage = profile.heroImage;
+
+  const desktopFocusX = heroConfig.heroImageFocusX ?? 50;
+  const desktopFocusY = heroConfig.heroImageFocusY ?? 50;
+  const mobileFocusX = heroConfig.heroImageMobileFocusX ?? 50;
+  const mobileFocusY = heroConfig.heroImageMobileFocusY ?? 50;
+
+  const useSeparateMobile =
+    heroConfig.heroImageMobile && heroConfig.heroImageMobile !== desktopImage;
+
   return (
     <section
       id="home"
       className="relative flex h-[70vh] min-h-[520px] max-h-[760px] items-center overflow-hidden bg-neutral-950 text-white"
     >
-      {/* Imagen de fondo */}
+      {/* Imagen desktop — hidden on mobile */}
       <img
-        src={profile.heroImage}
+        src={desktopImage}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover"
         fetchPriority="high"
+        className={`absolute inset-0 h-full w-full object-cover ${useSeparateMobile ? "hidden md:block" : ""}`}
+        style={{ objectPosition: `${desktopFocusX}% ${desktopFocusY}%` }}
       />
+
+      {/* Imagen móvil — shown on mobile, hidden on desktop */}
+      {useSeparateMobile && (
+        <img
+          src={mobileImage}
+          alt=""
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover md:hidden"
+          style={{ objectPosition: `${mobileFocusX}% ${mobileFocusY}%` }}
+        />
+      )}
 
       {/* Oscurecimiento lateral */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
@@ -45,12 +88,14 @@ function Hero() {
               {profile.heroPrimaryButton ?? "Ver portfolio"}
             </a>
 
-            <Link
-              to="/contacto"
-              className="inline-flex min-w-44 items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
-            >
-              {profile.heroSecondaryButton ?? "Contacto"}
-            </Link>
+            {showSecondary && (
+              <Link
+                to="/contacto"
+                className="inline-flex min-w-44 items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
+              >
+                {profile.heroSecondaryButton ?? "Contacto"}
+              </Link>
+            )}
           </div>
         </div>
       </div>

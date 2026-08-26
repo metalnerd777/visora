@@ -1,7 +1,10 @@
 import { useEffect } from "react";
-import { profile } from "../data/portfolio";
+
+import { usePortfolio } from "../lib/usePortfolio";
 
 function DocumentHead() {
+  const { profile } = usePortfolio();
+
   useEffect(() => {
     document.title = `${profile.name} - ${profile.profession}`;
 
@@ -10,7 +13,7 @@ function DocumentHead() {
     if (favicon) {
       favicon.href = "/favicon.svg";
     }
-  }, []);
+  }, [profile.name, profile.profession]);
 
   return null;
 }
