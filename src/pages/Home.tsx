@@ -29,7 +29,7 @@ function Home() {
     }
   }, [location.state]);
 
-  const openViewer = (photos: Photo[], photoId: number) => {
+  const openViewer = (photos: Photo[], photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
 
     if (index === -1) return;

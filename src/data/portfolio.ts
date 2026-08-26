@@ -1,12 +1,12 @@
 import type {
-  Photographer,
+  PortfolioProfile,
   Project,
   Photo,
   SiteTexts,
   BlogPost,
 } from "../types/portfolio";
 
-export const photographer: Photographer = {
+export const profile: PortfolioProfile = {
   name: "Alex Morgan",
   profession: "Fotógrafo",
 
@@ -31,8 +31,11 @@ export const photographer: Photographer = {
 
   email: "hello@example.com",
   location: "Santiago, Chile",
-  instagram: "@alexmorgan",
-  behance: "alexmorgan",
+
+  socialLinks: [
+    { platform: "instagram", handle: "@alexmorgan" },
+    { platform: "behance", handle: "alexmorgan" },
+  ],
 };
 
 export const siteTexts: SiteTexts = {
@@ -52,19 +55,20 @@ export const siteTexts: SiteTexts = {
 
 export const projects: Project[] = [
   {
-    id: "weddings",
+    id: "proj-weddings",
+    slug: "bodas",
     title: "Bodas",
     description: "Momentos únicos de un día especial.",
     cover:
       "https://images.unsplash.com/photo-1519741497674-611481863552",
     photos: [
       {
-        id: 1,
+        id: "photo-001",
         url: "https://images.unsplash.com/photo-1519741497674-611481863552",
         title: "Ceremonia",
       },
       {
-        id: 2,
+        id: "photo-002",
         url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc",
         title: "Celebración",
       },
@@ -72,19 +76,20 @@ export const projects: Project[] = [
   },
 
   {
-    id: "portraits",
+    id: "proj-portraits",
+    slug: "retratos",
     title: "Retratos",
     description: "Personas, personalidad e historias.",
     cover:
       "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     photos: [
       {
-        id: 3,
+        id: "photo-003",
         url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
         title: "Retrato I",
       },
       {
-        id: 4,
+        id: "photo-004",
         url: "https://images.unsplash.com/photo-1517841905240-472988babdf9",
         title: "Retrato II",
       },
@@ -92,19 +97,20 @@ export const projects: Project[] = [
   },
 
   {
-    id: "landscapes",
+    id: "proj-landscapes",
+    slug: "paisajes",
     title: "Paisajes",
     description: "Lugares y momentos encontrados.",
     cover:
       "https://images.unsplash.com/photo-1500534623283-312aade485b7",
     photos: [
       {
-        id: 5,
+        id: "photo-005",
         url: "https://images.unsplash.com/photo-1500534623283-312aade485b7",
         title: "Paisaje I",
       },
       {
-        id: 6,
+        id: "photo-006",
         url: "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
         title: "Paisaje II",
       },
@@ -114,72 +120,61 @@ export const projects: Project[] = [
 
 export const favorites: Photo[] = [
   {
-    id: 101,
-    url:
-      "https://images.unsplash.com/photo-1519741497674-611481863552",
+    id: "fav-001",
+    url: "https://images.unsplash.com/photo-1519741497674-611481863552",
     title: "Una tarde especial",
   },
   {
-    id: 102,
-    url:
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
+    id: "fav-002",
+    url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     title: "Retrato",
   },
   {
-    id: 103,
-    url:
-      "https://images.unsplash.com/photo-1500534623283-312aade485b7",
+    id: "fav-003",
+    url: "https://images.unsplash.com/photo-1500534623283-312aade485b7",
     title: "Paisaje",
   },
 ];
 
 export const featuredPhotos: Photo[] = [
   {
-    id: 201,
-    url:
-      "https://images.unsplash.com/photo-1519741497674-611481863552",
+    id: "feat-001",
+    url: "https://images.unsplash.com/photo-1519741497674-611481863552",
     title: "Ceremonia",
   },
   {
-    id: 202,
-    url:
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
+    id: "feat-002",
+    url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     title: "Retrato",
   },
   {
-    id: 203,
-    url:
-      "https://images.unsplash.com/photo-1500534623283-312aade485b7",
+    id: "feat-003",
+    url: "https://images.unsplash.com/photo-1500534623283-312aade485b7",
     title: "Paisaje",
   },
   {
-    id: 204,
-    url:
-      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc",
+    id: "feat-004",
+    url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc",
     title: "Celebración",
   },
   {
-    id: 205,
-    url:
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9",
+    id: "feat-005",
+    url: "https://images.unsplash.com/photo-1517841905240-472988babdf9",
     title: "Retrato II",
   },
   {
-    id: 206,
-    url:
-      "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
+    id: "feat-006",
+    url: "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
     title: "Paisaje II",
   },
   {
-    id: 207,
-    url:
-      "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
+    id: "feat-007",
+    url: "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
     title: "Arquitectura",
   },
   {
-    id: 208,
-    url:
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f",
+    id: "feat-008",
+    url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f",
     title: "Editorial",
   },
 ];
@@ -202,8 +197,7 @@ export const blogPosts: BlogPost[] = [
       {
         id: "b2",
         type: "image",
-        url:
-          "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
+        url: "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
         alt: "Vista de cerros al amanecer",
         caption: "Cerro Alegre, 6:42 AM.",
       },
@@ -215,8 +209,7 @@ export const blogPosts: BlogPost[] = [
       {
         id: "b4",
         type: "image",
-        url:
-          "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
+        url: "https://images.unsplash.com/photo-1504150558240-0b4fd8946624",
         alt: "Mar de niebla sobre la ciudad",
         caption: "La niebla entrando desde el pacífico.",
       },

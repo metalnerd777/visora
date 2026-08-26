@@ -1,7 +1,25 @@
-export interface Photographer {
+export type SocialPlatform =
+  | "instagram"
+  | "behance"
+  | "vimeo"
+  | "linkedin"
+  | "twitter"
+  | "facebook"
+  | "flickr"
+  | "youtube"
+  | string;
+
+export interface SocialLink {
+  platform: SocialPlatform;
+  handle: string;
+}
+
+export interface PortfolioProfile {
   name: string;
   profession: string;
   description: string;
+
+  avatar?: string;
 
   heroImage?: string;
   heroPrimaryButton?: string;
@@ -15,20 +33,18 @@ export interface Photographer {
 
   email: string;
   location: string;
-  instagram?: string;
-  behance?: string;
+  socialLinks: SocialLink[];
 }
 
-export type PhotoId = number;
-
 export interface Photo {
-  id: PhotoId;
+  id: string;
   url: string;
   title: string;
 }
 
 export interface Project {
   id: string;
+  slug: string;
   title: string;
   description: string;
   cover: string;

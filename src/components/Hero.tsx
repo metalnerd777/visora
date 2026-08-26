@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { photographer } from "../data/portfolio";
+import { profile } from "../data/portfolio";
 
 function Hero() {
   return (
@@ -10,7 +10,7 @@ function Hero() {
     >
       {/* Imagen de fondo */}
       <img
-        src={photographer.heroImage}
+        src={profile.heroImage}
         alt=""
         className="absolute inset-0 h-full w-full object-cover"
         fetchPriority="high"
@@ -26,15 +26,15 @@ function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-7xl px-6 sm:px-10">
         <div className="max-w-xl">
           <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70">
-            {photographer.profession}
+            {profile.profession}
           </p>
 
           <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl">
-            {photographer.name}
+            {profile.name}
           </h1>
 
           <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
-            {photographer.description}
+            {profile.description}
           </p>
 
           <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
@@ -42,14 +42,14 @@ function Hero() {
               href="#projects"
               className="inline-flex min-w-44 items-center justify-center rounded-full bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
             >
-              {photographer.heroPrimaryButton ?? "Ver portfolio"}
+              {profile.heroPrimaryButton ?? "Ver portfolio"}
             </a>
 
             <Link
               to="/contacto"
               className="inline-flex min-w-44 items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
             >
-              {photographer.heroSecondaryButton ?? "Contacto"}
+              {profile.heroSecondaryButton ?? "Contacto"}
             </Link>
           </div>
         </div>

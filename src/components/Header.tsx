@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { photographer } from "../data/portfolio";
+import { profile } from "../data/portfolio";
 
 interface HeaderProps {
   darkMode: boolean;
@@ -75,7 +75,7 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
             to="/"
             className="text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-60 dark:text-[#F5F3FF]"
           >
-            {photographer.name}
+            {profile.name}
           </Link>
 
           {/* Desktop */}
@@ -152,7 +152,7 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
           <aside className="ml-auto flex h-full w-72 flex-col rounded-l-[2rem] bg-white/85 p-8 shadow-2xl backdrop-blur-2xl transition-colors dark:bg-[#111020]/85">
             <div className="mb-10 flex items-center justify-between">
               <h2 className="text-lg font-medium text-neutral-900 dark:text-[#F5F3FF]">
-                {photographer.name}
+                {profile.name}
               </h2>
 
               <button

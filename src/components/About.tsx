@@ -1,4 +1,4 @@
-import { photographer } from "../data/portfolio";
+import { profile } from "../data/portfolio";
 
 function About() {
   return (
@@ -8,30 +8,31 @@ function About() {
       </p>
 
       <h2 className="max-w-2xl text-3xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] sm:text-4xl md:text-5xl">
-        {photographer.aboutTitle}
+        {profile.aboutTitle}
       </h2>
 
       {/* Texto + ubicación / redes */}
       <div className="mt-12 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
         <p className="max-w-xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-          {photographer.aboutDescription}
+          {profile.aboutDescription}
         </p>
 
         <div className="flex flex-col gap-1 md:items-end md:text-right">
-          {photographer.location && (
+          {profile.location && (
             <p className="text-sm text-neutral-500 dark:text-[#A8A3B8]">
-              {photographer.location}
+              {profile.location}
             </p>
           )}
 
-          {photographer.instagram && (
+          {profile.socialLinks.map((link) => (
             <a
+              key={link.platform}
               href="#"
               className="text-sm text-neutral-900 transition-colors hover:text-[#7C6CFF] dark:text-[#F5F3FF]"
             >
-              {photographer.instagram}
+              {link.handle}
             </a>
-          )}
+          ))}
         </div>
       </div>
     </div>

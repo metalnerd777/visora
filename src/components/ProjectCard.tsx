@@ -14,7 +14,7 @@ function ProjectCard({ project }: ProjectCardProps) {
   return (
     <button
       type="button"
-      onClick={() => navigate(`/proyecto/${project.id}`)}
+      onClick={() => navigate(`/proyecto/${project.slug}`)}
       className="group relative block w-full overflow-hidden text-left"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">

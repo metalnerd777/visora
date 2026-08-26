@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
-import { photographer } from "../data/portfolio";
-import { instagramUrl, behanceUrl } from "../lib/socials";
+import { profile } from "../data/portfolio";
+import { socialUrl, socialLabel } from "../lib/socials";
 
 const exploreLinks = [
   { label: "Inicio", to: "/" },
@@ -21,36 +21,26 @@ function Footer() {
               to="/"
               className="text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-60 dark:text-[#F5F3FF]"
             >
-              {photographer.name}
+              {profile.name}
             </Link>
 
             <p className="mt-2 text-sm text-neutral-500 dark:text-[#A8A3B8]">
-              {photographer.profession}
+              {profile.profession}
             </p>
 
             {/* Redes */}
             <div className="mt-6 flex flex-wrap gap-2">
-              {photographer.instagram && (
+              {profile.socialLinks.map((link) => (
                 <a
-                  href={instagramUrl(photographer.instagram)}
+                  key={link.platform}
+                  href={socialUrl(link.platform, link.handle)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-400 hover:text-black dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#4A4468] dark:hover:text-[#F5F3FF]"
                 >
-                  Instagram
+                  {socialLabel(link.platform)}
                 </a>
-              )}
-
-              {photographer.behance && (
-                <a
-                  href={behanceUrl(photographer.behance)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-400 hover:text-black dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#4A4468] dark:hover:text-[#F5F3FF]"
-                >
-                  Behance
-                </a>
-              )}
+              ))}
             </div>
           </div>
 
@@ -91,6 +81,7 @@ function Footer() {
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
+
               Administrador
             </Link>
           </div>
@@ -99,10 +90,10 @@ function Footer() {
         {/* Barra inferior */}
         <div className="mt-14 flex flex-col gap-2 border-t border-neutral-200/60 pt-6 text-xs text-neutral-400 transition-colors dark:border-[#27243A]/60 dark:text-[#6F6A80] md:flex-row md:justify-between">
           <span>
-            © {new Date().getFullYear()} {photographer.name}
+            © {new Date().getFullYear()} {profile.name}
           </span>
 
-          <span>"Visora" desarrollado por Juan Andrés PM</span>
+          <span>Impulsado por Visora</span>
         </div>
       </div>
     </footer>
