@@ -49,7 +49,9 @@ function SocialLinksEditor({
           <input
             type="text"
             value={link.handle}
-            onChange={(e) => update(index, { handle: e.target.value })}
+            onChange={(e) =>
+              update(index, { handle: e.target.value.replace(/\s+/g, "") })
+            }
             placeholder="@usuario"
             className="flex-1 rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />

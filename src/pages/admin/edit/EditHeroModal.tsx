@@ -11,6 +11,8 @@ import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
+import { isNonEmpty, sanitizeText } from "../../../lib/validation";
+
 import type { PortfolioProfile } from "../../../types/portfolio";
 
 interface HeroConfig {
@@ -56,6 +58,7 @@ function EditHeroModal({
 }) {
   const { refresh } = usePortfolio();
   const [config, setConfig] = useState<HeroConfig>(loadHero);
+  const [titleError, setTitleError] = useState<string | undefined>(undefined);
 
   const [cropOpen, setCropOpen] = useState(false);
   const [cropTarget, setCropTarget] = useState<"desktop" | "mobile">("desktop");
@@ -65,7 +68,24 @@ function EditHeroModal({
   };
 
   const handleSave = () => {
-    saveJSON("visora-admin-hero", config);
+    if (!isNonEmpty(config.title)) {
+      setTitleError("El título es obligatorio.");
+      return;
+    }
+
+    setTitleError(undefined);
+
+    const cleaned = {
+      ...config,
+      title: sanitizeText(config.title).trim(),
+      description: sanitizeText(config.description).trim(),
+      primaryText: sanitizeText(config.primaryText).trim(),
+      secondaryText: sanitizeText(config.secondaryText).trim(),
+      primaryLink: config.primaryLink.trim(),
+      secondaryLink: config.secondaryLink.trim(),
+    };
+
+    saveJSON("visora-admin-hero", cleaned);
 
     const profile = loadJSON<PortfolioProfile>(
       "visora-admin-profile",
@@ -74,16 +94,16 @@ function EditHeroModal({
 
     saveJSON("visora-admin-profile", {
       ...profile,
-      name: config.title,
-      description: config.description,
-      heroImage: config.heroImage,
-      heroImageMobile: config.heroImageMobile,
-      heroImageFocusX: config.heroImageFocusX,
-      heroImageFocusY: config.heroImageFocusY,
-      heroImageMobileFocusX: config.heroImageMobileFocusX,
-      heroImageMobileFocusY: config.heroImageMobileFocusY,
-      heroPrimaryButton: config.primaryText,
-      heroSecondaryButton: config.secondaryText,
+      name: cleaned.title,
+      description: cleaned.description,
+      heroImage: cleaned.heroImage,
+      heroImageMobile: cleaned.heroImageMobile,
+      heroImageFocusX: cleaned.heroImageFocusX,
+      heroImageFocusY: cleaned.heroImageFocusY,
+      heroImageMobileFocusX: cleaned.heroImageMobileFocusX,
+      heroImageMobileFocusY: cleaned.heroImageMobileFocusY,
+      heroPrimaryButton: cleaned.primaryText,
+      heroSecondaryButton: cleaned.secondaryText,
     });
 
     refresh();
@@ -184,8 +204,13 @@ function EditHeroModal({
         <Field
           label="Título"
           value={config.title}
-          onChange={(v) => update({ title: v })}
+          onChange={(v) => {
+            update({ title: v });
+            setTitleError(undefined);
+          }}
           placeholder="Tu nombre"
+          required
+          error={titleError}
         />
 
         <div className="flex flex-col gap-2">

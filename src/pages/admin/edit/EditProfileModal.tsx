@@ -9,10 +9,18 @@ import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
+import { isEmail, isNonEmpty, sanitizeText } from "../../../lib/validation";
+
 import type { PortfolioProfile, SocialLink } from "../../../types/portfolio";
 
 function loadProfileData(): PortfolioProfile {
   return loadJSON<PortfolioProfile>("visora-admin-profile", defaultProfile);
+}
+
+interface FormErrors {
+  name?: string;
+  profession?: string;
+  email?: string;
 }
 
 function EditProfileModal({
@@ -27,13 +35,35 @@ function EditProfileModal({
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(
     data.socialLinks,
   );
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const update = (patch: Partial<PortfolioProfile>) => {
     setData((prev) => ({ ...prev, ...patch }));
   };
 
   const handleSave = () => {
-    saveJSON("visora-admin-profile", { ...data, socialLinks });
+    const nextErrors: FormErrors = {};
+
+    if (!isNonEmpty(data.name)) nextErrors.name = "El nombre es obligatorio.";
+    if (!isNonEmpty(data.profession))
+      nextErrors.profession = "La profesión es obligatoria.";
+    if (!isEmail(data.email))
+      nextErrors.email = "Ingresa un correo válido.";
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    saveJSON("visora-admin-profile", {
+      ...data,
+      name: sanitizeText(data.name).trim(),
+      profession: sanitizeText(data.profession).trim(),
+      location: sanitizeText(data.location).trim(),
+      description: sanitizeText(data.description).trim(),
+      email: data.email.trim(),
+      socialLinks: socialLinks.filter((l) => l.handle.trim().length > 0),
+    });
     refresh();
     onClose();
   };
@@ -45,15 +75,25 @@ function EditProfileModal({
           <Field
             label="Nombre"
             value={data.name}
-            onChange={(v) => update({ name: v })}
+            onChange={(v) => {
+              update({ name: v });
+              setErrors((e) => ({ ...e, name: undefined }));
+            }}
             placeholder="Tu nombre"
+            required
+            error={errors.name}
           />
 
           <Field
             label="Profesión"
             value={data.profession}
-            onChange={(v) => update({ profession: v })}
+            onChange={(v) => {
+              update({ profession: v });
+              setErrors((e) => ({ ...e, profession: undefined }));
+            }}
             placeholder="Fotógrafo, Diseñador..."
+            required
+            error={errors.profession}
           />
 
           <Field
@@ -67,8 +107,13 @@ function EditProfileModal({
             label="Email"
             type="email"
             value={data.email}
-            onChange={(v) => update({ email: v })}
+            onChange={(v) => {
+              update({ email: v });
+              setErrors((e) => ({ ...e, email: undefined }));
+            }}
             placeholder="tu@email.com"
+            required
+            error={errors.email}
           />
         </div>
 

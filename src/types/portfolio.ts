@@ -79,19 +79,25 @@ export type EmbedProvider =
 
 export interface BlogBlock {
   id: string;
-  type: "text" | "image" | "embed";
+  type: "text" | "image" | "embed" | "separator";
   text?: string;
+  content?: unknown;
   url?: string;
   alt?: string;
   caption?: string;
   provider?: EmbedProvider;
 }
 
+export type BlogPostStatus = "draft" | "published";
+
 export interface BlogPost {
   slug: string;
   title: string;
   excerpt: string;
   cover: string;
+  coverFocusX?: number;
+  coverFocusY?: number;
   date: string;
+  status: BlogPostStatus;
   blocks: BlogBlock[];
 }

@@ -9,6 +9,8 @@ import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
+import { isNonEmpty, sanitizeText } from "../../../lib/validation";
+
 import type { PortfolioProfile } from "../../../types/portfolio";
 
 function loadAboutData(): { title: string; description: string; image?: string } {
@@ -32,13 +34,29 @@ function EditAboutModal({
 }) {
   const { refresh } = usePortfolio();
   const [config, setConfig] = useState(loadAboutData);
+  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
 
   const update = (patch: Partial<{ title: string; description: string; image?: string }>) => {
     setConfig((prev) => ({ ...prev, ...patch }));
   };
 
   const handleSave = () => {
-    saveJSON("visora-admin-about", config);
+    const nextErrors: typeof errors = {};
+
+    if (!isNonEmpty(config.title)) nextErrors.title = "El título es obligatorio.";
+    if (!isNonEmpty(config.description))
+      nextErrors.description = "La descripción es obligatoria.";
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    saveJSON("visora-admin-about", {
+      ...config,
+      title: sanitizeText(config.title).trim(),
+      description: sanitizeText(config.description).trim(),
+    });
 
     const profile = loadJSON<PortfolioProfile>(
       "visora-admin-profile",
@@ -47,8 +65,8 @@ function EditAboutModal({
 
     saveJSON("visora-admin-profile", {
       ...profile,
-      aboutTitle: config.title,
-      aboutDescription: config.description,
+      aboutTitle: sanitizeText(config.title).trim(),
+      aboutDescription: sanitizeText(config.description).trim(),
     });
 
     refresh();
@@ -68,8 +86,13 @@ function EditAboutModal({
         <Field
           label="Título"
           value={config.title}
-          onChange={(v) => update({ title: v })}
+          onChange={(v) => {
+            update({ title: v });
+            setErrors((e) => ({ ...e, title: undefined }));
+          }}
           placeholder="Sobre mí"
+          required
+          error={errors.title}
         />
 
         <div className="flex flex-col gap-2">
@@ -79,11 +102,25 @@ function EditAboutModal({
 
           <textarea
             value={config.description}
-            onChange={(e) => update({ description: e.target.value })}
+            onChange={(e) => {
+              update({ description: e.target.value });
+              setErrors((err) => ({ ...err, description: undefined }));
+            }}
             placeholder="Cuéntanos sobre ti y tu trabajo..."
             rows={5}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            aria-invalid={errors.description ? true : undefined}
+            className={`rounded-xl border bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
+              errors.description
+                ? "border-red-400 dark:border-red-500"
+                : "border-neutral-200 dark:border-[#27243A]"
+            }`}
           />
+
+          {errors.description && (
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {errors.description}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">

@@ -58,6 +58,7 @@ Frontend:
 - Google Fonts: Montserrat (200–600)
 - @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (drag-and-drop en admin)
 - react-easy-crop (crop de imágenes con focal point)
+- TipTap 3 (@tiptap/react + starter-kit + underline + text-align + link) editor de texto enriquecido (lazy-loaded solo en admin)
 
 Backend futuro:
 
@@ -99,39 +100,35 @@ src/
 │   ├── MasonryGallery.tsx     (grid masonry dinámico, columnas por count)
 │   ├── Modal.tsx              (reutilizable, responsive, Escape, scroll lock)
 │   ├── PhotoViewer.tsx        (visor fullscreen, click fuera, SVGs)
+│   ├── PostBody.tsx           (renderiza bloques del blog; compartido público + vista previa)
 │   ├── ProjectCard.tsx        (tarjeta de proyecto, navega por slug)
+│   ├── RichTextEditor.tsx     (TipTap con toolbar: H1-3, negrita, listas, cita, enlace, alineación, deshacer/rehacer)
+│   ├── RichTextView.tsx       (renderiza JSON TipTap → elementos estilizados)
 │   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
+│   ├── blog/
+│   │   └── BlogBlockEditor.tsx (tarjeta bloque sortable: mango dnd + Subir/Bajar/Editar/Eliminar, formularios Texto/Imagen/Embed, preview, MiniButton)
 │   ├── SocialLinksEditor.tsx  (editor de redes sociales reutilizable)
 │   └── Toggle.tsx             (switch toggle reutilizable)
 │
 ├── pages/
 │   ├── About.tsx              (página /sobre-mi, edit control cuando autenticado)
 │   ├── AdminLogin.tsx         (página /admin, UI login mock)
-│   ├── Blog.tsx               (listado /blog, "Nueva publicación" cuando autenticado)
+│   ├── Blog.tsx               (listado /blog, [+ Nueva publicación] + editor inline cuando autenticado)
 │   ├── BlogPost.tsx           (artículo individual, edit/delete cuando autenticado)
 │   ├── Contact.tsx            (página /contacto, edit control cuando autenticado)
 │   ├── Home.tsx               (Hero + Featured + Projects con edit controls)
 │   ├── NotFound.tsx           (404 reutilizable con título configurable)
 │   ├── Project.tsx            (página /proyecto/:slug)
 │   └── admin/
-│       ├── edit/
-│       │   ├── EditableSection.tsx    (wrapper con botones [Editar] / [+ Agregar])
-│       │   ├── EditHeroModal.tsx      (imagen desktop + móvil + focal points + botones)
-│       │   ├── EditProfileModal.tsx   (nombre, profesión, descripción, avatar, redes)
-│       │   ├── EditAboutModal.tsx     (título, descripción, imagen)
-│       │   ├── EditFeaturedModal.tsx   (selección proyectos con DnD)
-│       │   ├── EditProjectsModal.tsx   (lista + form, DnD, imágenes)
-│       │   └── EditContactModal.tsx    (contacto, WhatsApp, formulario)
-│       ├── AdminLayout.tsx    (sidebar legacy, ya no enrutado)
-│       ├── Dashboard.tsx      (legacy, ya no enrutado)
-│       ├── Profile.tsx        (legacy, ya no enrutado)
-│       ├── HeroAdmin.tsx      (legacy, ya no enrutado)
-│       ├── AboutAdmin.tsx     (legacy, ya no enrutado)
-│       ├── ContactAdmin.tsx   (legacy, ya no enrutado)
-│       ├── Featured.tsx       (legacy, ya no enrutado)
-│       └── projects/
-│           ├── ProjectList.tsx    (legacy, ya no enrutado)
-│           └── ProjectForm.tsx    (legacy, ya no enrutado)
+│       └── edit/
+│           ├── EditableSection.tsx    (wrapper con botones [Editar] / [+ Agregar])
+│           ├── EditHeroModal.tsx      (imagen desktop + móvil + focal points + botones)
+│           ├── EditProfileModal.tsx   (nombre, profesión, descripción, avatar, redes)
+│           ├── EditAboutModal.tsx     (título, descripción, imagen)
+│           ├── EditFeaturedModal.tsx   (selección proyectos con DnD)
+│           ├── EditProjectsModal.tsx   (lista + form, DnD, imágenes)
+│           ├── EditContactModal.tsx    (contacto, WhatsApp, formulario)
+│           └── BlogPostEditor.tsx      (editor inline de publicaciones con bloques y TipTap)
 │
 ├── themes/
 │   └── minimal/
@@ -142,9 +139,13 @@ src/
 │
 ├── lib/
 │   ├── auth.ts                (login, logout, isAuthenticated — mock localStorage)
+│   ├── blogAutosave.ts        (autoguardado temporal del editor: key, load/save/clear, AutosaveDraft)
+│   ├── blogBlocks.ts          (helpers bloques: buildId, toDraft, toBlock + re-export BlockDraft; compartidos editor + BlogBlockEditor)
 │   ├── embeds.ts              (detección de proveedor + URLs embed seguras)
 │   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
-│   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh)
+│   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
+│   ├── richtext.ts            (helpers JSON TipTap: doc vacío, texto plano, isRichTextEmpty)
+│   ├── slug.ts                (slugify + uniqueSlug para posts/proyectos)
 │   ├── usePortfolio.ts        (hook usePortfolio)
 │   ├── socials.ts             (socialUrl(), socialLabel() genéricos)
 │   ├── storage.ts             (loadJSON, saveJSON helpers)
@@ -186,7 +187,7 @@ BrowserRouter
 
 No hay rutas admin anidadas. El sitio público ES el admin cuando hay sesión activa.
 
-Las páginas /admin legacy (Dashboard, Profile, HeroAdmin, etc.) existen como archivos pero ya no se enrutan.
+Los archivos /admin legacy (Dashboard, Profile, HeroAdmin, etc.) fueron ELIMINADOS en la limpieza de código muerto (7 modales de edición en admin/edit son los únicos archivos admin).
 
 ---
 
@@ -226,12 +227,15 @@ src/types/portfolio.ts
   - projectsLabel, projectsTitle, projectsDescription
 
 - **BlogPost** — publicación del blog:
-  - slug, title, excerpt, cover, date
+  - slug, title, excerpt, cover, coverFocusX/Y?
+  - date, status ("draft" | "published")
   - blocks: BlogBlock[]
 
 - **BlogBlock** — bloque de contenido:
-  - type: "text" | "image" | "embed"
-  - text?, url?, alt?, caption?, provider?
+  - type: "text" | "image" | "embed" | "separator"
+  - text?: string (legacy texto plano)
+  - content?: JSON TipTap (contenido enriquecido estructurado para bloques text)
+  - url?, alt?, caption?, provider?
 
 ---
 
@@ -292,6 +296,8 @@ Keys:
   - Importante: usa campo `images` (no `photos`) con estructura { id, url, alt }
 - `visora-admin-featured` — array de slugs de proyectos destacados
 - `visora-admin-texts` — siteTexts configurables (pendiente de implementar admin)
+- `visora-admin-blog-posts` — array de publicaciones del blog (lectura/escritura vía PortfolioProvider + setBlogPosts)
+- `visora-blog-draft` — autoguardado temporal del editor (solo en publicaciones nuevas, key separada de la lista definitiva; se borra al Guardar/Publicar/Cancelar)
 
 Credenciales mock: `admin@visora.com` / `admin123`
 
@@ -437,10 +443,23 @@ Arquitectura por bloques:
 - /blog → listado de publicaciones
 - /blog/:slug → artículo individual
 
+Modelo de datos:
+- BlogPost incluye `status` ("draft" | "published") y `coverFocusX/Y`
+- Los bloques `text` almacenan contenido enriquecido estructurado (JSON TipTap) en `content`
+- Los bloques `image` usan url, alt y caption opcional
+- Los bloques `embed` usan url + caption; proveedor detectado automáticamente
+- Los bloques `separator` (sin campos) → `<hr>` separador visual
+- `text?` (string) se conserva como legacy para datos antiguos
+
+Persistencia:
+- `blogPosts` vive en PortfolioContext/Provider, leído de localStorage (`visora-admin-blog-posts`) con fallback a los datos demo
+- `setBlogPosts` guarda y refresca el estado; los editores/saves lo usan
+
 Tipos de bloques:
-- text: párrafo de texto libre
+- text: editor visual TipTap (negrita, cursiva, subrayado, tachado, H1-H3, listas, cita, enlace, alineación, deshacer/rehacer)
 - image: imagen con URL, alt y caption opcional
 - embed: URL de redes + caption; proveedor detectado automáticamente
+- separator: línea divisoria `<hr>` sin contenido (no se edita, solo se reordena/borra)
 
 Soporte de embeds (src/lib/embeds.ts):
 - YouTube → iframe seguro (youtube-nocookie.com, sin cookies)
@@ -449,10 +468,60 @@ Soporte de embeds (src/lib/embeds.ts):
 
 Los 3 posts de demo incluyen: historia con fotos, video YouTube, embeds de Instagram y Behance.
 
+Editor de publicaciones (src/pages/admin/edit/BlogPostEditor.tsx):
+- INLINE (no modal), aparece entre el encabezado del Blog y el listado cuando autenticado
+- "Nueva publicación" y "Editar" (desde el listado o el detalle) → abre el editor inline
+- Título obligatorio → genera slug automáticamente (colisión → variante -2, -3, ...); slug editable
+- Extracto opcional, Portada (ImageUpload + focal point con ImageCropModal), Fecha, Estado (Borrador/Publicado)
+- Bloques: [+ Texto] [+ Imagen] [+ Embed] [+ Separador]; reordenados por arrastrar (dnd-kit, mango + botones Subir/Bajar), edición/borrado
+- Acciones: Cancelar, Vista previa, Guardar borrador, Publicar
+- Lazy-loaded (React.lazy): TipTap solo se descarga cuando el admin abre el editor
+
+Autoguardado temporal (solo para publicaciones NUEVAS, src/lib/blogAutosave.ts + BlogPostEditor):
+- Key: `visora-blog-draft` (separada de la lista definitiva `visora-admin-blog-posts`)
+- Helpers centralizados en src/lib/blogAutosave.ts (AutosaveDraft, loadAutosave, saveAutosave, clearAutosave, AUTOSAVE_KEY)
+- Se guarda por debounce ~20s; también se vacía en `beforeunload`
+- NO publica ni toca la lista definitiva: solo existe hasta Guardar/Publicar/Cancelar (que la borran)
+- Indicador discreto en el header del editor: "Guardando..." (con cambios sin guardar) → "Guardado hace unos segundos"
+- Recuperación (Parte 9): al volver al Blog con un autoguardado pendiente, el listado muestra el aviso
+  "Se encontró una versión no guardada de esta publicación" con botones [Recuperar] [Descartar]
+  - Recuperar → abre el editor como "nueva" con el borrador cargado vía prop `restoredDraft` (sin restaurar en silencio)
+  - Descartar → clearAutosave()
+  - Cancelar explícito en publicaciones nuevas → confirmación de descarte antes de borrar el autoguardado
+- Los blob URLs de imágenes no sobreviven a un reload (limitación de la fase mock; con storage de Supabase serán URLs reales)
+
+Guardar borrador / Publicar (Partes 10 y 11):
+- Validan campos, generan/validan slug, guardan en la colección definitiva con status "draft" o "published"
+- Eliminan el autoguardado, cierran el editor y muestran confirmación (toast transitorio en la página Blog)
+- El editor cierra vía `onClose(result?: EditorResult)` con "saved-draft" | "published" | "discarded" | "cancelled"
+- El borrador aparece en /blog para el admin con badge "BORRADOR" y NO aparece para visitantes públicos
+- El post publicado aparece inmediatamente en /blog
+
+Eliminar (Parte 14):
+- Confirmación previa con confirm(); al confirmar se elimina de la persistencia y se limpia el autoguardado
+
+Borradores:
+- Los borradores NO aparecen en /blog público ni en /blog/:slug (router solo resuelve posts "published")
+- El admin ve todos los posts en /blog (con badge "Borrador")
+- Editar desde el detalle navega a /blog con state { editSlug }
+
+Vista previa y renderer compartido (Parte 12):
+- Un único renderer: src/components/PostBody.tsx (text/image/embed/separator) usado INDISTINTAMENTE por la
+  página pública /blog/:slug y por la vista previa del editor → misma salida, sin duplicar lógica
+
+Componentes:
+- RichTextEditor.tsx (TipTap con toolbar, compartido en src/components/)
+- RichTextView.tsx (renderiza JSON TipTap → elementos estilizados, sin dangerouslySetInnerHTML)
+- PostBody.tsx (renderiza blogPosts / bloques; compartido entre página pública y vista previa)
+- BlogPostEditor.tsx (editor inline completo, reutilizable para crear y editar)
+- blog/BlogBlockEditor.tsx (tarjeta bloque sortable + formularios Texto/Imagen/Embed + preview + MiniButton; helpers de bloques en src/lib/blogBlocks.ts)
+
+Helpers de bloques (src/lib/blogBlocks.ts):
+- buildId(), toDraft(), toBlock() + re-export BlockDraft — compartidos entre BlogPostEditor y BlogBlockEditor para no duplicar la conversión draft↔bloque
+
 Cuando autenticado:
-- Blog listing muestra botón [+ Nueva publicación]
-- Blog post muestra botones [✏ Editar] y [🗑 Eliminar]
-- Los botones son visibles pero funcionalidad de editor pendiente
+- Blog listing muestra botón [+ Nueva publicación] y un lápiz por tarjeta para editar
+- Blog post muestra botones [✏ Editar] y [🗑 Eliminar] (funcionales)
 
 ---
 
@@ -564,7 +633,6 @@ Estructura pública:
 - index.html: título estático "visora" — DocumentHead lo sobreescribe
 
 Administrador:
-- Blog: botones "Nueva publicación" / "Editar" / "Eliminar" visibles, pero sin editor implementado
 - Apariencia: sin implementar (selección de tema, colores)
 - Conectar admin → Supabase (actualmente todo en localStorage)
 
@@ -603,7 +671,7 @@ Se busca crear sitios profesionales que puedan venderse individualmente de forma
 
 # 21. Próximo objetivo técnico
 
-ESTADO: Sitio público + inline editing completado. 6 modales de edición funcionales. Hero con imagen dual + crop.
+ESTADO: Sitio público + inline editing completado. 6 modales de edición funcionales. Hero con imagen dual + crop. Blog con editor inline de publicaciones (TipTap, borradores/borrador, bloques, portada con focal point).
 
 PRÓXIMO PASO: Conectar Supabase (lectura de datos, storage de imágenes, autenticación real).
 
@@ -611,7 +679,7 @@ Después:
 1. Conectar Supabase (lectura de datos)
 2. Storage (subida de imágenes)
 3. Autenticación real (reemplazar mock)
-4. Editor de blog
+4. Editor de blog — IMPLEMENTADO (pendiente persistencia Supabase)
 5. Selección de tema / Apariencia
 6. Deployment en Vercel
 7. Dominios personalizados

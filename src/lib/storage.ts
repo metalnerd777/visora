@@ -13,5 +13,9 @@ export function loadJSON<T>(key: string, fallback: T): T {
 }
 
 export function saveJSON(key: string, data: unknown): void {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // Quota exceeded, private mode, or storage disabled — ignore
+  }
 }

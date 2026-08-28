@@ -10,6 +10,8 @@ import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
+import { isEmail, isNonEmpty, isPhone, sanitizeText } from "../../../lib/validation";
+
 import type { PortfolioProfile, SocialLink } from "../../../types/portfolio";
 
 interface ContactConfig {
@@ -52,13 +54,50 @@ function EditContactModal({
 }) {
   const { refresh } = usePortfolio();
   const [config, setConfig] = useState<ContactConfig>(loadContact);
+  const [errors, setErrors] = useState<{
+    title?: string;
+    email?: string;
+    whatsappPhone?: string;
+    formEmail?: string;
+  }>({});
 
   const update = (patch: Partial<ContactConfig>) => {
     setConfig((prev) => ({ ...prev, ...patch }));
   };
 
   const handleSave = () => {
-    saveJSON("visora-admin-contact", config);
+    const nextErrors: typeof errors = {};
+
+    if (!isNonEmpty(config.title)) nextErrors.title = "El título es obligatorio.";
+    if (!isEmail(config.email)) nextErrors.email = "Ingresa un correo válido.";
+
+    if (config.whatsappPhone.trim() && !isPhone(config.whatsappPhone)) {
+      nextErrors.whatsappPhone =
+        "Ingresa un número con código de país, solo dígitos y +.";
+    }
+
+    if (config.formEnabled && config.formEmail.trim() && !isEmail(config.formEmail)) {
+      nextErrors.formEmail = "Ingresa un correo válido.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    const cleanedPhone = config.whatsappPhone.replace(/[^\d+]/g, "");
+
+    saveJSON("visora-admin-contact", {
+      ...config,
+      title: sanitizeText(config.title).trim(),
+      description: sanitizeText(config.description).trim(),
+      location: sanitizeText(config.location).trim(),
+      email: config.email.trim(),
+      whatsappPhone: cleanedPhone,
+      whatsappMessage: sanitizeText(config.whatsappMessage).trim(),
+      formEmail: config.formEmail.trim(),
+      socialLinks: config.socialLinks.filter((l) => l.handle.trim().length > 0),
+    });
 
     const profile = loadJSON<PortfolioProfile>(
       "visora-admin-profile",
@@ -67,10 +106,10 @@ function EditContactModal({
 
     saveJSON("visora-admin-profile", {
       ...profile,
-      contactTitle: config.title,
-      contactDescription: config.description,
-      email: config.email,
-      location: config.location,
+      contactTitle: sanitizeText(config.title).trim(),
+      contactDescription: sanitizeText(config.description).trim(),
+      email: config.email.trim(),
+      location: sanitizeText(config.location).trim(),
     });
 
     refresh();
@@ -84,16 +123,26 @@ function EditContactModal({
           <Field
             label="Título"
             value={config.title}
-            onChange={(v) => update({ title: v })}
+            onChange={(v) => {
+              update({ title: v });
+              setErrors((e) => ({ ...e, title: undefined }));
+            }}
             placeholder="Hablemos."
+            required
+            error={errors.title}
           />
 
           <Field
             label="Email"
             type="email"
             value={config.email}
-            onChange={(v) => update({ email: v })}
+            onChange={(v) => {
+              update({ email: v });
+              setErrors((e) => ({ ...e, email: undefined }));
+            }}
             placeholder="tu@email.com"
+            required
+            error={errors.email}
           />
 
           <Field
@@ -135,8 +184,12 @@ function EditContactModal({
           <Field
             label="Número de teléfono"
             value={config.whatsappPhone}
-            onChange={(v) => update({ whatsappPhone: v })}
+            onChange={(v) => {
+              update({ whatsappPhone: v });
+              setErrors((e) => ({ ...e, whatsappPhone: undefined }));
+            }}
             placeholder="5491112345678"
+            error={errors.whatsappPhone}
           />
 
           <div className="flex flex-col gap-2">
@@ -176,8 +229,12 @@ function EditContactModal({
               label="Email de destino"
               type="email"
               value={config.formEmail}
-              onChange={(v) => update({ formEmail: v })}
+              onChange={(v) => {
+                update({ formEmail: v });
+                setErrors((e) => ({ ...e, formEmail: undefined }));
+              }}
               placeholder="donde@recibir-mensajes.com"
+              error={errors.formEmail}
             />
           )}
         </div>

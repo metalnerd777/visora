@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 
-import EmbedBlock from "../components/EmbedBlock";
+import PostBody from "../components/PostBody";
 
 import { isAuthenticated } from "../lib/auth";
 
-import type { BlogPost, BlogBlock } from "../types/portfolio";
+import type { BlogPost } from "../types/portfolio";
 
 interface BlogPostPageProps {
   post: BlogPost;
   onBack: () => void;
+  onEdit: (slug: string) => void;
+  onDelete: (slug: string) => void;
 }
 
 function formatDate(date: string): string {
@@ -19,43 +21,7 @@ function formatDate(date: string): string {
   });
 }
 
-function Block({ block }: { block: BlogBlock }) {
-  if (block.type === "text" && block.text) {
-    return (
-      <p className="my-6 text-base leading-relaxed text-neutral-600 dark:text-[#C9C4D8] md:text-lg md:leading-relaxed">
-        {block.text}
-      </p>
-    );
-  }
-
-  if (block.type === "image" && block.url) {
-    return (
-      <figure className="my-10">
-        <img
-          src={`${block.url}?auto=format&w=1600&q=85`}
-          alt={block.alt ?? ""}
-          loading="lazy"
-          decoding="async"
-          className="w-full rounded-2xl"
-        />
-
-        {block.caption && (
-          <figcaption className="mt-3 text-center text-sm text-neutral-500 dark:text-[#A8A3B8]">
-            {block.caption}
-          </figcaption>
-        )}
-      </figure>
-    );
-  }
-
-  if (block.type === "embed") {
-    return <EmbedBlock block={block} />;
-  }
-
-  return null;
-}
-
-function BlogPostPage({ post, onBack }: BlogPostPageProps) {
+function BlogPostPage({ post, onBack, onEdit, onDelete }: BlogPostPageProps) {
   const [admin, setAdmin] = useState(isAuthenticated());
 
   useEffect(() => {
@@ -65,6 +31,14 @@ function BlogPostPage({ post, onBack }: BlogPostPageProps) {
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleDelete = () => {
+    if (!confirm("¿Eliminar esta publicación? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    onDelete(post.slug);
+  };
 
   return (
     <main className="px-6 pt-10 pb-20 transition-colors md:px-10 md:pt-5 md:pb-24">
@@ -83,6 +57,7 @@ function BlogPostPage({ post, onBack }: BlogPostPageProps) {
             <div className="flex gap-2">
               <button
                 type="button"
+                onClick={() => onEdit(post.slug)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#7C6CFF]/30 bg-white/80 px-3 py-1.5 text-xs font-medium text-[#7C6CFF] shadow-lg backdrop-blur-md transition-colors hover:border-[#7C6CFF] hover:bg-[#7C6CFF]/10 dark:bg-[#161327]/80"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
@@ -94,6 +69,7 @@ function BlogPostPage({ post, onBack }: BlogPostPageProps) {
 
               <button
                 type="button"
+                onClick={handleDelete}
                 className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-white/80 px-3 py-1.5 text-xs font-medium text-red-500 shadow-lg backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-50 dark:bg-[#161327]/80 dark:text-red-400"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
@@ -126,14 +102,15 @@ function BlogPostPage({ post, onBack }: BlogPostPageProps) {
           src={`${post.cover}?auto=format&w=1800&q=85`}
           alt={post.title}
           fetchPriority="high"
-          className="mb-12 w-full rounded-3xl"
+          style={{
+            objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
+          }}
+          className="mb-12 h-auto w-full rounded-3xl object-cover"
         />
 
         {/* Contenido por bloques */}
         <article>
-          {post.blocks.map((block) => (
-            <Block key={block.id} block={block} />
-          ))}
+          <PostBody blocks={post.blocks} />
         </article>
       </div>
     </main>

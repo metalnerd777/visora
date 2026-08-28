@@ -14,7 +14,7 @@ function AdminLoginPage() {
     e.preventDefault();
 
     if (login(email, password)) {
-      navigate("/admin/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } else {
       setError(true);
     }

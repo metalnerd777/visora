@@ -7,15 +7,17 @@ import {
   projects as defaultProjects,
   featuredPhotos as defaultFeatured,
   siteTexts as defaultTexts,
+  blogPosts as defaultBlogPosts,
 } from "../data/portfolio";
 
-import { loadJSON } from "../lib/storage";
+import { loadJSON, saveJSON } from "../lib/storage";
 
 import type {
   PortfolioProfile,
   Project,
   Photo,
   SiteTexts,
+  BlogPost,
 } from "../types/portfolio";
 
 function loadFeatured(projects: Project[], allFeatured: Photo[]): Photo[] {
@@ -88,7 +90,9 @@ function readState() {
 
   const siteTexts = loadJSON<SiteTexts>("visora-admin-texts", defaultTexts);
 
-  return { profile, projects, featuredPhotos, siteTexts };
+  const blogPosts = loadJSON<BlogPost[]>("visora-admin-blog-posts", defaultBlogPosts);
+
+  return { profile, projects, featuredPhotos, siteTexts, blogPosts };
 }
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
@@ -96,8 +100,15 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(() => setState(readState()), []);
 
+  const setBlogPosts = useCallback((posts: BlogPost[]) => {
+    saveJSON("visora-admin-blog-posts", posts);
+    setState((prev) => ({ ...prev, blogPosts: posts }));
+  }, []);
+
   return (
-    <PortfolioContext.Provider value={{ ...state, refresh }}>
+    <PortfolioContext.Provider
+      value={{ ...state, refresh, setBlogPosts }}
+    >
       {children}
     </PortfolioContext.Provider>
   );

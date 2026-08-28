@@ -188,6 +188,7 @@ export const blogPosts: BlogPost[] = [
     cover:
       "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
     date: "2026-08-10",
+    status: "published",
     blocks: [
       {
         id: "b1",
@@ -224,6 +225,7 @@ export const blogPosts: BlogPost[] = [
     cover:
       "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     date: "2026-07-28",
+    status: "published",
     blocks: [
       {
         id: "b1",
@@ -253,6 +255,7 @@ export const blogPosts: BlogPost[] = [
     cover:
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f",
     date: "2026-07-02",
+    status: "published",
     blocks: [
       {
         id: "b1",

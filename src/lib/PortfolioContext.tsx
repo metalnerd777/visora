@@ -5,6 +5,7 @@ import type {
   Project,
   Photo,
   SiteTexts,
+  BlogPost,
 } from "../types/portfolio";
 
 export interface PortfolioContextType {
@@ -12,7 +13,9 @@ export interface PortfolioContextType {
   projects: Project[];
   featuredPhotos: Photo[];
   siteTexts: SiteTexts;
+  blogPosts: BlogPost[];
   refresh: () => void;
+  setBlogPosts: (posts: BlogPost[]) => void;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | null>(null);

@@ -29,6 +29,9 @@ function BlogCard({ post }: BlogCardProps) {
           alt={post.title}
           loading="lazy"
           decoding="async"
+          style={{
+            objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
+          }}
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
         />
 

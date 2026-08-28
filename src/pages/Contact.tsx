@@ -17,7 +17,7 @@ function ContactPage() {
     whatsappPhone?: string;
     whatsappMessage?: string;
   }>("visora-admin-contact", {});
-  const whatsappPhone = contactConfig?.whatsappPhone?.trim() ?? "";
+  const whatsappPhone = contactConfig?.whatsappPhone?.replace(/[^\d+]/g, "") ?? "";
   const whatsappMessage = contactConfig?.whatsappMessage?.trim() ?? "";
 
   const whatsappUrl = whatsappPhone

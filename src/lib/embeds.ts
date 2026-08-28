@@ -9,33 +9,38 @@ const providerLabels: Record<EmbedProvider, string> = {
   flickr: "Flickr",
 };
 
+const ALLOWED_HOSTS: Record<EmbedProvider, string[]> = {
+  youtube: ["youtube.com", "youtu.be", "www.youtube.com", "m.youtube.com"],
+  vimeo: ["vimeo.com", "player.vimeo.com"],
+  instagram: ["instagram.com", "www.instagram.com"],
+  facebook: ["facebook.com", "www.facebook.com", "fb.watch"],
+  behance: ["behance.net", "www.behance.net"],
+  flickr: ["flickr.com", "www.flickr.com"],
+};
+
 export function getProviderLabel(provider: EmbedProvider): string {
   return providerLabels[provider];
 }
 
-export function detectEmbedProvider(url: string): EmbedProvider | null {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) {
-    return "youtube";
+function getHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    // If it doesn't parse as a URL but looks like a path, try https prepended
+    return null;
   }
+}
 
-  if (url.includes("vimeo.com")) {
-    return "vimeo";
-  }
+export function detectEmbedProvider(rawUrl: string): EmbedProvider | null {
+  const url = rawUrl.trim();
+  const hostname = getHostname(url);
 
-  if (url.includes("instagram.com")) {
-    return "instagram";
-  }
+  if (!hostname) return null;
 
-  if (url.includes("facebook.com") || url.includes("fb.watch")) {
-    return "facebook";
-  }
-
-  if (url.includes("behance.net")) {
-    return "behance";
-  }
-
-  if (url.includes("flickr.com")) {
-    return "flickr";
+  for (const provider of Object.keys(ALLOWED_HOSTS) as EmbedProvider[]) {
+    if (ALLOWED_HOSTS[provider].some((h) => h === hostname || hostname.endsWith(`.${h}`))) {
+      return provider;
+    }
   }
 
   return null;

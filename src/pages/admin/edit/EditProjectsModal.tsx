@@ -312,6 +312,7 @@ function EditProjectsModal({
   const [formDesc, setFormDesc] = useState("");
   const [formCover, setFormCover] = useState("");
   const [formImages, setFormImages] = useState<FormImage[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -351,6 +352,7 @@ function EditProjectsModal({
     setFormDesc("");
     setFormCover("");
     setFormImages([]);
+    setFormError(null);
     setView("form");
   };
 
@@ -364,20 +366,41 @@ function EditProjectsModal({
     setFormDesc(project.description);
     setFormCover(project.cover);
     setFormImages([...project.images]);
+    setFormError(null);
     setView("form");
   };
 
   const saveForm = () => {
-    if (!formTitle.trim()) return;
+    if (!formTitle.trim()) {
+      setFormError("El título es obligatorio.");
+      return;
+    }
 
     const slug = editingSlug || slugify(formTitle);
+
+    const generatedSlug = slugify(formTitle);
+    const slugConflict =
+      !editingSlug &&
+      projects.some((p) => p.slug === generatedSlug) &&
+      generatedSlug !== slug;
+
+    if (slugConflict) {
+      setFormError("Ya existe un proyecto con este nombre.");
+      return;
+    }
+
+    if (formImages.length === 0) {
+      setFormError("Agrega al menos una imagen al proyecto.");
+      return;
+    }
+
     const imageData = formImages;
 
     const updated: AdminProject = {
       slug,
       title: formTitle.trim(),
       description: formDesc.trim(),
-      cover: formCover,
+      cover: formCover || formImages[0].url,
       images: imageData,
     };
 
@@ -391,6 +414,7 @@ function EditProjectsModal({
       saveAll([...projects, updated]);
     }
 
+    setFormError(null);
     setView("list");
   };
 
@@ -655,6 +679,14 @@ function EditProjectsModal({
           </div>
 
           <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
+            <div className="flex flex-1 flex-col items-start justify-center gap-1">
+              {formError && (
+                <p className="text-xs text-red-500 dark:text-red-400">
+                  {formError}
+                </p>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={saveForm}
