@@ -1,7 +1,11 @@
 import { usePortfolio } from "../lib/usePortfolio";
+import { nonEmptySocials, socialUrl } from "../lib/socials";
 
 function About() {
-  const { profile } = usePortfolio();
+  const { profile, settings } = usePortfolio();
+  const rawSocials =
+    settings.socials.length > 0 ? settings.socials : profile.socialLinks;
+  const socials = nonEmptySocials(rawSocials);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -26,11 +30,13 @@ function About() {
             </p>
           )}
 
-          {profile.socialLinks.map((link) => (
+          {socials.map((link) => (
             <a
               key={link.platform}
-              href="#"
-              className="text-sm text-neutral-900 transition-colors hover:text-[#7C6CFF] dark:text-[#F5F3FF]"
+              href={socialUrl(link.platform, link.handle)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-neutral-900 transition-colors hover:text-(--visora-accent) dark:text-[#F5F3FF]"
             >
               {link.handle}
             </a>

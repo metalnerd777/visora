@@ -67,7 +67,7 @@ function IconButton({
       onClick={onClick}
       className={`flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
         active
-          ? "bg-[#7C6CFF]/15 text-[#7C6CFF] dark:bg-[#7C6CFF]/25 dark:text-[#B9B1FF]"
+          ? "bg-(--visora-accent)/15 text-(--visora-accent) dark:bg-(--visora-accent)/25 dark:text-[#B9B1FF]"
           : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:bg-white/5 dark:hover:text-white"
       }`}
     >

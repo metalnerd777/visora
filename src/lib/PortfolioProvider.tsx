@@ -9,6 +9,7 @@ import {
   siteTexts as defaultTexts,
   blogPosts as defaultBlogPosts,
 } from "../data/portfolio";
+import { defaultSettings } from "../data/settings";
 
 import { loadJSON, saveJSON } from "../lib/storage";
 
@@ -18,7 +19,10 @@ import type {
   Photo,
   SiteTexts,
   BlogPost,
+  SiteSettings,
 } from "../types/portfolio";
+
+const SETTINGS_KEY = "visora-admin-settings";
 
 function loadFeatured(projects: Project[], allFeatured: Photo[]): Photo[] {
   const slugs = loadJSON<string[]>("visora-admin-featured", []);
@@ -76,6 +80,27 @@ function normalizeProjects(raw: unknown[]): Project[] {
   });
 }
 
+function mergeSettings(
+  defaults: SiteSettings,
+  stored: Partial<SiteSettings> | null,
+): SiteSettings {
+  return {
+    general: { ...defaults.general, ...(stored?.general ?? {}) },
+    seo: { ...defaults.seo, ...(stored?.seo ?? {}) },
+    appearance: {
+      ...defaults.appearance,
+      ...(stored?.appearance ?? {}),
+      background: {
+        ...defaults.appearance.background,
+        ...(stored?.appearance?.background ?? {}),
+      },
+    },
+    socials: stored?.socials ?? defaults.socials,
+    privacy: { ...defaults.privacy, ...(stored?.privacy ?? {}) },
+    site: { ...defaults.site, ...(stored?.site ?? {}) },
+  };
+}
+
 function readState() {
   const profile = loadJSON<PortfolioProfile>(
     "visora-admin-profile",
@@ -92,7 +117,11 @@ function readState() {
 
   const blogPosts = loadJSON<BlogPost[]>("visora-admin-blog-posts", defaultBlogPosts);
 
-  return { profile, projects, featuredPhotos, siteTexts, blogPosts };
+  const storedSettings = loadJSON<Partial<SiteSettings>>(SETTINGS_KEY, {});
+
+  const settings = mergeSettings(defaultSettings, storedSettings);
+
+  return { profile, projects, featuredPhotos, siteTexts, blogPosts, settings };
 }
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
@@ -105,9 +134,14 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, blogPosts: posts }));
   }, []);
 
+  const setSettings = useCallback((settings: SiteSettings) => {
+    saveJSON(SETTINGS_KEY, settings);
+    setState((prev) => ({ ...prev, settings }));
+  }, []);
+
   return (
     <PortfolioContext.Provider
-      value={{ ...state, refresh, setBlogPosts }}
+      value={{ ...state, refresh, setBlogPosts, setSettings }}
     >
       {children}
     </PortfolioContext.Provider>

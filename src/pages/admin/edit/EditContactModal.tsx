@@ -3,27 +3,34 @@ import { useState } from "react";
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
 import SocialLinksEditor from "../../../components/SocialLinksEditor";
-import Toggle from "../../../components/Toggle";
 
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
-import { isEmail, isNonEmpty, isPhone, sanitizeText } from "../../../lib/validation";
+import { isEmail, isNonEmpty, sanitizeText } from "../../../lib/validation";
 
-import type { PortfolioProfile, SocialLink } from "../../../types/portfolio";
+import type { PortfolioProfile } from "../../../types/portfolio";
 
 interface ContactConfig {
   title: string;
   description: string;
   email: string;
+  emailSubject: string;
   location: string;
-  socialLinks: SocialLink[];
   whatsappPhone: string;
   whatsappMessage: string;
-  formEnabled: boolean;
-  formEmail: string;
+}
+
+const WHATSAPP_MESSAGE_MAX = 100;
+const WHATSAPP_DIGITS = 8;
+
+function extractWhatsAppDigits(saved: string): string {
+  const digits = saved.replace(/\D/g, "");
+  return digits.length > WHATSAPP_DIGITS
+    ? digits.slice(-WHATSAPP_DIGITS)
+    : digits;
 }
 
 function loadContact(): ContactConfig {
@@ -32,17 +39,21 @@ function loadContact(): ContactConfig {
     defaultProfile,
   );
 
-  return loadJSON<ContactConfig>("visora-admin-contact", {
+  const existing = loadJSON<{
+    emailSubject?: string;
+    whatsappPhone?: string;
+    whatsappMessage?: string;
+  }>("visora-admin-contact", {});
+
+  return {
     title: profile.contactTitle ?? "Hablemos.",
     description: profile.contactDescription ?? "",
     email: profile.email,
+    emailSubject: existing.emailSubject ?? "Contacto desde el portfolio",
     location: profile.location,
-    socialLinks: profile.socialLinks,
-    whatsappPhone: "",
-    whatsappMessage: "Hola, me interesa tu trabajo. ¿Podemos hablar?",
-    formEnabled: false,
-    formEmail: profile.email,
-  });
+    whatsappPhone: extractWhatsAppDigits(existing.whatsappPhone ?? ""),
+    whatsappMessage: existing.whatsappMessage ?? "Hola, me interesa tu trabajo. ¿Podemos hablar?",
+  };
 }
 
 function EditContactModal({
@@ -52,13 +63,13 @@ function EditContactModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { refresh } = usePortfolio();
+  const { refresh, settings, setSettings } = usePortfolio();
   const [config, setConfig] = useState<ContactConfig>(loadContact);
   const [errors, setErrors] = useState<{
     title?: string;
     email?: string;
     whatsappPhone?: string;
-    formEmail?: string;
+    whatsappMessage?: string;
   }>({});
 
   const update = (patch: Partial<ContactConfig>) => {
@@ -71,13 +82,12 @@ function EditContactModal({
     if (!isNonEmpty(config.title)) nextErrors.title = "El título es obligatorio.";
     if (!isEmail(config.email)) nextErrors.email = "Ingresa un correo válido.";
 
-    if (config.whatsappPhone.trim() && !isPhone(config.whatsappPhone)) {
-      nextErrors.whatsappPhone =
-        "Ingresa un número con código de país, solo dígitos y +.";
+    if (config.whatsappPhone && config.whatsappPhone.length !== WHATSAPP_DIGITS) {
+      nextErrors.whatsappPhone = `Ingresa ${WHATSAPP_DIGITS} números después del prefijo.`;
     }
 
-    if (config.formEnabled && config.formEmail.trim() && !isEmail(config.formEmail)) {
-      nextErrors.formEmail = "Ingresa un correo válido.";
+    if (config.whatsappMessage.trim().length > WHATSAPP_MESSAGE_MAX) {
+      nextErrors.whatsappMessage = `El mensaje no puede superar los ${WHATSAPP_MESSAGE_MAX} caracteres.`;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -85,18 +95,16 @@ function EditContactModal({
       return;
     }
 
-    const cleanedPhone = config.whatsappPhone.replace(/[^\d+]/g, "");
-
     saveJSON("visora-admin-contact", {
-      ...config,
       title: sanitizeText(config.title).trim(),
       description: sanitizeText(config.description).trim(),
-      location: sanitizeText(config.location).trim(),
       email: config.email.trim(),
-      whatsappPhone: cleanedPhone,
+      emailSubject: sanitizeText(config.emailSubject).trim(),
+      location: sanitizeText(config.location).trim(),
+      whatsappPhone: config.whatsappPhone
+        ? `+569${config.whatsappPhone}`
+        : "",
       whatsappMessage: sanitizeText(config.whatsappMessage).trim(),
-      formEmail: config.formEmail.trim(),
-      socialLinks: config.socialLinks.filter((l) => l.handle.trim().length > 0),
     });
 
     const profile = loadJSON<PortfolioProfile>(
@@ -116,6 +124,11 @@ function EditContactModal({
     onClose();
   };
 
+  const waPhone = config.whatsappPhone;
+  const waUrl = waPhone
+    ? `https://wa.me/569${waPhone}${config.whatsappMessage.trim() ? `?text=${encodeURIComponent(config.whatsappMessage.trim())}` : ""}`
+    : null;
+
   return (
     <Modal open={open} onClose={onClose} title="Editar Contacto" wide>
       <div className="flex flex-col gap-6">
@@ -130,19 +143,6 @@ function EditContactModal({
             placeholder="Hablemos."
             required
             error={errors.title}
-          />
-
-          <Field
-            label="Email"
-            type="email"
-            value={config.email}
-            onChange={(v) => {
-              update({ email: v });
-              setErrors((e) => ({ ...e, email: undefined }));
-            }}
-            placeholder="tu@email.com"
-            required
-            error={errors.email}
           />
 
           <Field
@@ -163,87 +163,145 @@ function EditContactModal({
             onChange={(e) => update({ description: e.target.value })}
             placeholder="Cuéntanos sobre tu proyecto..."
             rows={3}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-            Redes sociales
-          </label>
-
-          <SocialLinksEditor
-            links={config.socialLinks}
-            onChange={(links) => update({ socialLinks: links })}
-          />
-        </div>
-
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 border-t border-neutral-100 pt-5 dark:border-[#27243A]">
           <label className="text-sm font-medium">WhatsApp</label>
 
-          <Field
-            label="Número de teléfono"
-            value={config.whatsappPhone}
-            onChange={(v) => {
-              update({ whatsappPhone: v });
-              setErrors((e) => ({ ...e, whatsappPhone: undefined }));
-            }}
-            placeholder="5491112345678"
-            error={errors.whatsappPhone}
-          />
+          <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+                Número de teléfono
+              </label>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-              Mensaje predefinido
-            </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400 dark:text-[#6F6A80]">
+                  +56 9
+                </span>
 
-            <textarea
-              value={config.whatsappMessage}
-              onChange={(e) => update({ whatsappMessage: e.target.value })}
-              placeholder="Hola, me interesa tu trabajo..."
-              rows={2}
-              className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
-            />
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={config.whatsappPhone}
+                  onChange={(e) => {
+                    const v = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, WHATSAPP_DIGITS);
+                    update({ whatsappPhone: v });
+                    setErrors((er) => ({ ...er, whatsappPhone: undefined }));
+                  }}
+                  placeholder="12345678"
+                  aria-invalid={errors.whatsappPhone ? true : undefined}
+                  className={`w-full rounded-xl border bg-white/80 py-3 pl-[4.5rem] pr-4 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
+                    errors.whatsappPhone
+                      ? "border-red-400 dark:border-red-500"
+                      : "border-neutral-200 dark:border-[#27243A]"
+                  }`}
+                />
+              </div>
+
+              <p
+                className={`text-xs ${
+                  errors.whatsappPhone
+                    ? "text-red-500"
+                    : "text-neutral-400 dark:text-[#6F6A80]"
+                }`}
+              >
+                {errors.whatsappPhone ??
+                  "Formato: +56 9 + 8 números (ej. +569 1234 5678)."}
+              </p>
+              <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                {waUrl
+                  ? `El botón abrirá wa.me/569${waPhone} con el mensaje predefinido.`
+                  : "Sin número configurado. El botón de WhatsApp no se mostrará."}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+                Mensaje predefinido
+              </label>
+
+              <textarea
+                value={config.whatsappMessage}
+                onChange={(e) => {
+                  update({ whatsappMessage: e.target.value });
+                  setErrors((er) => ({ ...er, whatsappMessage: undefined }));
+                }}
+                placeholder="Hola, me interesa tu trabajo..."
+                rows={3}
+                maxLength={WHATSAPP_MESSAGE_MAX + 20}
+                className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+              />
+
+              <div className="flex items-baseline justify-between gap-2">
+                <p
+                  className={`text-xs ${
+                    errors.whatsappMessage
+                      ? "text-red-500"
+                      : config.whatsappMessage.trim().length > WHATSAPP_MESSAGE_MAX
+                        ? "text-red-500"
+                        : "text-neutral-400 dark:text-[#6F6A80]"
+                  }`}
+                >
+                  {errors.whatsappMessage ??
+                    `Máximo ${WHATSAPP_MESSAGE_MAX} caracteres`}
+                </p>
+
+                <p className="text-xs tabular-nums text-neutral-400 dark:text-[#6F6A80]">
+                  {config.whatsappMessage.trim().length} / {WHATSAPP_MESSAGE_MAX}
+                </p>
+              </div>
+
+              
+            </div>
           </div>
-
-          <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
-            {config.whatsappPhone
-              ? `El botón abrirá wa.me/${config.whatsappPhone} con el mensaje predefinido.`
-              : "Sin número configurado. El botón de WhatsApp no se mostrará."}
-          </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Formulario de contacto</label>
+        <div className="grid gap-4 border-t border-neutral-100 pt-5 sm:grid-cols-2 dark:border-[#27243A]">
+          <Field
+            label="Email de contacto"
+            type="email"
+            value={config.email}
+            onChange={(v) => {
+              update({ email: v });
+              setErrors((e) => ({ ...e, email: undefined }));
+            }}
+            placeholder="tu@email.com"
+            required
+            error={errors.email}
+          />
 
-            <Toggle
-              label={config.formEnabled ? "Activado" : "Desactivado"}
-              checked={config.formEnabled}
-              onChange={(v) => update({ formEnabled: v })}
-            />
+          <Field
+            label="Asunto del correo"
+            value={config.emailSubject}
+            onChange={(v) => update({ emailSubject: v })}
+            placeholder="Contacto desde el portfolio"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-neutral-100 pt-5 dark:border-[#27243A]">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Redes sociales</label>
+            <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+              Las redes con información se muestran en todo el sitio (header,
+              footer y contacto). Solo se muestran las que tienen un usuario.
+            </p>
           </div>
 
-          {config.formEnabled && (
-            <Field
-              label="Email de destino"
-              type="email"
-              value={config.formEmail}
-              onChange={(v) => {
-                update({ formEmail: v });
-                setErrors((e) => ({ ...e, formEmail: undefined }));
-              }}
-              placeholder="donde@recibir-mensajes.com"
-              error={errors.formEmail}
-            />
-          )}
+          <SocialLinksEditor
+            links={settings.socials}
+            onChange={(links) => setSettings({ ...settings, socials: links })}
+          />
         </div>
 
         <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Guardar
           </button>

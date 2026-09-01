@@ -4,53 +4,72 @@
 
 @theme {
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+
+  /* Radios escalados por el selector global de radio (sm/md/lg).
+     `rounded-full` se mantiene como píldora y no se escala. */
+  --radius-sm: calc(0.25rem * var(--visora-radius-scale, 1));
+  --radius-md: calc(0.4rem * var(--visora-radius-scale, 1));
+  --radius-lg: calc(0.5rem * var(--visora-radius-scale, 1));
+  --radius-xl: calc(0.75rem * var(--visora-radius-scale, 1));
+  --radius-2xl: calc(1rem * var(--visora-radius-scale, 1));
+  --radius-3xl: calc(1.5rem * var(--visora-radius-scale, 1));
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+:root {
+  --visora-accent: #7c6cff;
+  --visora-bg-light-1: #f5f5f8;
+  --visora-bg-light-2: #fdecef;
+  --visora-bg-dark-1: #0b0a14;
+  --visora-bg-dark-2: #7c6cff;
+  --visora-radius-scale: 1;
+  --visora-btn-radius: 9999px;
+}
+
 @layer base {
   html {
-    font-family: var(--font-sans);
+    font-family: var(--visora-font, var(--font-sans));
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
   body {
     margin: 0;
-    background-color: #f7f7fa;
+    background-color: var(--visora-bg-light-1, #f5f5f8);
     background-image:
       radial-gradient(
-        60rem 40rem at 85% -10%,
-        rgba(124, 108, 255, 0.07),
-        transparent 60%
+        55rem 40rem at 88% -12%,
+        var(--visora-bg-light-2, #fdecef),
+        transparent 62%
       ),
       radial-gradient(
-        50rem 35rem at -10% 110%,
-        rgba(255, 150, 120, 0.05),
-        transparent 60%
+        45rem 34rem at -12% 112%,
+        color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 55%, var(--visora-bg-light-1, #f5f5f8)),
+        transparent 62%
       );
     background-attachment: fixed;
   }
 
   .dark body {
-    background-color: #0b0a14;
+    background-color: var(--visora-bg-dark-1, #0b0a14);
     background-image:
       radial-gradient(
-        60rem 40rem at 85% -10%,
-        rgba(124, 108, 255, 0.14),
-        transparent 60%
+        55rem 40rem at 88% -12%,
+        color-mix(in srgb, var(--visora-bg-dark-2, #7c6cff) 34%, transparent),
+        transparent 62%
       ),
       radial-gradient(
-        50rem 35rem at -10% 110%,
-        rgba(64, 60, 140, 0.2),
-        transparent 65%
+        45rem 34rem at -12% 112%,
+        color-mix(in srgb, var(--visora-bg-dark-2, #4a4468) 22%, transparent),
+        transparent 62%
       );
   }
 
   ::selection {
-    background-color: rgba(124, 108, 255, 0.25);
+    background-color: color-mix(in srgb, var(--visora-accent) 25%, transparent);
   }
 }
 
@@ -125,7 +144,7 @@ html {
 
 .rich-text-editor .ProseMirror blockquote {
   margin: 1rem 0;
-  border-left: 3px solid #7c6cff;
+  border-left: 3px solid var(--visora-accent);
   padding: 0.5rem 0 0.5rem 1rem;
   font-style: italic;
   color: #565662;
@@ -136,7 +155,7 @@ html {
 }
 
 .rich-text-editor .ProseMirror a {
-  color: #7c6cff;
+  color: var(--visora-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

@@ -13,7 +13,7 @@ interface HeroConfig {
 }
 
 function Hero() {
-  const { profile } = usePortfolio();
+  const { profile, settings } = usePortfolio();
   const heroConfig = loadJSON<HeroConfig>("visora-admin-hero", {
     showSecondary: true,
     heroImageFocusX: 50,
@@ -21,6 +21,9 @@ function Hero() {
     heroImageMobileFocusX: 50,
     heroImageMobileFocusY: 50,
   });
+
+  const brand = settings.general.brandName || profile.name;
+  const profession = settings.general.profession || profile.profession;
 
   const showSecondary = heroConfig.showSecondary ?? true;
   const mobileImage = heroConfig.heroImageMobile || profile.heroImage;
@@ -69,11 +72,11 @@ function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-7xl px-6 sm:px-10">
         <div className="max-w-xl">
           <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70">
-            {profile.profession}
+            {profession}
           </p>
 
           <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl">
-            {profile.name}
+            {brand}
           </h1>
 
           <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
@@ -83,7 +86,7 @@ function Hero() {
           <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
             <a
               href="#projects"
-              className="inline-flex min-w-44 items-center justify-center rounded-full bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
+              className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
             >
               {profile.heroPrimaryButton ?? "Ver portfolio"}
             </a>
@@ -91,7 +94,7 @@ function Hero() {
             {showSecondary && (
               <Link
                 to="/contacto"
-                className="inline-flex min-w-44 items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
+                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
               >
                 {profile.heroSecondaryButton ?? "Contacto"}
               </Link>

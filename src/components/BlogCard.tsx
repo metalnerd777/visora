@@ -42,7 +42,7 @@ function BlogCard({ post }: BlogCardProps) {
       </div>
 
       <div className="mt-6">
-        <h3 className="text-xl font-light tracking-tight text-neutral-900 transition-colors group-hover:text-[#7C6CFF] dark:text-[#F5F3FF] md:text-2xl">
+        <h3 className="text-xl font-light tracking-tight text-neutral-900 transition-colors group-hover:text-(--visora-accent) dark:text-[#F5F3FF] md:text-2xl">
           {post.title}
         </h3>
 

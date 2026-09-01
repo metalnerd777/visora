@@ -37,7 +37,7 @@ function SocialLinksEditor({
             onChange={(e) =>
               update(index, { platform: e.target.value as SocialPlatform })
             }
-            className="w-36 shrink-0 rounded-xl border border-neutral-200 bg-white/80 px-3 py-2.5 text-sm outline-none transition-colors focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 sm:w-44"
+            className="w-36 shrink-0 rounded-xl border border-neutral-200 bg-white/80 px-3 py-2.5 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 sm:w-44"
           >
             {PLATFORM_OPTIONS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -53,7 +53,7 @@ function SocialLinksEditor({
               update(index, { handle: e.target.value.replace(/\s+/g, "") })
             }
             placeholder="@usuario"
-            className="flex-1 rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            className="flex-1 rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />
 
           <button
@@ -74,7 +74,7 @@ function SocialLinksEditor({
         <button
           type="button"
           onClick={add}
-          className="inline-flex items-center gap-2 text-sm text-[#7C6CFF] transition-opacity hover:opacity-70"
+          className="inline-flex items-center gap-2 text-sm text-(--visora-accent) transition-opacity hover:opacity-70"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
             <line x1="12" y1="5" x2="12" y2="19" />

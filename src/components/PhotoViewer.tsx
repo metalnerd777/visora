@@ -1,4 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+import { usePortfolio } from "../lib/usePortfolio";
+import { applyWatermark, loadImageWithCors } from "../lib/watermark";
 
 interface PhotoViewerProps {
   imageUrl: string;
@@ -47,6 +50,45 @@ function PhotoViewer({
       document.body.style.overflow = "";
     };
   }, [onClose, onPrevious, onNext, hasPrevious, hasNext]);
+
+  const { settings } = usePortfolio();
+  const {
+    watermarkEnabled,
+    watermarkStyle,
+    watermarkOpacity,
+    watermarkText,
+  } = settings.privacy;
+  const watermark = watermarkEnabled
+    ? watermarkText.trim() || settings.general.brandName
+    : "";
+
+  const [markedUrl, setMarkedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!watermark) return;
+
+    loadImageWithCors(imageUrl)
+      .then((img) => {
+        if (!active) return;
+        setMarkedUrl(
+          applyWatermark(img, {
+            text: watermark,
+            style: watermarkStyle,
+            opacity: watermarkOpacity,
+          }),
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setMarkedUrl(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [imageUrl, watermark, watermarkStyle, watermarkOpacity]);
 
   return (
     <div
@@ -112,7 +154,11 @@ function PhotoViewer({
         onClick={(e) => e.stopPropagation()}
       >
         <img
-          src={`${imageUrl}?auto=format&w=2400&q=85`}
+          src={
+            watermark && markedUrl
+              ? markedUrl
+              : `${imageUrl}?auto=format&w=2400&q=85`
+          }
           alt={title || "Imagen"}
           className="max-h-[82vh] max-w-[90vw] rounded-xl object-contain"
         />

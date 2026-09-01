@@ -92,6 +92,7 @@ src/
 │   ├── DocumentHead.tsx       (título dinámico + favicon, consume usePortfolio)
 │   ├── EmbedBlock.tsx         (renderiza embeds de YouTube/Vimeo/redes)
 │   ├── Field.tsx              (input de texto reutilizable para admin)
+│   ├── FaviconPicker.tsx       (selector de favicon: 10 presets SVG + subida redimensionada a 64×64)
 │   ├── Footer.tsx             (sticky, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Hero.tsx               (imagen fondo dual desktop/móvil, object-position, consume usePortfolio)
@@ -105,6 +106,7 @@ src/
 │   ├── RichTextEditor.tsx     (TipTap con toolbar: H1-3, negrita, listas, cita, enlace, alineación, deshacer/rehacer)
 │   ├── RichTextView.tsx       (renderiza JSON TipTap → elementos estilizados)
 │   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
+│   ├── CookieBanner.tsx       (banner de aviso de cookies para visitantes, usa settings.privacy.cookieNotice)
 │   ├── blog/
 │   │   └── BlogBlockEditor.tsx (tarjeta bloque sortable: mango dnd + Subir/Bajar/Editar/Eliminar, formularios Texto/Imagen/Embed, preview, MiniButton)
 │   ├── SocialLinksEditor.tsx  (editor de redes sociales reutilizable)
@@ -115,11 +117,12 @@ src/
 │   ├── AdminLogin.tsx         (página /admin, UI login mock)
 │   ├── Blog.tsx               (listado /blog, [+ Nueva publicación] + editor inline cuando autenticado)
 │   ├── BlogPost.tsx           (artículo individual, edit/delete cuando autenticado)
-│   ├── Contact.tsx            (página /contacto, edit control cuando autenticado)
+│   ├── Contact.tsx            (página /contacto, 3 botones: Instagram/WhatsApp/Email, edit control cuando autenticado)
 │   ├── Home.tsx               (Hero + Featured + Projects con edit controls)
 │   ├── NotFound.tsx           (404 reutilizable con título configurable)
 │   ├── Project.tsx            (página /proyecto/:slug)
 │   └── admin/
+│       ├── Settings.tsx        (página /configuracion, categorías: General/SEO/Apariencia/Privacidad/Publicación, solo admin)
 │       └── edit/
 │           ├── EditableSection.tsx    (wrapper con botones [Editar] / [+ Agregar])
 │           ├── EditHeroModal.tsx      (imagen desktop + móvil + focal points + botones)
@@ -127,29 +130,33 @@ src/
 │           ├── EditAboutModal.tsx     (título, descripción, imagen)
 │           ├── EditFeaturedModal.tsx   (selección proyectos con DnD)
 │           ├── EditProjectsModal.tsx   (lista + form, DnD, imágenes)
-│           ├── EditContactModal.tsx    (contacto, WhatsApp, formulario)
+│           ├── EditContactModal.tsx    (contacto, WhatsApp, redes sociales)
 │           └── BlogPostEditor.tsx      (editor inline de publicaciones con bloques y TipTap)
 │
 ├── themes/
 │   └── minimal/
-│       └── MinimalTheme.tsx   (layout flex, dark mode persistente)
+│       └── MinimalTheme.tsx   (layout flex, dark mode, aplica apariencia + gate público mantenimiento/no publicado)
 │
 ├── data/
-│   └── portfolio.ts           (datos demo: profile, projects, blogPosts, siteTexts)
+│   ├── portfolio.ts           (datos demo: profile, projects, blogPosts, siteTexts)
+│   └── settings.ts            (defaultSettings: SiteSettings por defecto)
 │
 ├── lib/
 │   ├── auth.ts                (login, logout, isAuthenticated — mock localStorage)
 │   ├── blogAutosave.ts        (autoguardado temporal del editor: key, load/save/clear, AutosaveDraft)
 │   ├── blogBlocks.ts          (helpers bloques: buildId, toDraft, toBlock + re-export BlockDraft; compartidos editor + BlogBlockEditor)
 │   ├── embeds.ts              (detección de proveedor + URLs embed seguras)
+│   ├── favicons.ts            (10 presets SVG de favicon por profesión + svgToDataUrl, presetDataUrl, fileToFaviconDataUrl)
+│   ├── appearance.ts          (presets de apariencia: 6 acentos, colores de fondo, radio, botones, 6 fuentes + loadGoogleFont)
 │   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
 │   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
 │   ├── richtext.ts            (helpers JSON TipTap: doc vacío, texto plano, isRichTextEmpty)
 │   ├── slug.ts                (slugify + uniqueSlug para posts/proyectos)
 │   ├── usePortfolio.ts        (hook usePortfolio)
-│   ├── socials.ts             (socialUrl(), socialLabel() genéricos)
+│   ├── socials.ts             (socialUrl(), socialLabel(), nonEmptySocials() genéricos)
 │   ├── storage.ts             (loadJSON, saveJSON helpers)
-│   └── platforms.ts           (PLATFORM_OPTIONS compartido)
+│   ├── platforms.ts           (PLATFORM_OPTIONS compartido)
+│   └── watermark.ts           (marca de agua: loadImageWithCors + applyWatermark, quema el nombre en la imagen del visor)
 │
 ├── types/
 │   └── portfolio.ts           (PortfolioProfile, Photo, Project, SocialLink, etc.)
@@ -181,6 +188,7 @@ BrowserRouter
     │   ├── /blog/:slug      → BlogPostPage (con edit/delete si autenticado)
     │   ├── /contacto        → ContactPage (con edit control si autenticado)
     │   ├── /admin           → AdminLoginPage (standalone)
+    │   ├── /configuracion   → SettingsPage (solo admin; redirige a /admin si no hay sesión)
     │   └── *                → NotFound (404)
     └── Footer (fijo abajo, mt-auto, logout cuando autenticado)
 ```
@@ -286,17 +294,37 @@ Keys:
 - `visora-admin-about` — sobre mí (title, description, image?)
 - `visora-admin-contact` — contacto config:
   - title, description
-  - email, location
-  - socialLinks: SocialLink[]
-  - whatsappPhone: string (número con código de país)
-  - whatsappMessage: string (mensaje predefinido)
-  - formEnabled: boolean
-  - formEmail: string
+  - email, emailSubject (asunto del mailto)
+  - location
+  - whatsappPhone: string (formato `+569` + 8 números, prefijo `+56 9` fijo en el form)
+  - whatsappMessage: string (mensaje predefinido, máx 100 caracteres)
+  - Las redes sociales ya NO viven aquí; se editan vía `settings.socials` en el form "Editar contacto"
 - `visora-admin-projects` — array de proyectos con images[], alt text, etc.
   - Importante: usa campo `images` (no `photos`) con estructura { id, url, alt }
 - `visora-admin-featured` — array de slugs de proyectos destacados
 - `visora-admin-texts` — siteTexts configurables (pendiente de implementar admin)
 - `visora-admin-blog-posts` — array de publicaciones del blog (lectura/escritura vía PortfolioProvider + setBlogPosts)
+- `visora-admin-settings` — configuración global del sitio (SiteSettings): general, seo, appearance, socials, privacy, site
+  - lectura en PortfolioProvider (merge con defaultSettings), escritura vía `setSettings`
+  - `general`: brandName (nombre del profesional/marca), profession, language, favicon
+    - `siteName` fue ELIMINADO (era redundante con brandName)
+    - `language` = idioma del sitio: se aplica al atributo `lang` del `<html>` (accesibilidad/SEO), NO es charset
+    - `favicon` = data URL (icono de ejemplo SVG con acento, o PNG 64×64 subido y redimensionado); si está vacío se usa /favicon.svg (la "V" de Visora, color adaptativo claro/oscuro)
+    - `siteUrl` fue ELIMINADO: la URL se configura en Vercel; el canonical se deriva automáticamente de window.location (no se emite en localhost)
+  - Favicon (FaviconPicker): 10 presets SVG (inicial "V" como primera/por defecto, cámara, pincel, lápiz, objetivo, paleta, cámara de video, arquitectura, diseño web, moda) + subida de imagen redimensionada a 64×64 (src/lib/favicons.ts)
+  - `seo`: title, description, ogImage, noindex
+  - `appearance`: mode, primaryColor, background (color1/color2 → degradado del fondo), borderRadius, buttonStyle, fontFamily
+    - mode: system | light | dark — se aplica al instante (sin recargar); system sigue a prefers-color-scheme en tiempo real; el toggle del header cambia la config en modos explícitos o un override en system
+    - primaryColor: 6 presets (Violeta/Azul/Esmeralda/Ámbar/Rosa/Grafito) en lugar de color picker libre; se propaga a TODO el sitio vía `--visora-accent` (accent presets en src/lib/appearance.ts)
+    - background: color base (clara u oscura) + acento del fondo → degradado del body; presets pre-hechos en `src/lib/appearance.ts` (Medianoche·violeta, Negro·azul, Grafito·verde azulado, etc.); elegir un preset oscuro activa el modo oscuro automáticamente para que el texto sea legible; en dark mode el degradado se atenúa con color-mix
+    - borderRadius (sm/md/lg) → escala `--visora-radius-scale` que multiplica TODOS los `rounded-sm..3xl` del sitio (Tailwind v4 `@theme`); `rounded-full` (píldoras) no se escala
+    - buttonStyle (pill/rounded/square) → `--visora-btn-radius` (pill 9999px, rounded 0.75rem, square 0px) aplicado a los CTAs principales
+    - fontFamily: dropdown con 6 Google Fonts (Montserrat, Inter, Poppins, Space Grotesk, Playfair Display, Lora); se carga dinámicamente y aplica `--visora-font` (src/lib/appearance.ts)
+  - `socials`: SocialLink[] (fuente única de redes, editada en el form "Editar contacto")
+  - `privacy`: showEmail, showLocation, protectImages, notice, cookieNotice, watermarkEnabled, watermarkStyle ("tiling" | "corner"), watermarkOpacity (0.05–0.35), watermarkText
+    - Marca de agua (`watermark*`): cuando `watermarkEnabled`, el PhotoViewer quema la imagen ampliada con el texto de `watermarkText` vía canvas (src/lib/watermark.ts); si `watermarkText` está vacío usa el nombre del profesional (brandName). Estilo `tiling` = texto repetido en diagonal, `corner` = texto discreto en la esquina inferior derecha. Opacidad configurable. La imagen mostrada en el visor ES la versión marcada, así que cualquier captura/descarga desde ahí lleva la marca. Requiere CORS del proveedor de imágenes; en Supabase Storage hay que habilitar CORS en el bucket.
+  - `site`: published (si false, solo el admin ve el sitio; los visitantes ven "Sitio en construcción")
+- `visora-cookies-accepted` — aceptación del aviso de cookies ("accepted"/"rejected", evita el banner)
 - `visora-blog-draft` — autoguardado temporal del editor (solo en publicaciones nuevas, key separada de la lista definitiva; se borra al Guardar/Publicar/Cancelar)
 
 Credenciales mock: `admin@visora.com` / `admin123`
@@ -346,7 +374,7 @@ El sitio público ES el admin cuando hay sesión activa. No hay barra extra ni t
 - EditAboutModal — título, descripción, imagen
 - EditFeaturedModal — selección de proyectos con DnD
 - EditProjectsModal — lista + formulario, DnD, imágenes
-- EditContactModal — título, descripción, email, ubicación, redes, WhatsApp, formulario
+- EditContactModal — título, descripción, email + asunto, WhatsApp (prefijo `+56 9` + 8 números, mensaje ≤100) y redes sociales (settings.socials)
 
 ---
 
@@ -377,6 +405,7 @@ El Hero soporta dos imágenes: una para desktop y una para móvil (opcional).
 - Botón "Centrar" (resetea a 50% 50%)
 - Botón "Aplicar" (guarda coordenadas como porcentajes)
 - Aspect ratio configurable (16/9 desktop, 9/16 mobile)
+- Modo export opcional: si se pasan `exportSize` + `onExport`, al aplicar genera la imagen recortada redimensionada a ese tamaño como data URL JPEG (via canvas) en lugar de solo el focal point — usado por la ogImage del SEO (1200×630). `onSave` es opcional.
 
 ---
 
@@ -428,7 +457,7 @@ Logout: pills rojos discretos en desktop y menú móvil cuando autenticado.
 # 13. Componentes públicos reutilizables
 
 - **About** (componente + página): label, aboutTitle, aboutDescription, ubicación, socialLinks
-- **PhotoViewer**: visor fullscreen, teclado, click fuera, aria-labels genéricos
+- **PhotoViewer**: visor fullscreen, teclado, click fuera, aria-labels genéricos; si está activa la marca de agua (settings.privacy.watermarkEnabled) muestra la imagen con la marca quemada vía canvas (src/lib/watermark.ts)
 - **ProjectCard**: tarjeta clickeable, navega por slug, sombras, gradiente
 - **BlogCard**: tarjeta con portada rounded-3xl, fecha pill glass
 - **EmbedBlock**: iframe YouTube/Vimeo, tarjeta-enlace para otras redes
@@ -592,7 +621,6 @@ profile
 - contactTitle, contactDescription
 - email, location
 - whatsappPhone, whatsappMessage
-- formEnabled, formEmail
 
 social_links
 - id, profile_id (FK), platform, handle
@@ -628,12 +656,18 @@ Storage:
 
 Estructura pública:
 - Sección favoritas en Home (datos existen, no se renderizan)
-- Vercel.json: rewrite para SPA routing — necesario antes de deploy
-- SEO: metadata por página (title, description, Open Graph)
+- Vercel.json: rewrite para SPA routing + header X-Robots-Tag (`index, follow`) — IMPLEMENTADO (vercel.json)
+- SEO: metadata por página (title, description, Open Graph) — DocumentHead aplica el SEO base global desde Configuración; falta metadata por página (sobre-mi, blog, etc.)
 - index.html: título estático "visora" — DocumentHead lo sobreescribe
 
 Administrador:
-- Apariencia: sin implementar (selección de tema, colores)
+- Configuración global (/configuracion) — IMPLEMENTADO: categorías General/SEO/Apariencia/Privacidad/Publicación (la categoría "Redes" fue ELIMINADA: las redes se editan solo en el form "Editar contacto" de /contacto via `settings.socials`; las categorías "Sitio/Mantenimiento" y "Dominio" fueron ELIMINADAS: se configuran en Vercel, no en la app)
+  - General: brandName, profession, language, favicon (brand/profession como fuente única); favicon con 10 presets SVG (inicial "V" por defecto, cámara, pincel, lápiz, objetivo, paleta, cámara de video, arquitectura, diseño web, moda) o subida (redimensionada a 64×64)
+  - Contacto: botones con iconos — "Envíame un mensaje" (Instagram, principal, abre el perfil), "Escríbeme por WhatsApp" (wa.me con mensaje) y "Escríbeme un correo" (mailto con asunto predefinido)
+  - Apariencia: aplica modo de tema + 6 colores de acento + degradado de fondo (2 colores) + tipografía/radio/botones. Se propaga a TODO el sitio en real (sin recargar) vía CSS vars: `--visora-accent`, `--visora-bg-1/2`, `--visora-font`, `--visora-radius-scale`, `--visora-btn-radius`. El color de acento reemplaza los `#7C6CFF` hardcodeados de todos los componentes. Vista previa en la propia página (botones + tipografía + fondo). Presets en `src/lib/appearance.ts`. El dark/flash es instantáneo y "seguir al sistema" responde en tiempo real (`MinimalTheme`).
+  - SEO: title + meta description + ogImage (recortada a 1200×630 vía `ImageCropModal` con modo export, guardada como data URL JPEG) + toggle noindex. `DocumentHead` emite `canonical` (derivado de la URL real, omitido en localhost) y `meta robots`: `index, follow` por defecto, o `noindex, nofollow` si noindex está activo. El `X-Robots-Tag` (header HTTP) se configura en `vercel.json`. `meta keywords` y `rel=precursor`/`publisher` no se implementan (obsoletos).
+  - Privacidad: showEmail/showLocation/protectImages + notice + cookieNotice (banner de cookies `CookieBanner` para visitantes) + marca de agua en el visor (watermarkEnabled/style/opacity, ver sección 8)
+  - Publicación: published (si false, solo el admin ve el sitio; los visitantes ven "Sitio en construcción")
 - Conectar admin → Supabase (actualmente todo en localStorage)
 
 Técnicos:
@@ -680,6 +714,6 @@ Después:
 2. Storage (subida de imágenes)
 3. Autenticación real (reemplazar mock)
 4. Editor de blog — IMPLEMENTADO (pendiente persistencia Supabase)
-5. Selección de tema / Apariencia
+5. Selección de tema / Apariencia — Configuración de Apariencia IMPLEMENTADA (modo de tema instantáneo, 6 acentos, degradado de fondo, radio, botones, 6 fuentes Google); falta el despliegue de Temas alternativos (Editorial/Cinematic)
 6. Deployment en Vercel
 7. Dominios personalizados

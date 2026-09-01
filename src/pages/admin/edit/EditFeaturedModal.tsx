@@ -66,7 +66,7 @@ function SortableSelected({
       style={style}
       className={`flex items-center gap-3 rounded-xl border bg-white/60 p-3 backdrop-blur-sm transition-all dark:bg-[#161327]/60 ${
         isDragging
-          ? "border-[#7C6CFF]/40 shadow-lg shadow-[#7C6CFF]/10"
+          ? "border-(--visora-accent)/40 shadow-lg shadow-(--visora-accent)/10"
           : "border-neutral-200/70 dark:border-[#27243A]/70"
       }`}
     >
@@ -218,14 +218,14 @@ function EditFeaturedModal({
                   onClick={() => toggle(project.slug)}
                   className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
                     isSelected
-                      ? "border-[#7C6CFF]/30 bg-[#7C6CFF]/5 dark:border-[#7C6CFF]/30 dark:bg-[#7C6CFF]/10"
+                      ? "border-(--visora-accent)/30 bg-(--visora-accent)/5 dark:border-(--visora-accent)/30 dark:bg-(--visora-accent)/10"
                       : "border-neutral-200/70 bg-white/60 hover:border-neutral-300 dark:border-[#27243A]/70 dark:bg-[#161327]/60 dark:hover:border-[#4A4468]"
                   }`}
                 >
                   <div
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                       isSelected
-                        ? "border-[#7C6CFF] bg-[#7C6CFF]"
+                        ? "border-(--visora-accent) bg-(--visora-accent)"
                         : "border-neutral-300 dark:border-[#4A4468]"
                     }`}
                   >
@@ -259,7 +259,7 @@ function EditFeaturedModal({
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Guardar
           </button>

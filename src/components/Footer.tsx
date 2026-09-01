@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
-import { socialUrl, socialLabel } from "../lib/socials";
+import { socialUrl, socialLabel, nonEmptySocials } from "../lib/socials";
 import { isAuthenticated, logout } from "../lib/auth";
 
 const exploreLinks = [
@@ -14,9 +14,15 @@ const exploreLinks = [
 ];
 
 function Footer() {
-  const { profile } = usePortfolio();
+  const { profile, settings } = usePortfolio();
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(isAuthenticated());
+
+  const brand = settings.general.brandName || profile.name;
+  const profession = settings.general.profession || profile.profession;
+  const rawSocials =
+    settings.socials.length > 0 ? settings.socials : profile.socialLinks;
+  const socials = nonEmptySocials(rawSocials);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -42,16 +48,16 @@ function Footer() {
               to="/"
               className="text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-60 dark:text-[#F5F3FF]"
             >
-              {profile.name}
+              {brand}
             </Link>
 
             <p className="mt-2 text-sm text-neutral-500 dark:text-[#A8A3B8]">
-              {profile.profession}
+              {profession}
             </p>
 
             {/* Redes */}
             <div className="mt-6 flex flex-wrap gap-2">
-              {profile.socialLinks.map((link) => (
+              {socials.map((link) => (
                 <a
                   key={link.platform}
                   href={socialUrl(link.platform, link.handle)}
@@ -134,8 +140,12 @@ function Footer() {
         {/* Barra inferior */}
         <div className="mt-14 flex flex-col gap-2 border-t border-neutral-200/60 pt-6 text-xs text-neutral-400 transition-colors dark:border-[#27243A]/60 dark:text-[#6F6A80] md:flex-row md:justify-between">
           <span>
-            © {new Date().getFullYear()} {profile.name}
+            © {new Date().getFullYear()} {brand}
           </span>
+
+          {settings.privacy.notice && (
+            <span className="max-w-md text-right">{settings.privacy.notice}</span>
+          )}
 
           <span>Impulsado por Visora</span>
         </div>

@@ -179,7 +179,7 @@ function BlogPage() {
         {toast && (
           <div
             role="status"
-            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-neutral-900/90 px-5 py-3 text-sm text-white shadow-2xl backdrop-blur-md dark:bg-[#F5F3FF]/90 dark:text-black"
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-[var(--visora-btn-radius)] bg-neutral-900/90 px-5 py-3 text-sm text-white shadow-2xl backdrop-blur-md dark:bg-[#F5F3FF]/90 dark:text-black"
           >
             {toast}
           </div>
@@ -211,7 +211,7 @@ function BlogPage() {
                       type="button"
                       onClick={() => openEdit(post)}
                       aria-label={`Editar ${post.title}`}
-                      className="absolute -top-2 right-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#7C6CFF]/30 bg-white/80 text-[#7C6CFF] shadow-lg backdrop-blur-md transition-colors hover:border-[#7C6CFF] hover:bg-[#7C6CFF]/10 dark:bg-[#161327]/80"
+                      className="absolute -top-2 right-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-(--visora-accent)/30 bg-white/80 text-(--visora-accent) shadow-lg backdrop-blur-md transition-colors hover:border-(--visora-accent) hover:bg-(--visora-accent)/10 dark:bg-[#161327]/80"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />

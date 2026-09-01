@@ -40,7 +40,7 @@ function ProjectPage({ project, onBack }: ProjectPageProps) {
         <button
           type="button"
           onClick={onBack}
-          className="mb-10 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-[#7C6CFF]"
+          className="mb-10 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-(--visora-accent)"
         >
           ← Volver al portfolio
         </button>

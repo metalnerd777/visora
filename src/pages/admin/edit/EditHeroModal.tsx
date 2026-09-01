@@ -148,7 +148,7 @@ function EditHeroModal({
             <button
               type="button"
               onClick={() => openCrop("desktop")}
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-[#7C6CFF] hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8]"
+              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8]"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                 <path d="M15 3h6v6" />
@@ -182,7 +182,7 @@ function EditHeroModal({
             <button
               type="button"
               onClick={() => openCrop("mobile")}
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-[#7C6CFF] hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8]"
+              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8]"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                 <path d="M15 3h6v6" />
@@ -223,7 +223,7 @@ function EditHeroModal({
             onChange={(e) => update({ description: e.target.value })}
             placeholder="Una breve descripción..."
             rows={3}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />
         </div>
 
@@ -281,7 +281,7 @@ function EditHeroModal({
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Guardar
           </button>

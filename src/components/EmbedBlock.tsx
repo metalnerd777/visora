@@ -55,7 +55,7 @@ function EmbedBlock({ block }: { block: BlogBlock }) {
           {label}
         </span>
 
-        <span className="text-sm text-neutral-900 transition-colors hover:text-[#7C6CFF] dark:text-[#F5F3FF]">
+        <span className="text-sm text-neutral-900 transition-colors hover:text-(--visora-accent) dark:text-[#F5F3FF]">
           Ver publicación →
         </span>
       </a>

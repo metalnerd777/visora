@@ -33,7 +33,7 @@ function EditableSection({
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#7C6CFF]/30 bg-white/80 px-3 py-1.5 text-xs font-medium text-[#7C6CFF] shadow-lg backdrop-blur-md transition-colors hover:border-[#7C6CFF] hover:bg-[#7C6CFF]/10 dark:bg-[#161327]/80"
+          className="inline-flex items-center gap-1.5 rounded-full border border-(--visora-accent)/30 bg-white/80 px-3 py-1.5 text-xs font-medium text-(--visora-accent) shadow-lg backdrop-blur-md transition-colors hover:border-(--visora-accent) hover:bg-(--visora-accent)/10 dark:bg-[#161327]/80"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />

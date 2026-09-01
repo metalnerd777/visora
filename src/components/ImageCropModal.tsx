@@ -5,24 +5,68 @@ import Modal from "./Modal";
 
 type CroppedArea = { x: number; y: number; width: number; height: number };
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: CroppedArea,
+  outputSize: { width: number; height: number },
+): Promise<string> {
+  const image = await loadImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  canvas.width = outputSize.width;
+  canvas.height = outputSize.height;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) throw new Error("Canvas no disponible");
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    outputSize.width,
+    outputSize.height,
+  );
+
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
+
 function ImageCropModal({
   open,
   onClose,
   image,
   aspect,
   onSave,
+  exportSize,
+  onExport,
 }: {
   open: boolean;
   onClose: () => void;
   image: string;
   aspect: number;
-  onSave: (x: number, y: number) => void;
+  onSave?: (x: number, y: number) => void;
+  exportSize?: { width: number; height: number };
+  onExport?: (dataUrl: string) => void;
 }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [croppedPixels, setCroppedPixels] = useState<CroppedArea | null>(null);
 
   const handleCropComplete = useCallback(
     (_croppedArea: CroppedArea, croppedAreaPixels: CroppedArea) => {
+      setCroppedPixels(croppedAreaPixels);
+
       const centerX = croppedAreaPixels.x + croppedAreaPixels.width / 2;
       const centerY = croppedAreaPixels.y + croppedAreaPixels.height / 2;
 
@@ -31,7 +75,7 @@ function ImageCropModal({
       img.src = image;
 
       img.onload = () => {
-        onSave(
+        onSave?.(
           Math.round((centerX / img.naturalWidth) * 1000) / 10,
           Math.round((centerY / img.naturalHeight) * 1000) / 10,
         );
@@ -41,6 +85,13 @@ function ImageCropModal({
   );
 
   const handleSave = () => {
+    if (exportSize && onExport && croppedPixels) {
+      getCroppedImg(image, croppedPixels, exportSize)
+        .then(onExport)
+        .finally(() => onClose());
+      return;
+    }
+
     const img = new Image();
 
     img.src = image;
@@ -68,7 +119,7 @@ function ImageCropModal({
       const imgX = (offsetX / renderedW) * img.naturalWidth;
       const imgY = (offsetY / renderedH) * img.naturalHeight;
 
-      onSave(
+      onSave?.(
         Math.round((imgX / img.naturalWidth) * 1000) / 10,
         Math.round((imgY / img.naturalHeight) * 1000) / 10,
       );
@@ -78,7 +129,7 @@ function ImageCropModal({
   };
 
   const handleReset = () => {
-    onSave(50, 50);
+    onSave?.(50, 50);
     onClose();
   };
 
@@ -127,7 +178,7 @@ function ImageCropModal({
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Aplicar
           </button>

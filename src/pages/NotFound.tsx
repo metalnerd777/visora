@@ -21,7 +21,7 @@ function NotFound({ title = "Página no encontrada" }: NotFoundProps) {
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="mt-8 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-[#7C6CFF]"
+          className="mt-8 text-xs uppercase tracking-[0.2em] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-[#A8A3B8] dark:hover:text-(--visora-accent)"
         >
           ← Volver al portfolio
         </button>

@@ -109,7 +109,7 @@ function EditAboutModal({
             placeholder="Cuéntanos sobre ti y tu trabajo..."
             rows={5}
             aria-invalid={errors.description ? true : undefined}
-            className={`rounded-xl border bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
+            className={`rounded-xl border bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
               errors.description
                 ? "border-red-400 dark:border-red-500"
                 : "border-neutral-200 dark:border-[#27243A]"
@@ -127,7 +127,7 @@ function EditAboutModal({
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Guardar
           </button>

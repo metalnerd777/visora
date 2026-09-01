@@ -12,7 +12,7 @@ function Toggle({
       <div
         className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
           checked
-            ? "bg-[#7C6CFF]"
+            ? "bg-(--visora-accent)"
             : "bg-neutral-300 dark:bg-[#4A4468]"
         }`}
       >

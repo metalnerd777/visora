@@ -1,4 +1,4 @@
-import type { SocialPlatform } from "../types/portfolio";
+import type { SocialLink, SocialPlatform } from "../types/portfolio";
 
 const platformUrls: Partial<Record<string, (handle: string) => string>> = {
   instagram: (h) => `https://instagram.com/${h.replace(/^@/, "")}`,
@@ -26,5 +26,14 @@ export function socialLabel(platform: SocialPlatform): string {
 
   return (
     platform.charAt(0).toUpperCase() + platform.slice(1)
+  );
+}
+
+export function nonEmptySocials(socials: SocialLink[]): SocialLink[] {
+  return socials.filter(
+    (s) =>
+      typeof s.handle === "string" &&
+      s.handle.trim().length > 0 &&
+      socialUrl(s.platform, s.handle).startsWith("https://"),
   );
 }

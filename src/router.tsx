@@ -8,6 +8,7 @@ import BlogPostPage from "./pages/BlogPost";
 import ContactPage from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import AdminLoginPage from "./pages/AdminLogin";
+import SettingsPage from "./pages/admin/Settings";
 
 import { usePortfolio } from "./lib/usePortfolio";
 import { clearAutosave } from "./lib/blogAutosave";
@@ -77,6 +78,8 @@ function AppRouter() {
       <Route path="/contacto" element={<ContactPage />} />
 
       <Route path="/admin" element={<AdminLoginPage />} />
+
+      <Route path="/configuracion" element={<SettingsPage />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

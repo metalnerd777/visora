@@ -28,7 +28,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
-        className={`rounded-xl border bg-white/80 px-4 py-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
+        className={`rounded-xl border bg-white/80 px-4 py-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
           error
             ? "border-red-400 dark:border-red-500"
             : "border-neutral-200 dark:border-[#27243A]"

@@ -69,6 +69,8 @@ export interface SiteTexts {
   projectsDescription: string;
 }
 
+export type WatermarkStyle = "tiling" | "corner";
+
 export type EmbedProvider =
   | "youtube"
   | "vimeo"
@@ -86,6 +88,46 @@ export interface BlogBlock {
   alt?: string;
   caption?: string;
   provider?: EmbedProvider;
+}
+
+export type ThemeMode = "system" | "light" | "dark";
+
+export interface SiteSettings {
+  general: {
+    brandName: string;
+    profession: string;
+    language: string;
+    favicon: string;
+  };
+  seo: {
+    title: string;
+    description: string;
+    ogImage: string;
+    noindex: boolean;
+  };
+  appearance: {
+    mode: ThemeMode;
+    primaryColor: string;
+    background: { color1: string; color2: string };
+    fontFamily: string;
+    borderRadius: "sm" | "md" | "lg";
+    buttonStyle: "pill" | "rounded" | "square";
+  };
+  socials: SocialLink[];
+  privacy: {
+    showEmail: boolean;
+    showLocation: boolean;
+    notice: string;
+    protectImages: boolean;
+    cookieNotice: string;
+    watermarkEnabled: boolean;
+    watermarkStyle: WatermarkStyle;
+    watermarkOpacity: number;
+    watermarkText: string;
+  };
+  site: {
+    published: boolean;
+  };
 }
 
 export type BlogPostStatus = "draft" | "published";

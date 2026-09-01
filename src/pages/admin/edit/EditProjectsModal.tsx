@@ -126,7 +126,7 @@ function SortableRow({
       style={style}
       className={`flex items-center gap-3 rounded-xl border bg-white/60 p-3 backdrop-blur-sm transition-all dark:bg-[#161327]/60 ${
         isDragging
-          ? "border-[#7C6CFF]/40 shadow-lg"
+          ? "border-(--visora-accent)/40 shadow-lg"
           : "border-neutral-200/70 dark:border-[#27243A]/70"
       }`}
     >
@@ -221,7 +221,7 @@ function SortableImage({
       ref={setNodeRef}
       style={style}
       className={`group relative overflow-hidden rounded-xl bg-neutral-100 dark:bg-white/5 ${
-        isDragging ? "ring-2 ring-[#7C6CFF]/40 shadow-lg" : ""
+        isDragging ? "ring-2 ring-(--visora-accent)/40 shadow-lg" : ""
       }`}
     >
       <div className="aspect-square">
@@ -247,7 +247,7 @@ function SortableImage({
           </button>
 
           {isCover && (
-            <span className="rounded-md bg-[#7C6CFF] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
+            <span className="rounded-md bg-(--visora-accent) px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
               Portada
             </span>
           )}
@@ -470,7 +470,7 @@ function EditProjectsModal({
             <button
               type="button"
               onClick={openNew}
-              className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-5 py-2.5 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -538,7 +538,7 @@ function EditProjectsModal({
                   onChange={(e) => setFormDesc(e.target.value)}
                   placeholder="Describe el proyecto..."
                   rows={3}
-                  className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+                  className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
                 />
               </div>
 
@@ -581,7 +581,7 @@ function EditProjectsModal({
                     </div>
                   </div>
                 ) : (
-                  <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-[#7C6CFF]/30 dark:border-[#27243A]">
+                  <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-(--visora-accent)/30 dark:border-[#27243A]">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-neutral-300 dark:text-[#4A4468]">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                       <circle cx="8.5" cy="8.5" r="1.5" />
@@ -614,7 +614,7 @@ function EditProjectsModal({
                   Imágenes ({formImages.length})
                 </label>
 
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
@@ -655,7 +655,7 @@ function EditProjectsModal({
                   </SortableContext>
                 </DndContext>
               ) : (
-                <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-[#7C6CFF]/30 dark:border-[#27243A]">
+                <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-(--visora-accent)/30 dark:border-[#27243A]">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-neutral-300 dark:text-[#4A4468]">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
@@ -691,7 +691,7 @@ function EditProjectsModal({
               type="button"
               onClick={saveForm}
               disabled={!formTitle.trim()}
-              className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
             >
               Guardar proyecto
             </button>

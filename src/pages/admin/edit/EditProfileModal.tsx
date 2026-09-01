@@ -2,25 +2,18 @@ import { useState } from "react";
 
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
-import SocialLinksEditor from "../../../components/SocialLinksEditor";
 
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
-import { isEmail, isNonEmpty, sanitizeText } from "../../../lib/validation";
+import { isEmail, sanitizeText } from "../../../lib/validation";
 
-import type { PortfolioProfile, SocialLink } from "../../../types/portfolio";
+import type { PortfolioProfile } from "../../../types/portfolio";
 
 function loadProfileData(): PortfolioProfile {
   return loadJSON<PortfolioProfile>("visora-admin-profile", defaultProfile);
-}
-
-interface FormErrors {
-  name?: string;
-  profession?: string;
-  email?: string;
 }
 
 function EditProfileModal({
@@ -32,37 +25,23 @@ function EditProfileModal({
 }) {
   const { refresh } = usePortfolio();
   const [data, setData] = useState<PortfolioProfile>(loadProfileData);
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(
-    data.socialLinks,
-  );
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [emailError, setEmailError] = useState<string | undefined>();
 
   const update = (patch: Partial<PortfolioProfile>) => {
     setData((prev) => ({ ...prev, ...patch }));
   };
 
   const handleSave = () => {
-    const nextErrors: FormErrors = {};
-
-    if (!isNonEmpty(data.name)) nextErrors.name = "El nombre es obligatorio.";
-    if (!isNonEmpty(data.profession))
-      nextErrors.profession = "La profesión es obligatoria.";
-    if (!isEmail(data.email))
-      nextErrors.email = "Ingresa un correo válido.";
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
+    if (!isEmail(data.email)) {
+      setEmailError("Ingresa un correo válido.");
       return;
     }
 
     saveJSON("visora-admin-profile", {
       ...data,
-      name: sanitizeText(data.name).trim(),
-      profession: sanitizeText(data.profession).trim(),
       location: sanitizeText(data.location).trim(),
       description: sanitizeText(data.description).trim(),
       email: data.email.trim(),
-      socialLinks: socialLinks.filter((l) => l.handle.trim().length > 0),
     });
     refresh();
     onClose();
@@ -72,30 +51,6 @@ function EditProfileModal({
     <Modal open={open} onClose={onClose} title="Editar Perfil">
       <div className="flex flex-col gap-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Nombre"
-            value={data.name}
-            onChange={(v) => {
-              update({ name: v });
-              setErrors((e) => ({ ...e, name: undefined }));
-            }}
-            placeholder="Tu nombre"
-            required
-            error={errors.name}
-          />
-
-          <Field
-            label="Profesión"
-            value={data.profession}
-            onChange={(v) => {
-              update({ profession: v });
-              setErrors((e) => ({ ...e, profession: undefined }));
-            }}
-            placeholder="Fotógrafo, Diseñador..."
-            required
-            error={errors.profession}
-          />
-
           <Field
             label="Ubicación"
             value={data.location}
@@ -109,11 +64,11 @@ function EditProfileModal({
             value={data.email}
             onChange={(v) => {
               update({ email: v });
-              setErrors((e) => ({ ...e, email: undefined }));
+              setEmailError(undefined);
             }}
             placeholder="tu@email.com"
             required
-            error={errors.email}
+            error={emailError}
           />
         </div>
 
@@ -127,7 +82,7 @@ function EditProfileModal({
             onChange={(e) => update({ description: e.target.value })}
             placeholder="Una breve descripción de tu trabajo"
             rows={2}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />
         </div>
 
@@ -145,7 +100,7 @@ function EditProfileModal({
               />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-xl font-light text-neutral-400 dark:bg-white/5 dark:text-[#6F6A80]">
-                {data.name.charAt(0).toUpperCase()}
+                {(data.name || defaultProfile.name).charAt(0).toUpperCase()}
               </div>
             )}
 
@@ -177,19 +132,16 @@ function EditProfileModal({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-            Redes sociales
-          </label>
-
-          <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
-        </div>
+        <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+          El nombre, la profesión y las redes sociales se gestionan desde{" "}
+          <strong>Configuración</strong>.
+        </p>
 
         <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Guardar
           </button>

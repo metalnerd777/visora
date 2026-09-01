@@ -40,11 +40,13 @@ function HeaderLink({
 }
 
 function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
-  const { profile } = usePortfolio();
+  const { profile, settings } = usePortfolio();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [admin, setAdmin] = useState(isAuthenticated);
+
+  const brand = settings.general.brandName || profile.name;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,7 +96,7 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
             to="/"
             className="text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-60 dark:text-[#F5F3FF]"
           >
-            {profile.name}
+            {brand}
           </Link>
 
           {/* Desktop */}
@@ -104,13 +106,22 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
             ))}
 
             {admin && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="ml-2 rounded-full border border-red-300/40 bg-red-50/80 px-3 py-1.5 text-xs text-red-500 backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
-              >
-                Cerrar sesión
-              </button>
+              <>
+                <Link
+                  to="/configuracion"
+                  className="ml-2 rounded-full px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/5 dark:hover:text-[#F5F3FF]"
+                >
+                  ⚙ Configuración
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="ml-2 rounded-full border border-red-300/40 bg-red-50/80 px-3 py-1.5 text-xs text-red-500 backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+                >
+                  Cerrar sesión
+                </button>
+              </>
             )}
 
             {/* Theme switch */}
@@ -181,7 +192,7 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
           <aside className="ml-auto flex h-full w-72 flex-col rounded-l-[2rem] bg-white/85 p-8 shadow-2xl backdrop-blur-2xl transition-colors dark:bg-[#111020]/85">
             <div className="mb-10 flex items-center justify-between">
               <h2 className="text-lg font-medium text-neutral-900 dark:text-[#F5F3FF]">
-                {profile.name}
+                {brand}
               </h2>
 
               <button
@@ -205,16 +216,26 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
             </nav>
 
             {admin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  handleLogout();
-                }}
-                className="mt-2 rounded-xl border border-red-300/40 bg-red-50/80 px-3 py-3 text-left text-sm text-red-500 transition-colors hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
-              >
-                Cerrar sesión
-              </button>
+              <>
+                <Link
+                  to="/configuracion"
+                  onClick={() => setOpen(false)}
+                  className="mt-2 rounded-xl px-3 py-3 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 dark:text-[#A8A3B8] dark:hover:bg-white/5"
+                >
+                  ⚙ Configuración
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    handleLogout();
+                  }}
+                  className="mt-2 rounded-xl border border-red-300/40 bg-red-50/80 px-3 py-3 text-left text-sm text-red-500 transition-colors hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                >
+                  Cerrar sesión
+                </button>
+              </>
             )}
 
             <button

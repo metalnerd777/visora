@@ -251,7 +251,7 @@ export function BlogBlockEditor({
       style={style}
       className={`overflow-hidden rounded-2xl border bg-white/60 transition-all dark:bg-[#0B0A14]/40 ${
         isDragging
-          ? "border-[#7C6CFF]/40 shadow-xl shadow-[#7C6CFF]/10"
+          ? "border-(--visora-accent)/40 shadow-xl shadow-(--visora-accent)/10"
           : "border-neutral-200 dark:border-[#27243A]"
       }`}
     >

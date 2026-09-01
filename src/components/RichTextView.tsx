@@ -48,7 +48,7 @@ function NodeRenderer({ node }: { node: JSONContent }) {
 
     case "blockquote":
       return (
-        <blockquote className="my-8 border-l-[3px] border-solid border-[#7C6CFF] pl-5 text-lg italic leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+        <blockquote className="my-8 border-l-[3px] border-solid border-(--visora-accent) pl-5 text-lg italic leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
           {renderNodes(node.content)}
         </blockquote>
       );
@@ -86,7 +86,7 @@ function NodeRenderer({ node }: { node: JSONContent }) {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#7C6CFF] underline underline-offset-2"
+                  className="text-(--visora-accent) underline underline-offset-2"
                 >
                   {inner}
                 </a>

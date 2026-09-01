@@ -324,7 +324,7 @@ export function BlogPostEditor({
   return (
     <section
       aria-label="Editor de publicación"
-      className="mb-16 rounded-3xl border border-[#7C6CFF]/20 bg-white/70 p-5 shadow-xl backdrop-blur-xl dark:bg-[#161327]/70 md:p-8"
+      className="mb-16 rounded-3xl border border-(--visora-accent)/20 bg-white/70 p-5 shadow-xl backdrop-blur-xl dark:bg-[#161327]/70 md:p-8"
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF]">
@@ -340,7 +340,7 @@ export function BlogPostEditor({
             >
               {dirty ? (
                 <>
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7C6CFF]" />
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-(--visora-accent)" />
                   Guardando...
                 </>
               ) : savedAt ? (
@@ -396,7 +396,7 @@ export function BlogPostEditor({
             onChange={(e) => setExcerpt(e.target.value)}
             placeholder="Resumen para el listado del blog..."
             rows={3}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
           />
         </div>
 
@@ -413,7 +413,7 @@ export function BlogPostEditor({
             <button
               type="button"
               onClick={() => setCropOpen(true)}
-              className="self-start rounded-full border border-neutral-200 px-4 py-2 text-xs text-neutral-600 transition-colors hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]"
+              className="self-start rounded-full border border-neutral-200 px-4 py-2 text-xs text-neutral-600 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)"
             >
               Ajustar posición de la portada
             </button>
@@ -430,7 +430,7 @@ export function BlogPostEditor({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-[#7C6CFF] dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:[color-scheme:dark]"
+              className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:[color-scheme:dark]"
             />
           </div>
 
@@ -447,7 +447,7 @@ export function BlogPostEditor({
                   onClick={() => setStatus(option.value)}
                   className={`flex-1 rounded-xl border px-4 py-3 text-sm transition-colors ${
                     status === option.value
-                      ? "border-[#7C6CFF] bg-[#7C6CFF]/10 text-[#7C6CFF] dark:text-[#B9B1FF]"
+                      ? "border-(--visora-accent) bg-(--visora-accent)/10 text-(--visora-accent) dark:text-[#B9B1FF]"
                       : "border-neutral-200 text-neutral-500 hover:border-neutral-400 dark:border-[#27243A] dark:text-[#A8A3B8]"
                   }`}
                 >
@@ -469,7 +469,7 @@ export function BlogPostEditor({
               <button
                 type="button"
                 onClick={() => handleAdd("text")}
-                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]"
+                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)"
               >
                 + Texto
               </button>
@@ -477,7 +477,7 @@ export function BlogPostEditor({
               <button
                 type="button"
                 onClick={() => handleAdd("image")}
-                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]"
+                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)"
               >
                 + Imagen
               </button>
@@ -485,7 +485,7 @@ export function BlogPostEditor({
               <button
                 type="button"
                 onClick={() => handleAdd("embed")}
-                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]"
+                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)"
               >
                 + Embed
               </button>
@@ -493,7 +493,7 @@ export function BlogPostEditor({
               <button
                 type="button"
                 onClick={() => handleAdd("separator")}
-                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-[#7C6CFF]/40 hover:text-[#7C6CFF] dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#7C6CFF]/40 dark:hover:text-[#7C6CFF]"
+                className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent)/40 dark:hover:text-(--visora-accent)"
               >
                 + Separador
               </button>
@@ -570,7 +570,7 @@ export function BlogPostEditor({
           <button
             type="button"
             onClick={() => doSave("published")}
-            className="rounded-full bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-[#7C6CFF] dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-[#7C6CFF] dark:hover:text-white"
+            className="rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
           >
             Publicar
           </button>
