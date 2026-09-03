@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { siteTexts } from "../data/portfolio";
+import { resizeUrl } from "../lib/image";
 
 import type { Project } from "../types/portfolio";
 
@@ -19,7 +20,7 @@ function ProjectCard({ project }: ProjectCardProps) {
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">
         <img
-          src={`${project.cover}?auto=format&w=1800&q=85`}
+          src={resizeUrl(project.cover, 1800)}
           alt={project.title}
           loading="lazy"
           decoding="async"

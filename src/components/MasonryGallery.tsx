@@ -1,4 +1,5 @@
 import type { Photo } from "../types/portfolio";
+import { resizeUrl } from "../lib/image";
 
 interface MasonryGalleryProps {
   photos: Photo[];
@@ -83,7 +84,7 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
             }}
           >
             <img
-              src={`${photo.url}?auto=format&w=1600&q=85`}
+              src={resizeUrl(photo.url, 1600)}
               alt={photo.title}
               loading="lazy"
               decoding="async"

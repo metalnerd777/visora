@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
+import { resizeUrl } from "../lib/image";
+
 import type { BlogPost } from "../types/portfolio";
 
 interface BlogCardProps {
@@ -25,7 +27,7 @@ function BlogCard({ post }: BlogCardProps) {
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">
         <img
-          src={`${post.cover}?auto=format&w=1400&q=85`}
+          src={resizeUrl(post.cover, 1400)}
           alt={post.title}
           loading="lazy"
           decoding="async"

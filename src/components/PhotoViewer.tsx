@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { applyWatermark, loadImageWithCors } from "../lib/watermark";
+import { resizeUrl } from "../lib/image";
 
 interface PhotoViewerProps {
   imageUrl: string;
@@ -154,11 +155,7 @@ function PhotoViewer({
         onClick={(e) => e.stopPropagation()}
       >
         <img
-          src={
-            watermark && markedUrl
-              ? markedUrl
-              : `${imageUrl}?auto=format&w=2400&q=85`
-          }
+          src={watermark && markedUrl ? markedUrl : resizeUrl(imageUrl, 2400)}
           alt={title || "Imagen"}
           className="max-h-[82vh] max-w-[90vw] rounded-xl object-contain"
         />

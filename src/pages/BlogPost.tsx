@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PostBody from "../components/PostBody";
 
 import { isAuthenticated } from "../lib/auth";
+import { resizeUrl } from "../lib/image";
 
 import type { BlogPost } from "../types/portfolio";
 
@@ -99,7 +100,7 @@ function BlogPostPage({ post, onBack, onEdit, onDelete }: BlogPostPageProps) {
 
         {/* Portada */}
         <img
-          src={`${post.cover}?auto=format&w=1800&q=85`}
+          src={resizeUrl(post.cover, 1800)}
           alt={post.title}
           fetchPriority="high"
           style={{

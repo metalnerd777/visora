@@ -2,9 +2,13 @@ import { useState } from "react";
 
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
+import ImageProcessingIndicator, {
+  type ProcessingStatus,
+} from "../../../components/ImageProcessingIndicator";
 
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
+import { processImage } from "../../../lib/image";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
@@ -26,6 +30,27 @@ function EditProfileModal({
   const { refresh } = usePortfolio();
   const [data, setData] = useState<PortfolioProfile>(loadProfileData);
   const [emailError, setEmailError] = useState<string | undefined>();
+  const [avatarStatus, setAvatarStatus] = useState<ProcessingStatus>({
+    state: "idle",
+  });
+
+  const handleAvatar = async (file: File) => {
+    setAvatarStatus({ state: "loading" });
+    try {
+      const result = await processImage(file);
+      update({ avatar: result.url });
+      setAvatarStatus({
+        state: "done",
+        originalSize: result.originalSize,
+        finalSize: result.finalSize,
+      });
+    } catch (err) {
+      setAvatarStatus({
+        state: "error",
+        message: (err as Error).message || "Error al procesar la imagen",
+      });
+    }
+  };
 
   const update = (patch: Partial<PortfolioProfile>) => {
     setData((prev) => ({ ...prev, ...patch }));
@@ -113,11 +138,12 @@ function EditProfileModal({
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-
-                    if (file) update({ avatar: URL.createObjectURL(file) });
+                    e.target.value = "";
+                    if (file) void handleAvatar(file);
                   }}
                 />
               </label>
+              <ImageProcessingIndicator status={avatarStatus} />;
 
               {data.avatar && (
                 <button

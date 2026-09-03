@@ -1,4 +1,5 @@
 import type { WatermarkStyle } from "../types/portfolio";
+import { isBlobUrl, isDataUrl, resizeUrl } from "./image";
 
 const MAX_WIDTH = 2400;
 
@@ -8,18 +9,22 @@ export interface WatermarkOptions {
   opacity: number;
 }
 
-function normalizeUrl(src: string): string {
-  return `${src}?auto=format&w=2400&q=85`;
-}
-
+/**
+ * Carga una imagen para aplicar la marca de agua.
+ * - URLs `data:` / `blob:` (subidas locales): mismas que ya vienen optimizadas,
+ *   NO llevan `crossOrigin` (no aplica) ni parámetros CDN.
+ * - URLs remotas http(s): se les piden variantes CDN (`?auto=format&w=2400`)
+ *   y se cargan anónimas (requiere CORS del proveedor, p.ej. Supabase Storage).
+ */
 export function loadImageWithCors(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    const isLocal = isDataUrl(src) || isBlobUrl(src);
+    img.crossOrigin = isLocal ? null : "anonymous";
     img.decoding = "async";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
-    img.src = normalizeUrl(src);
+    img.src = isLocal ? src : resizeUrl(src, MAX_WIDTH, 85);
   });
 }
 

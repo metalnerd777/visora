@@ -3,6 +3,7 @@ import { useState } from "react";
 import PhotoViewer from "../components/PhotoViewer";
 
 import { usePortfolio } from "../lib/usePortfolio";
+import { resizeUrl } from "../lib/image";
 
 import type { Project } from "../types/portfolio";
 
@@ -79,7 +80,7 @@ function ProjectPage({ project, onBack }: ProjectPageProps) {
               className="group relative aspect-[4/3] overflow-hidden rounded-2xl"
             >
               <img
-                src={`${photo.url}?auto=format&w=1600&q=85`}
+                src={resizeUrl(photo.url, 1600)}
                 alt={photo.title}
                 loading="lazy"
                 decoding="async"

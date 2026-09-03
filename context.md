@@ -58,6 +58,7 @@ Frontend:
 - Google Fonts: Montserrat (200–600)
 - @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (drag-and-drop en admin)
 - react-easy-crop (crop de imágenes con focal point)
+- browser-image-compression (compresión/redimensión/orientación EXIF en subida, vía src/lib/image.ts)
 - TipTap 3 (@tiptap/react + starter-kit + underline + text-align + link) editor de texto enriquecido (lazy-loaded solo en admin)
 
 Backend futuro:
@@ -97,7 +98,8 @@ src/
 │   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Hero.tsx               (imagen fondo dual desktop/móvil, object-position, consume usePortfolio)
 │   ├── ImageCropModal.tsx     (cropper react-easy-crop, focal point como porcentaje)
-│   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar)
+│   ├── ImageProcessingIndicator.tsx (feedback de subida: original → final, error, spinners)
+│   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar, drag & drop, processImage)
 │   ├── MasonryGallery.tsx     (grid masonry dinámico, columnas por count)
 │   ├── Modal.tsx              (reutilizable, responsive, Escape, scroll lock)
 │   ├── PhotoViewer.tsx        (visor fullscreen, click fuera, SVGs)
@@ -147,6 +149,8 @@ src/
 │   ├── blogBlocks.ts          (helpers bloques: buildId, toDraft, toBlock + re-export BlockDraft; compartidos editor + BlogBlockEditor)
 │   ├── embeds.ts              (detección de proveedor + URLs embed seguras)
 │   ├── favicons.ts            (10 presets SVG de favicon por profesión + svgToDataUrl, presetDataUrl, fileToFaviconDataUrl)
+│   ├── image.ts               (pipeline central: processImage/processImages, variantes 640/1600/2400, validateImage, formatBytes, releaseObjectURL)
+│   ├── useImageDrop.ts        (hook drag & drop de imágenes: useImageDrop -> { isDragging, dragProps })
 │   ├── appearance.ts          (presets de apariencia: 6 acentos, colores de fondo, radio, botones, 6 fuentes + loadGoogleFont)
 │   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
 │   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
@@ -322,12 +326,59 @@ Keys:
     - fontFamily: dropdown con 6 Google Fonts (Montserrat, Inter, Poppins, Space Grotesk, Playfair Display, Lora); se carga dinámicamente y aplica `--visora-font` (src/lib/appearance.ts)
   - `socials`: SocialLink[] (fuente única de redes, editada en el form "Editar contacto")
   - `privacy`: showEmail, showLocation, protectImages, notice, cookieNotice, watermarkEnabled, watermarkStyle ("tiling" | "corner"), watermarkOpacity (0.05–0.35), watermarkText
-    - Marca de agua (`watermark*`): cuando `watermarkEnabled`, el PhotoViewer quema la imagen ampliada con el texto de `watermarkText` vía canvas (src/lib/watermark.ts); si `watermarkText` está vacío usa el nombre del profesional (brandName). Estilo `tiling` = texto repetido en diagonal, `corner` = texto discreto en la esquina inferior derecha. Opacidad configurable. La imagen mostrada en el visor ES la versión marcada, así que cualquier captura/descarga desde ahí lleva la marca. Requiere CORS del proveedor de imágenes; en Supabase Storage hay que habilitar CORS en el bucket.
+    - Marca de agua (`watermark*`): cuando `watermarkEnabled`, el PhotoViewer quema la imagen ampliada con el texto de `watermarkText` vía canvas (src/lib/watermark.ts); si `watermarkText` está vacío usa el nombre del profesional (brandName). Estilo `tiling` = texto repetido en diagonal, `corner` = texto discreto en la esquina inferior derecha. Opacidad configurable. La imagen mostrada en el visor ES la versión marcada, así que cualquier captura/descarga desde ahí lleva la marca. `loadImageWithCors` distingue URLs locales (`data:`/`blob:`, sin CORS ni params) de remotas (`http(s)` con CORS + `?auto=format&w=2400`). LIMITACIÓN pre-Supabase: los `settings` viven en localStorage por navegador y `watermarkEnabled` por defecto es `false`, así que el admin ve la marca en SU navegador pero un visitante en incógnito/otro navegador tiene su propio localStorage vacío → no la ve. Se resolverá al conectar Supabase (settings + imágenes compartidos).
   - `site`: published (si false, solo el admin ve el sitio; los visitantes ven "Sitio en construcción")
 - `visora-cookies-accepted` — aceptación del aviso de cookies ("accepted"/"rejected", evita el banner)
 - `visora-blog-draft` — autoguardado temporal del editor (solo en publicaciones nuevas, key separada de la lista definitiva; se borra al Guardar/Publicar/Cancelar)
 
 Credenciales mock: `admin@visora.com` / `admin123`
+
+---
+
+# 8b. Sistema de imágenes (procesamiento centralizado)
+
+Toda subida de imágenes pasa por un pipeline único en **`src/lib/image.ts`**, que usa `browser-image-compression` para corregir orientación EXIF, redimensionar, comprimir y convertir a WebP.
+
+**`processImage(file, opts?)`** — flujo:
+1. `validateImage(file, maxSizeMB=90)` — valida MIME (`image/jpeg|png|webp|gif|avif|bmp|tiff|svg+xml`), tamaño (mín > 0, máx 90 MB).
+2. Redimensiona + comprime con `browser-image-compression` (`useWebWorker: true`, calidad 0.82, maxWidthOrHeight 2400).
+3. Convierte a WebP vía canvas (`toDataURL("image/webp", 0.82)`), con fallback a JPEG si el navegador no lo soporta.
+4. Genera las **3 variantes** en paralelo:
+   - `thumb` → 640 px
+   - `preview` → 1600 px
+   - `full` → 2400 px
+
+Devuelve un `ImageProcessResult` con:
+- `url` — variante principal optimizada (data URL WebP) — la que se persiste en el estado/localStorage
+- `originalSize` / `finalSize` — para el feedback "Original → Final"
+- `width` / `height`
+- `variants` — `ImageVariant[]` (los 3 blobs, listos para subir a Supabase Storage en el futuro)
+
+Helpers exportados:
+- `processImages(files)` — procesa varios archivos en paralelo (conserva el orden)
+- `formatBytes(n)` — tamaño legible humano
+- `releaseObjectURL(url)` — libera ObjectURLs de forma segura (no-op si no es `blob:`)
+- `validateImage(file, maxSizeMB?)`, `isSupportedImage(file)`, `isBlobUrl`, `isDataUrl`
+- `VARIANT_SIZES` = `{ thumb: 640, preview: 1600, full: 2400 }`
+- `resizeUrl(url, width, quality?)` — añade `?auto=format&w=N&q=Q` SOLO a URLs remotas http(s); devuelve intactas las URLs `data:`/`blob:`. Sustituye a concatenar los parámetros CDN a mano (que rompía las URLs data/blob → imagenes en blanco). Lo usan Project, MasonryGallery, ProjectCard, BlogCard, BlogPost, PostBody, PhotoViewer y watermark.
+
+**Drag & drop**: `src/lib/useImageDrop.ts` exporta `useImageDrop(onFiles)` → `{ isDragging, dragProps }` para hacer zonas de soltar imágenes desde el explorador (no requiere abrir una carpeta).
+
+**Feedback de subida**: `src/components/ImageProcessingIndicator.tsx` muestra "Optimizando…" (spinner), error, o "Original: X → Final: Y".
+
+**Puntos donde se aplica el procesamiento** (ninguna subida lo evita):
+- `ImageUpload.tsx` — componente compartido (hero desktop/móvil, about, portada blog, bloques imagen del blog). Soporta drag & drop + procesamiento al subir.
+- `EditProfileModal.tsx` — avatar.
+- `EditProjectsModal.tsx` — galería + portadas con **compresión al guardar** (ver nota abajo).
+
+**Compresión al guardar en proyectos (flujo del álbum)**:
+1. Se seleccionan/arrastran las fotos (se muestran al instante como preview con ObjectURL; NO se comprimen todavía).
+2. Al pulsar "Guardar proyecto" se comprimen TODAS las imágenes nuevas (con barra de progreso "Comprimiendo y guardando imágenes…" y contador N/total).
+3. Se persisten las variantes optimizadas (data URL WebP) en localStorage y aparecen en el álbum.
+4. Al arrastrar una carpeta completa se procesan en paralelo y, si no hay portada definida, **la primera imagen subida se toma como portada por defecto**.
+5. Las imágenes ya existentes (sin archivo nuevo) se conservan tal cual.
+
+> Nota fase actual: en esta fase pre-Supabase, las subidas se persisten como data URL WebP de la variante principal en localStorage (los `blob:` URLs no sobreviven recarga). Cuando se conecte Supabase Storage, `ImageProcessResult.variants` (los 3 blobs) se subirán a los buckets y se guardarán las URLs CDN, que es lo que los componentes de consumo ya esperan (con `?auto=format&w=N&q=85`).
 
 ---
 
@@ -610,45 +661,153 @@ El grid ajusta columnas y patrón de spans según la cantidad de imágenes.
 
 # 17. Modelo de datos Supabase (futuro)
 
-profile
-- name, profession, description, avatar
-- heroImage, heroImageMobile
-- heroImageFocusX, heroImageFocusY
-- heroImageMobileFocusX, heroImageMobileFocusY
-- heroPrimaryButton, heroSecondaryButton
-- showSecondary
-- aboutTitle, aboutDescription, aboutImage
-- contactTitle, contactDescription
-- email, location
-- whatsappPhone, whatsappMessage
+Modelo **mono-tenant por cliente**: cada cliente tiene su propio proyecto Supabase (tablas + storage) y su propia DB. Un único perfil por proyecto. La autenticación real (reemplaza el mock de `localStorage`) usa Supabase Auth.
 
-social_links
-- id, profile_id (FK), platform, handle
+## Tabla `profiles` (datos del profesional + config hero / about / contacto)
 
-site_settings
-- workNounSingular, workNounPlural
-- featuredLabel, featuredTitle, featuredDescription
-- projectsLabel, projectsTitle, projectsDescription
-- theme, primaryColor, secondaryColor
+- `id` UUID PK — coincide con `auth.users.id` (el admin dueño del sitio)
+- `name` text — nombre del profesional/marca (fuente única con `site_settings.general.brandName`)
+- `profession` text
+- `description` text
+- `avatar` text — URL CDN del avatar
+- `hero_image` text — URL CDN
+- `hero_image_mobile` text (nullable)
+- `hero_image_focus_x` int2 (0–100, default 50)
+- `hero_image_focus_y` int2 (0–100, default 50)
+- `hero_image_mobile_focus_x` int2 (0–100, default 50)
+- `hero_image_mobile_focus_y` int2 (0–100, default 50)
+- `hero_primary_button` text
+- `hero_secondary_button` text
+- `about_title` text
+- `about_description` text
+- `about_image` text (nullable) — actualmente se sube pero NO se renderiza en público
+- `contact_title` text (nullable)
+- `contact_description` text (nullable)
+- `email` text
+- `location` text
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz
 
-projects
-- id (UUID), slug, title, description, cover, position
+## Tabla `social_links` (redes sociales del perfil)
 
-photos
-- id (UUID), project_id (FK), url, title, alt, position
-- is_featured (boolean), is_favorite (boolean), is_cover (boolean)
+- `id` UUID PK
+- `profile_id` UUID FK → `profiles.id`
+- `platform` text — "instagram" | "behance" | "linkedin" | "twitter" | "youtube" | "facebook" | "vimeo" | "flickr" (extensible)
+- `handle` text
+- `position` int2 (orden de visualización)
+- UNIQUE (`profile_id`, `platform`) o UNIQUE (`profile_id`, `position`)
 
-blog_posts
-- slug, title, excerpt, cover, date
+## Tabla `site_settings` (configuración global del sitio — una fila por perfil)
 
-blog_post_blocks
-- id, post_id (FK), position (integer)
-- type: text | image | embed
-- payload: jsonb
+- `id` UUID PK (o `profile_id` como PK)
+- `profile_id` UUID FK → `profiles.id`
+- `brand_name` text — fuente única del nombre de marca
+- `language` text (idioma del sitio, aplica al `<html lang>`; NO es charset)
+- `favicon` text (nullable) — data URL de preset SVG o PNG 64×64
+- **SEO**: `seo_title`, `seo_description`, `seo_og_image` text, `seo_noindex` bool
+- **Apariencia**:
+  - `appearance_mode` text — "system" | "light" | "dark"
+  - `appearance_primary_color` text — 1 de 6 presets (Violeta/Azul/Esmeralda/Ámbar/Rosa/Grafito)
+  - `appearance_bg_color1` text, `appearance_bg_color2` text — degradado del fondo
+  - `appearance_font_family` text — 1 de 6 Google Fonts
+  - `appearance_border_radius` text — "sm" | "md" | "lg"
+  - `appearance_button_style` text — "pill" | "rounded" | "square"
+- **Privacidad**:
+  - `privacy_show_email` bool (default true)
+  - `privacy_show_location` bool (default true)
+  - `privacy_notice` text
+  - `privacy_protect_images` bool
+  - `privacy_cookie_notice` text
+  - `privacy_watermark_enabled` bool (default false)
+  - `privacy_watermark_style` text — "tiling" | "corner"
+  - `privacy_watermark_opacity` float (0.05–0.35, default 0.18)
+  - `privacy_watermark_text` text (si vacío usa `brand_name`)
+- **Publicación**: `site_published` bool (default true)
+- `created_at`, `updated_at` timestamptz
 
-Storage:
-- portfolio-images (fotos de proyectos)
-- blog-images (portadas e imágenes inline)
+> Nota: las redes sociales NO viven en `site_settings`; se leen en `social_links` (con `brandName`/`profession` unificados en `profiles`+`site_settings`).
+
+## Tabla `site_texts` (textos configurables de secciones) — una fila por perfil
+
+- `profile_id` UUID PK/FK → `profiles.id`
+- `work_noun_singular`, `work_noun_plural` text
+- `featured_label`, `featured_title`, `featured_description` text
+- `projects_label`, `projects_title`, `projects_description` text
+
+## Tabla `projects` (álbumes)
+
+- `id` UUID PK
+- `profile_id` UUID FK → `profiles.id`
+- `slug` text UNIQUE
+- `title` text
+- `description` text
+- `cover` text — URL CDN (la imagen de portada; puede ser la 1ª subida si no se define)
+- `position` int2 (orden del listado / drag & drop)
+- `created_at`, `updated_at` timestamptz
+
+## Tabla `project_photos` (fotos dentro de un álbum)
+
+- `id` UUID PK
+- `project_id` UUID FK → `projects.id` (ON DELETE CASCADE)
+- `url` text (URL CDN) y, opcionalmente, las variantes por bucket en lugar de URL única:
+  - `url_thumb` text (640px), `url_preview` text (1600px), `url_full` text (2400px) — variantes generadas por `processImage`
+- `alt` text (descripción opcional de la foto, vacía por defecto; sustituye al antiguo `title` igual a nombre de archivo)
+- `position` int2 (orden del drag & drop en el álbum)
+- `is_cover` bool — marca cuál es la portada (alternativa a `projects.cover`)
+- `is_featured` bool — seleccionada para las "Destacadas" del Home
+- `is_favorite` bool (datos existentes, aún sin UI)
+- `created_at` timestamptz
+
+> La lista `featuredPhotos` de la Home se compone de proyectos/álbumes "destacados" (slugs en `visora-admin-featured`). Puede expresarse como `projects.is_featured` (bool) o una tabla de relación de orden.
+
+## Tabla `blog_posts`
+
+- `id` UUID PK
+- `profile_id` UUID FK → `profiles.id`
+- `slug` text UNIQUE
+- `title` text
+- `excerpt` text (nullable)
+- `cover` text (URL CDN) + `cover_focus_x`, `cover_focus_y` int2 (0–100)
+- `date` timestamptz
+- `status` text — "draft" | "published"
+- `position` int2 (orden en /blog)
+- `created_at`, `updated_at` timestamptz
+
+## Tabla `blog_post_blocks` (bloques de contenido enriquecido)
+
+- `id` UUID PK
+- `post_id` UUID FK → `blog_posts.id` (ON DELETE CASCADE)
+- `position` int2 (orden de bloques)
+- `type` text — "text" | "image" | "embed" | "separator"
+- `content` jsonb (nullable) — JSON TipTap para bloques `text`
+- `text` text (nullable) — legacy texto plano
+- `url` text (nullable) — imagen o embed
+- `alt` text (nullable) — descripción de imagen
+- `caption` text (nullable)
+- `provider` text (nullable) — "youtube" | "vimeo" | "instagram" | "facebook" | "behance" | "flickr" (detectado automáticamente)
+
+## Storage buckets (Supabase Storage)
+
+Clientes y carpetas (paths) sugeridos por tipo de contenido:
+
+**Bucket `portfolio-images`** — fotos de proyectos, avatar, hero y about:
+- `portfolio-images/avatars/*` — avatar del perfil
+- `portfolio-images/hero/*` — hero desktop/móvil
+- `portfolio-images/about/*` — imagen "sobre mí"
+- `portfolio-images/projects/{project_id}/*.webp` — fotos de álbumes (3 variantes por foto: `_thumb` 640 / `_preview` 1600 / `_full` 2400)
+
+**Bucket `blog-images`** — portadas e imágenes inline del blog:
+- `blog-images/covers/{post_id}/*.webp`
+- `blog-images/inline/{post_id}/*.webp`
+
+Las URLs guardadas en BD son las URLs CDN públicas de estos objetos; los componentes ya esperan el formato `?auto=format&w=N&q=85` (via `resizeUrl`).
+
+## Seguridad / RLS
+
+- Todos los `SELECT` públicos: permitidos (el sitio es público salvo `site_published=false`).
+- Insert/Update/Delete: solo el admin autenticado (ROL `authenticated` con `uid() = profile_id`, o `owner` RLS por id de perfil).
+- Storage: políticas de lectura pública; escritura solo para el owner.
+- Imágenes subidas que requieran CORS en el bucket para que la marca de agua funcionen en remoto (`crossOrigin="anonymous"`).
 
 ---
 

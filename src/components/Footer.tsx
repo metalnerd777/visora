@@ -147,7 +147,7 @@ function Footer() {
             <span className="max-w-md text-right">{settings.privacy.notice}</span>
           )}
 
-          <span>Impulsado por Visora</span>
+          <span>Desarrollado por @draugur_dev</span>
         </div>
       </div>
     </footer>

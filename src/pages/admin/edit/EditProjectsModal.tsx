@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   DndContext,
@@ -23,6 +23,8 @@ import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
+import { processImages, type ImageProcessResult } from "../../../lib/image";
+import { useImageDrop } from "../../../lib/useImageDrop";
 
 import { projects as defaultProjects } from "../../../data/portfolio";
 
@@ -38,6 +40,11 @@ interface FormImage {
   id: string;
   url: string;
   alt: string;
+  file?: File;
+}
+
+function findImageIdByUrl(images: FormImage[], url: string): string | undefined {
+  return images.find((img) => img.url === url)?.id;
 }
 
 function loadAllProjects(): AdminProject[] {
@@ -306,13 +313,19 @@ function EditProjectsModal({
   const [projects, setProjects] = useState<AdminProject[]>(loadAllProjects);
   const [view, setView] = useState<View>("list");
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* form state */
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formCover, setFormCover] = useState("");
+  const [formCoverFile, setFormCoverFile] = useState<File | null>(null);
   const [formImages, setFormImages] = useState<FormImage[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState<number>(0);
+  const [saveTotal, setSaveTotal] = useState(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -351,6 +364,7 @@ function EditProjectsModal({
     setFormTitle("");
     setFormDesc("");
     setFormCover("");
+    setFormCoverFile(null);
     setFormImages([]);
     setFormError(null);
     setView("form");
@@ -365,12 +379,13 @@ function EditProjectsModal({
     setFormTitle(project.title);
     setFormDesc(project.description);
     setFormCover(project.cover);
+    setFormCoverFile(null);
     setFormImages([...project.images]);
     setFormError(null);
     setView("form");
   };
 
-  const saveForm = () => {
+  const saveForm = async () => {
     if (!formTitle.trim()) {
       setFormError("El título es obligatorio.");
       return;
@@ -394,41 +409,110 @@ function EditProjectsModal({
       return;
     }
 
-    const imageData = formImages;
+    const toCompress = [
+      ...formImages.filter((img) => img.file),
+      ...(formCoverFile && !formImages.some((img) => img.url === formCover)
+        ? [{ id: "cover", file: formCoverFile } as FormImage]
+        : []),
+    ];
 
-    const updated: AdminProject = {
-      slug,
-      title: formTitle.trim(),
-      description: formDesc.trim(),
-      cover: formCover || formImages[0].url,
-      images: imageData,
-    };
-
-    const existing = projects.findIndex((p) => p.slug === slug);
-
-    if (existing >= 0) {
-      const next = [...projects];
-      next[existing] = updated;
-      saveAll(next);
-    } else {
-      saveAll([...projects, updated]);
-    }
-
+    setSaving(true);
+    setSaveError(null);
     setFormError(null);
-    setView("list");
+    setSaveTotal(toCompress.length);
+    setSaveProgress(0);
+
+    try {
+      const compressed = new Map<string, ImageProcessResult>();
+
+      if (toCompress.length > 0) {
+        const results = await processImages(
+          toCompress.map((img) => img.file as File),
+        );
+
+        results.forEach((result, idx) => {
+          const img = toCompress[idx];
+          if (img) compressed.set(img.id, result);
+          setSaveProgress(idx + 1);
+        });
+      }
+
+      const imageData: FormImage[] = formImages.map((img) => {
+        const result = compressed.get(img.id);
+        return result
+          ? { id: img.id, url: result.url, alt: img.alt }
+          : { id: img.id, url: img.url, alt: img.alt };
+      });
+
+      let cover = formCover || imageData[0].url;
+
+      if (formCover && formCoverFile) {
+        const result = compressed.get("cover");
+        if (result) cover = result.url;
+      } else if (formCover) {
+        const coverId = findImageIdByUrl(formImages, formCover);
+        if (coverId && compressed.get(coverId)) cover = compressed.get(coverId)!.url;
+      }
+
+      const updated: AdminProject = {
+        slug,
+        title: formTitle.trim(),
+        description: formDesc.trim(),
+        cover,
+        images: imageData,
+      };
+
+      const existing = projects.findIndex((p) => p.slug === slug);
+
+      if (existing >= 0) {
+        const next = [...projects];
+        next[existing] = updated;
+        saveAll(next);
+      } else {
+        saveAll([...projects, updated]);
+      }
+
+      setView("list");
+    } catch (err) {
+      setSaveError(
+        (err as Error).message || "Error al comprimir las imágenes",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* image helpers */
-  const addImages = (files: FileList | null) => {
-    if (!files) return;
+  const addFiles = (files: File[]) => {
+    if (files.length === 0) return;
+    setSaveError(null);
 
-    const newImages: FormImage[] = Array.from(files).map((file) => ({
+    const newImages: FormImage[] = files.map((file) => ({
       id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       url: URL.createObjectURL(file),
-      alt: file.name.replace(/\.[^.]+$/, ""),
+      alt: "",
+      file,
     }));
 
     setFormImages((prev) => [...prev, ...newImages]);
+
+    if (!formCover && newImages.length > 0) {
+      setFormCover(newImages[0].url);
+    }
+  };
+
+  const addImages = (files: FileList | null) => {
+    if (!files) return;
+    addFiles(Array.from(files));
+  };
+
+  const { isDragging, dragProps } = useImageDrop(addFiles);
+
+  const handleCoverFile = (file: File | undefined) => {
+    if (!file) return;
+    setSaveError(null);
+    setFormCover(URL.createObjectURL(file));
+    setFormCoverFile(file);
   };
 
   const removeImage = (id: string) => {
@@ -565,15 +649,18 @@ function EditProjectsModal({
                           className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-
-                            if (file) setFormCover(URL.createObjectURL(file));
+                            e.target.value = "";
+                            void handleCoverFile(file);
                           }}
                         />
                       </label>
 
                       <button
                         type="button"
-                        onClick={() => setFormCover("")}
+                        onClick={() => {
+                          setFormCover("");
+                          setFormCoverFile(null);
+                        }}
                         className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md hover:border-red-400/60 hover:bg-black/60"
                       >
                         Eliminar
@@ -598,8 +685,8 @@ function EditProjectsModal({
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-
-                        if (file) setFormCover(URL.createObjectURL(file));
+                        e.target.value = "";
+                        void handleCoverFile(file);
                       }}
                     />
                   </label>
@@ -608,7 +695,12 @@ function EditProjectsModal({
             </div>
 
             {/* Right: images */}
-            <div className="flex flex-col gap-3">
+            <div
+              {...dragProps}
+              className={`flex flex-col gap-3 rounded-2xl transition-colors ${
+                isDragging ? "bg-(--visora-accent)/10 p-2" : ""
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
                   Imágenes ({formImages.length})
@@ -625,10 +717,42 @@ function EditProjectsModal({
                     accept="image/*"
                     multiple
                     className="hidden"
-                    onChange={(e) => addImages(e.target.files)}
+                    onChange={(e) => {
+                      addImages(e.target.files);
+                      e.target.value = "";
+                    }}
                   />
                 </label>
               </div>
+
+              {saving && (
+                <div className="flex flex-col gap-2 rounded-xl border border-(--visora-accent)/30 bg-(--visora-accent)/5 p-3">
+                  <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-[#C9C4D8]">
+                    <span className="flex items-center gap-2">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-(--visora-accent) border-t-transparent" />
+                      Comprimiendo y guardando imágenes…
+                    </span>
+                    <span>
+                      {saveProgress}/{saveTotal || formImages.length}
+                    </span>
+                  </div>
+
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-[#27243A]">
+                    <div
+                      className="h-full rounded-full bg-(--visora-accent) transition-all duration-200"
+                      style={{
+                        width: `${saveTotal > 0 ? (saveProgress / saveTotal) * 100 : 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {saveError && (
+                <p className="text-xs text-red-500 dark:text-red-400">
+                  {saveError}
+                </p>
+              )}
 
               {formImages.length > 0 ? (
                 <DndContext
@@ -651,29 +775,66 @@ function EditProjectsModal({
                           onAltChange={(alt) => updateImageAlt(image.id, alt)}
                         />
                       ))}
+
+                      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-300 text-xs text-neutral-400 transition-colors hover:border-(--visora-accent)/40 hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#6F6A80]">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Agregar
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            addImages(e.target.files);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
                     </div>
                   </SortableContext>
                 </DndContext>
               ) : (
-                <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-(--visora-accent)/30 dark:border-[#27243A]">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed transition-colors ${
+                    isDragging
+                      ? "border-(--visora-accent) bg-(--visora-accent)/10"
+                      : "border-neutral-200 hover:border-(--visora-accent)/30 dark:border-[#27243A]"
+                  }`}
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-neutral-300 dark:text-[#4A4468]">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
                   </svg>
 
-                  <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
-                    Haz clic para agregar imágenes
+                  <p
+                    className={`text-xs ${isDragging ? "text-(--visora-accent)" : "text-neutral-400 dark:text-[#6F6A80]"}`}
+                  >
+                    {isDragging
+                      ? "Suelta las imágenes aquí"
+                      : "Arrastra las imágenes aquí o haz clic"}
                   </p>
 
+                  <span className="text-[11px] text-neutral-400 dark:text-[#6F6A80]">
+                    JPG, PNG, WebP · máx 90 MB c/u
+                  </span>
+
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     multiple
                     className="hidden"
-                    onChange={(e) => addImages(e.target.files)}
+                    onChange={(e) => {
+                      addImages(e.target.files);
+                      e.target.value = "";
+                    }}
                   />
-                </label>
+                </div>
               )}
             </div>
           </div>
@@ -689,11 +850,11 @@ function EditProjectsModal({
 
             <button
               type="button"
-              onClick={saveForm}
-              disabled={!formTitle.trim()}
+              onClick={() => void saveForm()}
+              disabled={!formTitle.trim() || saving}
               className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
             >
-              Guardar proyecto
+              {saving ? "Guardando…" : "Guardar proyecto"}
             </button>
           </div>
         </div>

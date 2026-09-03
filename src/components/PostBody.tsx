@@ -1,6 +1,8 @@
 import EmbedBlock from "./EmbedBlock";
 import { RichTextView } from "./RichTextView";
 
+import { resizeUrl } from "../lib/image";
+
 import type { BlogBlock } from "../types/portfolio";
 
 function Block({ block }: { block: BlogBlock }) {
@@ -24,7 +26,7 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <figure className="my-10">
         <img
-          src={`${block.url}?auto=format&w=1600&q=85`}
+          src={resizeUrl(block.url, 1600)}
           alt={block.alt ?? ""}
           loading="lazy"
           decoding="async"
