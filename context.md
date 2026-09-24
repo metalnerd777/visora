@@ -108,6 +108,7 @@ src/
 │   ├── RichTextEditor.tsx     (TipTap con toolbar: H1-3, negrita, listas, cita, enlace, alineación, deshacer/rehacer)
 │   ├── RichTextView.tsx       (renderiza JSON TipTap → elementos estilizados)
 │   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
+│   ├── SiteGate.tsx           (pantalla "Sitio en construcción" compartida por todos los temas)
 │   ├── CookieBanner.tsx       (banner de aviso de cookies para visitantes, usa settings.privacy.cookieNotice)
 │   ├── blog/
 │   │   └── BlogBlockEditor.tsx (tarjeta bloque sortable: mango dnd + Subir/Bajar/Editar/Eliminar, formularios Texto/Imagen/Embed, preview, MiniButton)
@@ -136,8 +137,21 @@ src/
 │           └── BlogPostEditor.tsx      (editor inline de publicaciones con bloques y TipTap)
 │
 ├── themes/
-│   └── minimal/
-│       └── MinimalTheme.tsx   (layout flex, dark mode, aplica apariencia + gate público mantenimiento/no publicado)
+│   ├── index.ts             (registro: THEME_OPTIONS + THEMES {minimal, editorial}, themeFor/themeOptionFor)
+│   ├── types.ts             (HeaderProps, ProjectPageProps, BlogPostPageProps, NotFoundProps, ThemePages, ThemeDefinition, ThemeOption)
+│   ├── ThemeShell.tsx       (shell compartido: useThemeShell + Header/Footer del tema + AppRouter(pages) + CookieBanner + SiteGate)
+│   ├── minimal/             (tema minimal = componentes y páginas compartidos de src/components y src/pages)
+│   └── editorial/
+│       ├── EditorialHeader.tsx   (masthead revista: marca serif, nav uppercase, reglas, dark toggle, sesión admin)
+│       ├── EditorialFooter.tsx   (footer editorial: masthead, columnas, redes, logout)
+│       └── pages/
+│           ├── EditorialHome.tsx       (portada/cover, destacadas numeradas, índice de proyectos)
+│           ├── EditorialProject.tsx    (cabecera numerada + galería editorial + visor)
+│           ├── EditorialAbout.tsx      (statement + ficha con avatar/ubicación/redes)
+│           ├── EditorialBlog.tsx       (índice de publicaciones tipo magacín + autoguardado + editor)
+│           ├── EditorialBlogPost.tsx   (artículo de revista con portada y PostBody)
+│           ├── EditorialContact.tsx    (canales de contacto como columnas numeradas)
+│           └── EditorialNotFound.tsx   (404 editorial)
 │
 ├── data/
 │   ├── portfolio.ts           (datos demo: profile, projects, blogPosts, siteTexts)
@@ -157,6 +171,10 @@ src/
 │   ├── richtext.ts            (helpers JSON TipTap: doc vacío, texto plano, isRichTextEmpty)
 │   ├── slug.ts                (slugify + uniqueSlug para posts/proyectos)
 │   ├── usePortfolio.ts        (hook usePortfolio)
+│   ├── useAdmin.ts            (hook sesión admin: polling isAuthenticated cada 500ms)
+│   ├── usePhotoViewer.ts      (hook visor: openViewer/closeViewer/prev/next sobre array Photo)
+│   ├── useBlogList.ts         (hook listado/blog completo: editor inline lazy, autoguardado, toasts)
+│   ├── useThemeShell.ts       (hook compartido de todos los temas: dark mode, CSS vars de apariencia, data-theme, polling admin, publicLocked)
 │   ├── socials.ts             (socialUrl(), socialLabel(), nonEmptySocials() genéricos)
 │   ├── storage.ts             (loadJSON, saveJSON helpers)
 │   ├── platforms.ts           (PLATFORM_OPTIONS compartido)
@@ -165,7 +183,7 @@ src/
 ├── types/
 │   └── portfolio.ts           (PortfolioProfile, Photo, Project, SocialLink, etc.)
 │
-├── App.tsx                    (BrowserRouter → DocumentHead + MinimalTheme)
+├── App.tsx                    (BrowserRouter → DocumentHead + ThemeSwitcher por settings.appearance.theme)
 ├── main.tsx                   (entry point React StrictMode)
 ├── router.tsx                 (rutas públicas + /admin login + catch-all 404)
 └── index.css                  (Tailwind v4 + font Montserrat + gradientes de fondo)
@@ -181,21 +199,27 @@ public/
 ```
 BrowserRouter
 ├── DocumentHead
-└── MinimalTheme
+└── ThemeShell (minimal | editorial según settings.appearance.theme)
     ├── ScrollToTop
-    ├── Header (sticky, glass, Links, logout button cuando autenticado)
-    ├── AppRouter (flex-1)
+    ├── Header del tema (minimal: glass/Links · editorial: masthead revista)
+    ├── AppRouter({ pages }) — páginas del tema activo (flex-1)
     │   ├── /                → Home (con edit controls si autenticado)
-    │   ├── /proyecto/:slug  → Project
+    │   ├── /proyecto/:slug  → Project (wrapper resuelve slug, pasa prop project)
     │   ├── /sobre-mi        → AboutPage (con edit control si autenticado)
     │   ├── /blog            → BlogPage (con "Nueva publicación" si autenticado)
-    │   ├── /blog/:slug      → BlogPostPage (con edit/delete si autenticado)
+    │   ├── /blog/:slug      → BlogPost (wrapper resuelve slug publicado, pasa post + onEdit/onDelete)
     │   ├── /contacto        → ContactPage (con edit control si autenticado)
     │   ├── /admin           → AdminLoginPage (standalone)
     │   ├── /configuracion   → SettingsPage (solo admin; redirige a /admin si no hay sesión)
     │   └── *                → NotFound (404)
-    └── Footer (fijo abajo, mt-auto, logout cuando autenticado)
+    └── Footer del tema (fijo abajo, mt-auto, logout cuando autenticado)
 ```
+
+Cada tema define su propio `pages` (ThemePages) para todas las rutas públicas. La lógica
+de datos/admin está compartida: las páginas del tema consumen `usePortfolio`, `useAdmin`,
+`usePhotoViewer`, `useBlogList` y los modales de edición reutilizables. El router
+(`src/router.tsx`) recibe `pages` como prop; los wrappers `ProjectRoute`/`BlogPostRoute`
+resuelven el slug y pasan las props tipadas a la página del tema.
 
 No hay rutas admin anidadas. El sitio público ES el admin cuando hay sesión activa.
 
@@ -295,7 +319,7 @@ Keys:
   - primaryText, primaryLink
   - secondaryText, secondaryLink
   - showSecondary (boolean)
-- `visora-admin-about` — sobre mí (title, description, image?)
+- `visora-admin-about` — sobre mí (title, description, image?, focusX?, focusY?); la imagen también se persiste como `aboutImage` (más `aboutImageFocusX/Y`) en `visora-admin-profile` (fuente única vía `usePortfolio`)
 - `visora-admin-contact` — contacto config:
   - title, description
   - email, emailSubject (asunto del mailto)
@@ -317,7 +341,8 @@ Keys:
     - `siteUrl` fue ELIMINADO: la URL se configura en Vercel; el canonical se deriva automáticamente de window.location (no se emite en localhost)
   - Favicon (FaviconPicker): 10 presets SVG (inicial "V" como primera/por defecto, cámara, pincel, lápiz, objetivo, paleta, cámara de video, arquitectura, diseño web, moda) + subida de imagen redimensionada a 64×64 (src/lib/favicons.ts)
   - `seo`: title, description, ogImage, noindex
-  - `appearance`: mode, primaryColor, background (color1/color2 → degradado del fondo), borderRadius, buttonStyle, fontFamily
+  - `appearance`: theme, mode, primaryColor, background (color1/color2 → degradado del fondo), borderRadius, buttonStyle, fontFamily
+    - theme: "minimal" | "editorial" — el "Diseño" del sitio (ver sección 15); independiente del modo claro/oscuro y de los colores. `data-theme` en `<html>`, registro en src/themes/index.ts, shell compartida vía src/lib/useThemeShell.ts
     - mode: system | light | dark — se aplica al instante (sin recargar); system sigue a prefers-color-scheme en tiempo real; el toggle del header cambia la config en modos explícitos o un override en system
     - primaryColor: 6 presets (Violeta/Azul/Esmeralda/Ámbar/Rosa/Grafito) en lugar de color picker libre; se propaga a TODO el sitio vía `--visora-accent` (accent presets en src/lib/appearance.ts)
     - background: color base (clara u oscura) + acento del fondo → degradado del body; presets pre-hechos en `src/lib/appearance.ts` (Medianoche·violeta, Negro·azul, Grafito·verde azulado, etc.); elegir un preset oscuro activa el modo oscuro automáticamente para que el texto sea legible; en dark mode el degradado se atenúa con color-mix
@@ -623,6 +648,42 @@ La arquitectura favorece esta separación:
 - Los componentes pueden reutilizarse entre temas
 - SiteTexts contiene textos UI configurables por tema
 
+## 15b. Sistema de temas (implementado)
+
+**"Diseño" (theme) vs "Modo claro/oscuro" (mode)**: son independientes (ver Apariencia). El selector "Modo de tema" se renombró a "Modo claro/oscuro"; nuevo selector **"Diseño"** arriba en Apariencia elige el tema gráfico. Ambos se persisten en `visora-admin-settings`.
+
+**Registro** — `src/themes/index.ts`:
+- `ThemeId` en `src/types/portfolio.ts`: `"minimal" | "editorial"`.
+- `ThemeDefinition` y `ThemePages` en `src/themes/types.ts`: cada tema define su propio `Header`, `Footer` y `pages` (Home, ProjectPage, AboutPage, BlogPage, BlogPostPage, ContactPage, NotFound).
+- `THEME_OPTIONS` (para el selector en Apariencia: id, label, descripción, swatches) + `THEMES` (mapa estático id → `ThemeDefinition`, con `minimal` como fallback). `themeOptionFor(id)` / `themeFor(id)`.
+- `appearance.theme` en `data/settings.ts` (default `"minimal"`); el merge de PortfolioProvider rellena `theme` con el default si el localStorage previo no lo tiene.
+- **Tema minimal**: reutiliza el scaffold compartido (`components/Header` + `components/Footer`) y las páginas compartidas (`src/pages/Home`, `Project`, `About`, `Blog`, `BlogPost`, `Contact`, `NotFound`). Cero duplicación.
+- **Tema editorial**: tiene su propio `EditorialHeader` (masthead), `EditorialFooter` y sus propias páginas bajo `src/themes/editorial/pages/` para un rediseño visual completo (revista).
+
+**Shell compartida** — `src/lib/useThemeShell.ts` + `src/themes/ThemeShell.tsx`:
+- `useThemeShell()` encapsula la lógica común de TODOS los temas: dark mode (override manual + sistema en tiempo real), aplicación de CSS vars de apariencia (acento, fondo claro/oscuro, tipografía/radio/botones con loadGoogleFont), `data-theme` en `<html>` (y carga de Playfair Display cuando el tema es editorial), polling de sesión admin (500ms) y `publicLocked` (sitio no publicado + visitante).
+- Devuelve `{ theme, effectiveDark, admin, publicLocked, onToggleDarkMode }`.
+- `ThemeShell` (src/themes/ThemeShell.tsx) compone el scaffold: ScrollToTop + `theme.Header` + `AppRouter({ pages })` + `theme.Footer` + CookieBanner, y `SiteGate` cuando `publicLocked`. Aplica `data-theme={theme.id}` en el wrapper raíz.
+
+**Páginas del tema**:
+- Las páginas del tema consumen la lógica admin compartida: `usePortfolio`, `useAdmin` (polling de sesión), `usePhotoViewer` (open/close/prev/next sobre un array Photo), `useBlogList` (estado completo del listado/blog: editor inline lazy `BlogPostEditor`, autoguardado recuperable, toasts) y los modales de edición (`EditHeroModal`, `EditFeaturedModal`, `EditProjectsModal`, `EditAboutModal`, `EditContactModal`) + `EditableSection` para los botones [✏ Editar].
+- El look del tema se define con tokens CSS scoped en `src/index.css` bajo `[data-theme="editorial"]` (display serif en h1-h3, reglas finas en headers/bordes, `--visora-font-display`, esquinas más rectas, fondo de papel uniforme en light/dark). La apariencia (acento, fondo, font de cuerpo, radio, botones) se respeta por completo encima del tema.
+
+**Gate compartido** — `src/components/SiteGate.tsx`: pantalla "Sitio en construcción" reutilizable, usada por todos los temas.
+
+**App.tsx**: `ThemeSwitcher` interno (dentro del Provider) lee `settings.appearance.theme`, hace lookup en `THEMES` y renderiza `<ThemeShell theme={...} />` (lookup de mapa estático, no creado "in render" — requisito del lint react-hooks).
+
+**Editorial (v2 — rediseño visual completo)**: ahora sí es un tema propio, no solo tokens:
+- Header masthead de revista: marca serif capitular, nav uppercase con separadores, regla con `border-top`, toggle claro/oscuro y sesión admin; menú móvil fullscreen.
+- Portada (cover) en la Home: mancheta con profesión, `brand` serif grande uppercase, regla doble, CTAs, imagen desktop/móvil con focal points y pie de foto (masthead figure).
+- Destacadas: grid de fotos sin huecos (gap-px) con numeración editorial `01..08`.
+- Proyectos: **índice numerado** con filas 01/02/…, portada flotante al hacer hover y conteo de obras.
+- Blog: **índice tipo magacín** (fecha + título serif + extracto + portada en la columna derecha), aviso de autoguardado, toasts y editor inline lazy compartido.
+- Artículo de blog: cabecera de revista con fecha/kicker, título serif grande, extracto como lead; portada; PostBody.
+- Contacto: canales (Instagram/WhatsApp/Email) como **columnas numeradas 01/02/03** con "Ir →".
+- 404 editorial con `404` serif gigante y reglas.
+- El tema carga Playfair Display (Google Fonts) dinámicamente y el fondo pasa a ser papel uniforme (`#f6f2e9` / `#0e0c1a`) en lugar de degradados.
+
 ---
 
 # 16. MasonryGallery — Grid dinámico
@@ -680,7 +741,8 @@ Modelo **mono-tenant por cliente**: cada cliente tiene su propio proyecto Supaba
 - `hero_secondary_button` text
 - `about_title` text
 - `about_description` text
-- `about_image` text (nullable) — actualmente se sube pero NO se renderiza en público
+- `about_image` text (nullable) — retrato opcional; se sube vía "Editar sobre mí" y se renderiza en público (minimal: retrato con marco en el grid; editorial: retrato en la ficha lateral). Fallback al `avatar` si no hay imagen propia. Almacenado en `Profile.aboutImage` (localStorage `visora-admin-about.image` + `visora-admin-profile.aboutImage`)
+- `about_image_focus_x` int2 (0–100, default 50), `about_image_focus_y` int2 (0–100, default 50) — focal point del retrato (GUI: botón "Ajustar posición" en "Editar sobre mí"); si en su lugar el usuario usa "Recortar (retrato 4:5)", el crop se exporta a 800×1000 JPEG y el foco se resetea a 50/50
 - `contact_title` text (nullable)
 - `contact_description` text (nullable)
 - `email` text
@@ -823,10 +885,10 @@ Administrador:
 - Configuración global (/configuracion) — IMPLEMENTADO: categorías General/SEO/Apariencia/Privacidad/Publicación (la categoría "Redes" fue ELIMINADA: las redes se editan solo en el form "Editar contacto" de /contacto via `settings.socials`; las categorías "Sitio/Mantenimiento" y "Dominio" fueron ELIMINADAS: se configuran en Vercel, no en la app)
   - General: brandName, profession, language, favicon (brand/profession como fuente única); favicon con 10 presets SVG (inicial "V" por defecto, cámara, pincel, lápiz, objetivo, paleta, cámara de video, arquitectura, diseño web, moda) o subida (redimensionada a 64×64)
   - Contacto: botones con iconos — "Envíame un mensaje" (Instagram, principal, abre el perfil), "Escríbeme por WhatsApp" (wa.me con mensaje) y "Escríbeme un correo" (mailto con asunto predefinido)
-  - Apariencia: aplica modo de tema + 6 colores de acento + degradado de fondo (2 colores) + tipografía/radio/botones. Se propaga a TODO el sitio en real (sin recargar) vía CSS vars: `--visora-accent`, `--visora-bg-1/2`, `--visora-font`, `--visora-radius-scale`, `--visora-btn-radius`. El color de acento reemplaza los `#7C6CFF` hardcodeados de todos los componentes. Vista previa en la propia página (botones + tipografía + fondo). Presets en `src/lib/appearance.ts`. El dark/flash es instantáneo y "seguir al sistema" responde en tiempo real (`MinimalTheme`).
+  - Apariencia: selector "Diseño" (tema gráfico, independiente) + "Modo claro/oscuro" + 6 colores de acento + degradado de fondo (2 colores) + tipografía/radio/botones. Se propaga a TODO el sitio en real (sin recargar) vía CSS vars: `--visora-accent`, `--visora-bg-1/2`, `--visora-font`, `--visora-radius-scale`, `--visora-btn-radius`. El color de acento reemplaza los `#7C6CFF` hardcodeados de todos los componentes. Vista previa en la propia página (botones + tipografía + fondo). Presets en `src/lib/appearance.ts`. El dark/flash es instantáneo y "seguir al sistema" responde en tiempo real (`useThemeShell`).
   - SEO: title + meta description + ogImage (recortada a 1200×630 vía `ImageCropModal` con modo export, guardada como data URL JPEG) + toggle noindex. `DocumentHead` emite `canonical` (derivado de la URL real, omitido en localhost) y `meta robots`: `index, follow` por defecto, o `noindex, nofollow` si noindex está activo. El `X-Robots-Tag` (header HTTP) se configura en `vercel.json`. `meta keywords` y `rel=precursor`/`publisher` no se implementan (obsoletos).
   - Privacidad: showEmail/showLocation/protectImages + notice + cookieNotice (banner de cookies `CookieBanner` para visitantes) + marca de agua en el visor (watermarkEnabled/style/opacity, ver sección 8)
-  - Publicación: published (si false, solo el admin ve el sitio; los visitantes ven "Sitio en construcción")
+  - Publicación: published (la web SIEMPRE inicia publicado: default true + migración de versión de settings a v2 que fuerza published=true en datos existentes; solo si el usuario lo desactiva explícitamente los visitantes ven "Sitio en construcción", únicamente el admin ve el sitio)
 - Conectar admin → Supabase (actualmente todo en localStorage)
 
 Técnicos:
@@ -873,6 +935,6 @@ Después:
 2. Storage (subida de imágenes)
 3. Autenticación real (reemplazar mock)
 4. Editor de blog — IMPLEMENTADO (pendiente persistencia Supabase)
-5. Selección de tema / Apariencia — Configuración de Apariencia IMPLEMENTADA (modo de tema instantáneo, 6 acentos, degradado de fondo, radio, botones, 6 fuentes Google); falta el despliegue de Temas alternativos (Editorial/Cinematic)
+5. Selección de tema / Apariencia — Configuración de Apariencia IMPLEMENTADA (modo claro/oscuro instantáneo, 6 acentos, degradado de fondo, radio, botones, 6 fuentes Google); SISTEMA DE TEMAS IMPLEMENTADO (selector "Diseño", Minimal + Editorial, registro THEME_OPTIONS/THEMES, ThemeShell, useThemeShell, SiteGate); Editorial con rediseño visual completo (Header/Footer/páginas propias); falta añadir otros temas premium (Cinematic, etc.)
 6. Deployment en Vercel
 7. Dominios personalizados

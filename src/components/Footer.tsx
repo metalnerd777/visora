@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { socialUrl, socialLabel, nonEmptySocials } from "../lib/socials";
+import SocialIcon from "./SocialIcon";
 import { isAuthenticated, logout } from "../lib/auth";
 
 const exploreLinks = [
@@ -63,8 +64,12 @@ function Footer() {
                   href={socialUrl(link.platform, link.handle)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-400 hover:text-black dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#4A4468] dark:hover:text-[#F5F3FF]"
+                  className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 text-xs uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-400 hover:text-black dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#4A4468] dark:hover:text-[#F5F3FF]"
                 >
+                  <SocialIcon
+                    platform={link.platform}
+                    className="h-3.5 w-3.5 text-current"
+                  />
                   {socialLabel(link.platform)}
                 </a>
               ))}

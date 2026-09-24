@@ -40,15 +40,20 @@ html {
     margin: 0;
     background-color: var(--visora-bg-light-1, #f5f5f8);
     background-image:
-      radial-gradient(
-        55rem 40rem at 88% -12%,
-        var(--visora-bg-light-2, #fdecef),
-        transparent 62%
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 16%, transparent),
+        transparent 34%
       ),
       radial-gradient(
-        45rem 34rem at -12% 112%,
-        color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 55%, var(--visora-bg-light-1, #f5f5f8)),
-        transparent 62%
+        80rem 55rem at 85% -20%,
+        color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 62%, var(--visora-bg-light-1, #f5f5f8)),
+        transparent 66%
+      ),
+      radial-gradient(
+        65rem 48rem at -15% 120%,
+        color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 50%, var(--visora-bg-light-1, #f5f5f8)),
+        transparent 66%
       );
     background-attachment: fixed;
   }
@@ -56,16 +61,22 @@ html {
   .dark body {
     background-color: var(--visora-bg-dark-1, #0b0a14);
     background-image:
-      radial-gradient(
-        55rem 40rem at 88% -12%,
-        color-mix(in srgb, var(--visora-bg-dark-2, #7c6cff) 34%, transparent),
-        transparent 62%
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--visora-bg-dark-2, #7c6cff) 16%, transparent),
+        transparent 36%
       ),
       radial-gradient(
-        45rem 34rem at -12% 112%,
-        color-mix(in srgb, var(--visora-bg-dark-2, #4a4468) 22%, transparent),
-        transparent 62%
+        80rem 55rem at 85% -20%,
+        color-mix(in srgb, var(--visora-bg-dark-2, #7c6cff) 50%, transparent),
+        transparent 66%
+      ),
+      radial-gradient(
+        65rem 48rem at -15% 120%,
+        color-mix(in srgb, var(--visora-bg-dark-2, #4a4468) 36%, transparent),
+        transparent 66%
       );
+    background-attachment: fixed;
   }
 
   ::selection {
@@ -170,4 +181,96 @@ html {
 
 .rich-text-editor .ProseMirror p[data-align="center"] {
   text-align: center;
+}
+
+/* --- Tema Editorial -------------------------------------------------------
+   Look revista: display serif en encabezados, reglas finas marcadas,
+   micro-etiquetas uppercase y esquinas más rectas. Se aplica SOLO cuando
+   el sitio tiene `data-theme="editorial"` en <html>. La apariencia
+   (colores de acento, fondo, tipografía de cuerpo, radio, botones) se
+   respeta por completo. */
+
+:root {
+  --visora-font-display: var(--visora-font, var(--font-sans));
+}
+
+html[data-theme="editorial"] {
+  --visora-font-display: Georgia, "Playfair Display", "Times New Roman", serif;
+  --visora-editorial-rule: #1c1c1f;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.375rem;
+  --radius-3xl: 0.5rem;
+}
+
+html[data-theme="editorial"] .dark {
+  --visora-editorial-rule: #e9e6df;
+}
+
+/* Encabezados con voz editorial */
+html[data-theme="editorial"] h1,
+html[data-theme="editorial"] h2,
+html[data-theme="editorial"] h3 {
+  font-family: var(--visora-font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Marca + menú en serif capitular */
+html[data-theme="editorial"] header {
+  border-bottom: 1px solid var(--visora-editorial-rule);
+}
+
+html[data-theme="editorial"] header .flex.justify-between > a,
+html[data-theme="editorial"] header aside h2 {
+  font-family: var(--visora-font-display);
+  letter-spacing: 0.32em;
+  font-weight: 600;
+}
+
+/* Separadores de sección tipo regla editorial */
+html[data-theme="editorial"] section.border-t {
+  border-top: 2px solid var(--visora-editorial-rule);
+}
+
+/* Micro-etiquetas uppercase: más aire entre letras */
+html[data-theme="editorial"] p.uppercase {
+  letter-spacing: 0.3em;
+}
+
+/* Enlace del visor / artículos subrayado fino */
+html[data-theme="editorial"] a {
+  text-underline-offset: 3px;
+}
+
+/* Fondo editorial: papel uniforme pero respeta los colores de fondo elegidos
+   en Apariencia (--visora-bg-*-1/2). Sin degradado fuerte: solo un tinte
+   sutil del acento para mantener el look revista legible con las reglas. */
+html[data-theme="editorial"] body {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 14%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      62rem 40rem at 90% -10%,
+      color-mix(in srgb, var(--visora-bg-light-2, #fdecef) 46%, var(--visora-bg-light-1, #f6f2e9)),
+      transparent 66%
+    );
+  background-color: var(--visora-bg-light-1, #f6f2e9);
+}
+
+html[data-theme="editorial"].dark body {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--visora-bg-dark-2, #4a4468) 14%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      62rem 40rem at 90% -10%,
+      color-mix(in srgb, var(--visora-bg-dark-2, #4a4468) 36%, transparent),
+      transparent 66%
+    );
+  background-color: var(--visora-bg-dark-1, #0e0c1a);
 }

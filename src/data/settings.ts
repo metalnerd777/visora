@@ -1,7 +1,10 @@
 import type { SiteSettings } from "../types/portfolio";
 import { profile as defaultProfile } from "./portfolio";
 
+export const SETTINGS_VERSION = 2;
+
 export const defaultSettings: SiteSettings = {
+  version: SETTINGS_VERSION,
   general: {
     brandName: defaultProfile.name,
     profession: defaultProfile.profession,
@@ -15,6 +18,7 @@ export const defaultSettings: SiteSettings = {
     noindex: false,
   },
   appearance: {
+    theme: "minimal",
     mode: "system",
     primaryColor: "#7C6CFF",
     background: { color1: "#F7F7FA", color2: "#FDEBEF" },

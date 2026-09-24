@@ -32,6 +32,9 @@ export interface PortfolioProfile {
 
   aboutTitle: string;
   aboutDescription: string;
+  aboutImage?: string;
+  aboutImageFocusX?: number;
+  aboutImageFocusY?: number;
 
   contactTitle?: string;
   contactDescription?: string;
@@ -92,7 +95,10 @@ export interface BlogBlock {
 
 export type ThemeMode = "system" | "light" | "dark";
 
+export type ThemeId = "minimal" | "editorial";
+
 export interface SiteSettings {
+  version?: number;
   general: {
     brandName: string;
     profession: string;
@@ -106,6 +112,7 @@ export interface SiteSettings {
     noindex: boolean;
   };
   appearance: {
+    theme: ThemeId;
     mode: ThemeMode;
     primaryColor: string;
     background: { color1: string; color2: string };

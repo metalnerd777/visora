@@ -1,45 +1,33 @@
 import { useEffect, useState } from "react";
 
-import { usePortfolio } from "../../lib/usePortfolio";
-import { isAuthenticated } from "../../lib/auth";
-import type { ThemeMode } from "../../types/portfolio";
+import { usePortfolio } from "./usePortfolio";
+import { isAuthenticated } from "./auth";
+import type {
+  ThemeMode,
+  ThemeId,
+} from "../types/portfolio";
 import {
   BUTTON_RADIUS,
   RADIUS_SCALE,
   effectiveBase,
   fontOptionFor,
   loadGoogleFont,
-} from "../../lib/appearance";
+} from "./appearance";
 
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import ScrollToTop from "../../components/ScrollToTop";
-import CookieBanner from "../../components/CookieBanner";
-
-import AppRouter from "../../router";
-
-function SiteGate({
-  title,
-  message,
-}: {
-  title: string;
-  message: string;
-}) {
-  return (
-    <main className="flex min-h-[70vh] items-center justify-center px-6 py-20 text-neutral-900 transition-colors dark:text-[#F5F3FF]">
-      <div className="max-w-md text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-white/70 text-2xl backdrop-blur-2xl dark:border-[#27243A]/70 dark:bg-[#161327]/70">
-          ⚙
-        </div>
-        <h1 className="mt-6 text-3xl font-light tracking-tight">{title}</h1>
-        <p className="mt-3 text-neutral-500 dark:text-[#A8A3B8]">{message}</p>
-      </div>
-    </main>
-  );
+export interface ThemeShell {
+  theme: ThemeId;
+  effectiveDark: boolean;
+  admin: boolean;
+  publicLocked: boolean;
+  onToggleDarkMode: () => void;
 }
 
-function MinimalTheme() {
+// Lógica compartida por todos los temas: dark mode (override + sistema en
+// tiempo real), CSS vars de apariencia sobre <html>, polling de admin y
+// gate de publicación. Cada tema compone su propio shell visual.
+export function useThemeShell(): ThemeShell {
   const { settings, setSettings } = usePortfolio();
+
   const [admin, setAdmin] = useState(isAuthenticated());
 
   // Override manual del visitante (toggle del header) solo en modo sistema.
@@ -74,6 +62,16 @@ function MinimalTheme() {
     }
   }, [effectiveDark, settings.appearance.mode]);
 
+  // Establece el tema de diseño activo sobre <html> para el CSS global (background, tipografía).
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.appearance.theme;
+
+    // El tema editorial usa un display serif; se carga junto con la fuente de cuerpo.
+    if (settings.appearance.theme === "editorial") {
+      loadGoogleFont("Playfair Display");
+    }
+  }, [settings.appearance.theme]);
+
   // Modo "system": sigue al sistema operativo en tiempo real.
   useEffect(() => {
     if (settings.appearance.mode !== "system") return;
@@ -87,19 +85,19 @@ function MinimalTheme() {
   const bgColor1 = settings.appearance.background.color1;
   const bgColor2 = settings.appearance.background.color2;
 
+  // Apariencia: acento + fondo efectivo (claro/oscuro contrastados) por luminosidad.
   useEffect(() => {
     const root = document.documentElement;
 
     root.style.setProperty("--visora-accent", primaryColor);
 
-    // Fondo: base efectiva por luminosidad (claro contrasta en claro, oscuro
-    // contrasta en oscuro) + color de acento del fondo para el degradado.
     root.style.setProperty("--visora-bg-light-1", effectiveBase(bgColor1, false));
     root.style.setProperty("--visora-bg-light-2", bgColor2);
     root.style.setProperty("--visora-bg-dark-1", effectiveBase(bgColor1, true));
     root.style.setProperty("--visora-bg-dark-2", bgColor2);
   }, [primaryColor, bgColor1, bgColor2]);
 
+  // Apariencia: tipografía (Google Fonts) + radio global + estilo de botones.
   useEffect(() => {
     const root = document.documentElement;
 
@@ -122,6 +120,7 @@ function MinimalTheme() {
     settings.appearance.buttonStyle,
   ]);
 
+  // Detección de sesión admin (el sitio público ES el admin cuando hay sesión).
   useEffect(() => {
     const interval = setInterval(() => {
       setAdmin(isAuthenticated());
@@ -132,45 +131,18 @@ function MinimalTheme() {
 
   const publicLocked = !admin && settings.site.published === false;
 
-  if (publicLocked) {
-    return (
-      <div className="flex min-h-screen flex-col text-neutral-900 transition-colors dark:text-[#F5F3FF]">
-        <SiteGate
-          title="Sitio en construcción"
-          message="Este portfolio aún no está publicado. Vuelve pronto."
-        />
-      </div>
-    );
-  }
+  const onToggleDarkMode = () => {
+    if (settings.appearance.mode === "system") {
+      setOverride((current) => !(current ?? systemDark));
+    } else {
+      const nextMode: ThemeMode =
+        settings.appearance.mode === "dark" ? "light" : "dark";
+      setSettings({
+        ...settings,
+        appearance: { ...settings.appearance, mode: nextMode },
+      });
+    }
+  };
 
-  return (
-    <div className="flex min-h-screen flex-col text-neutral-900 transition-colors dark:text-[#F5F3FF]">
-      <ScrollToTop />
-
-      <Header
-        darkMode={effectiveDark}
-        onToggleDarkMode={() => {
-          if (settings.appearance.mode === "system") {
-            setOverride((current) => !(current ?? systemDark));
-          } else {
-            const nextMode: ThemeMode =
-              settings.appearance.mode === "dark" ? "light" : "dark";
-            setSettings({
-              ...settings,
-              appearance: { ...settings.appearance, mode: nextMode },
-            });
-          }
-        }}
-      />
-
-      <div className="flex-1">
-        <AppRouter />
-      </div>
-
-      <Footer />
-      <CookieBanner />
-    </div>
-  );
+  return { theme: settings.appearance.theme, effectiveDark, admin, publicLocked, onToggleDarkMode };
 }
-
-export default MinimalTheme;

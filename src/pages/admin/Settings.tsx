@@ -9,6 +9,7 @@ import FaviconPicker from "../../components/FaviconPicker";
 
 import { usePortfolio } from "../../lib/usePortfolio";
 import { isAuthenticated } from "../../lib/auth";
+import { THEME_OPTIONS } from "../../themes";
 import {
   ACCENT_PRESETS,
   BACKGROUND_ACCENTS,
@@ -22,7 +23,7 @@ import {
   fontOptionFor,
 } from "../../lib/appearance";
 
-import type { SiteSettings, ThemeMode } from "../../types/portfolio";
+import type { SiteSettings, ThemeId, ThemeMode } from "../../types/portfolio";
 
 type CategoryKey =
   | "general"
@@ -492,11 +493,71 @@ function SettingsPage() {
             {activeCategory.key === "appearance" && (
               <SectionCard
                 title="Apariencia"
-                description="Tema, colores y estilo general del portfolio."
+                description="Diseño del sitio, colores y estilo general del portfolio."
               >
                 <FieldGroup>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+                      Diseño
+                    </label>
+                    <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                      El tema define el aspecto gráfico general del sitio
+                      (estructura, encabezados, reglas). Claro/oscuro y colores
+                      se aplican encima por separado.
+                    </p>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {THEME_OPTIONS.map((option) => {
+                        const isActive =
+                          settings.appearance.theme === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() =>
+                              patchGroup("appearance", {
+                                theme: option.id as ThemeId,
+                              })
+                            }
+                            className={`flex cursor-pointer flex-col gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:scale-[1.02] ${
+                              isActive
+                                ? "border-neutral-900 dark:border-white"
+                                : "border-neutral-200/70 dark:border-[#2A273F]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="flex gap-1">
+                                {option.swatch.map((color) => (
+                                  <span
+                                    key={color}
+                                    className="h-6 w-6 rounded-full border border-black/10"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                ))}
+                              </span>
+
+                              <span
+                                className={`text-sm font-medium ${
+                                  isActive
+                                    ? "text-neutral-900 dark:text-[#F5F3FF]"
+                                    : "text-neutral-600 dark:text-[#A8A3B8]"
+                                }`}
+                              >
+                                {option.label}
+                              </span>
+                            </div>
+
+                            <p className="text-xs leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                              {option.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <SettingSelect
-                    label="Modo de tema"
+                    label="Modo claro/oscuro"
                     value={settings.appearance.mode}
                     onChange={(v) =>
                       patchGroup("appearance", { mode: v as ThemeMode })

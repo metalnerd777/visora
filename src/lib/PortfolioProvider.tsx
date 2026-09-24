@@ -8,8 +8,9 @@ import {
   featuredPhotos as defaultFeatured,
   siteTexts as defaultTexts,
   blogPosts as defaultBlogPosts,
+  PROFILE_VERSION,
 } from "../data/portfolio";
-import { defaultSettings } from "../data/settings";
+import { defaultSettings, SETTINGS_VERSION } from "../data/settings";
 
 import { loadJSON, saveJSON } from "../lib/storage";
 
@@ -23,6 +24,45 @@ import type {
 } from "../types/portfolio";
 
 const SETTINGS_KEY = "visora-admin-settings";
+const PROFILE_VERSION_KEY = "visora-admin-profile-version";
+
+function loadProfile(): PortfolioProfile {
+  const stored = loadJSON<PortfolioProfile | null>(
+    "visora-admin-profile",
+    null,
+  );
+
+  if (!stored) return defaultProfile;
+
+  const storedVersion = loadJSON<number>(PROFILE_VERSION_KEY, 1);
+
+  const merged: PortfolioProfile = {
+    ...defaultProfile,
+    ...stored,
+    socialLinks: stored.socialLinks ?? defaultProfile.socialLinks,
+  };
+
+  if (storedVersion >= PROFILE_VERSION) return merged;
+
+  const refreshed: PortfolioProfile = {
+    ...merged,
+    name: defaultProfile.name,
+    profession: defaultProfile.profession,
+    description: defaultProfile.description,
+    aboutTitle: defaultProfile.aboutTitle,
+    aboutDescription: defaultProfile.aboutDescription,
+    contactTitle: defaultProfile.contactTitle,
+    contactDescription: defaultProfile.contactDescription,
+    heroPrimaryButton: defaultProfile.heroPrimaryButton,
+    heroSecondaryButton: defaultProfile.heroSecondaryButton,
+    socialLinks: defaultProfile.socialLinks,
+  };
+
+  saveJSON("visora-admin-profile", refreshed);
+  saveJSON(PROFILE_VERSION_KEY, PROFILE_VERSION);
+
+  return refreshed;
+}
 
 function loadFeatured(projects: Project[], allFeatured: Photo[]): Photo[] {
   const slugs = loadJSON<string[]>("visora-admin-featured", []);
@@ -85,6 +125,7 @@ function mergeSettings(
   stored: Partial<SiteSettings> | null,
 ): SiteSettings {
   return {
+    version: stored?.version ?? defaults.version,
     general: { ...defaults.general, ...(stored?.general ?? {}) },
     seo: { ...defaults.seo, ...(stored?.seo ?? {}) },
     appearance: {
@@ -102,10 +143,7 @@ function mergeSettings(
 }
 
 function readState() {
-  const profile = loadJSON<PortfolioProfile>(
-    "visora-admin-profile",
-    defaultProfile,
-  );
+  const profile = loadProfile();
 
   const rawProjects = loadJSON<unknown[]>("visora-admin-projects", defaultProjects);
 
@@ -119,7 +157,16 @@ function readState() {
 
   const storedSettings = loadJSON<Partial<SiteSettings>>(SETTINGS_KEY, {});
 
-  const settings = mergeSettings(defaultSettings, storedSettings);
+  let settings = mergeSettings(defaultSettings, storedSettings);
+
+  if ((storedSettings.version ?? 1) < SETTINGS_VERSION) {
+    settings = {
+      ...settings,
+      version: SETTINGS_VERSION,
+      site: { ...settings.site, published: true },
+    };
+    saveJSON(SETTINGS_KEY, settings);
+  }
 
   return { profile, projects, featuredPhotos, siteTexts, blogPosts, settings };
 }

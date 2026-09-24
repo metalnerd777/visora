@@ -1,19 +1,18 @@
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 
-import Home from "./pages/Home";
-import ProjectPage from "./pages/Project";
-import AboutPage from "./pages/About";
-import BlogPage from "./pages/Blog";
-import BlogPostPage from "./pages/BlogPost";
-import ContactPage from "./pages/Contact";
-import NotFound from "./pages/NotFound";
 import AdminLoginPage from "./pages/AdminLogin";
 import SettingsPage from "./pages/admin/Settings";
 
 import { usePortfolio } from "./lib/usePortfolio";
 import { clearAutosave } from "./lib/blogAutosave";
 
-function ProjectRoute() {
+import type { ThemePages } from "./themes/types";
+
+function ProjectRoute({
+  pages,
+}: {
+  pages: ThemePages;
+}) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { projects } = usePortfolio();
@@ -21,15 +20,19 @@ function ProjectRoute() {
   const project = projects.find((item) => item.slug === slug);
 
   if (!project) {
-    return <NotFound title="Proyecto no encontrado" />;
+    return <pages.NotFound title="Proyecto no encontrado" />;
   }
 
   return (
-    <ProjectPage project={project} onBack={() => navigate("/")} />
+    <pages.ProjectPage project={project} onBack={() => navigate("/")} />
   );
 }
 
-function BlogPostRoute() {
+function BlogPostRoute({
+  pages,
+}: {
+  pages: ThemePages;
+}) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { blogPosts, setBlogPosts } = usePortfolio();
@@ -39,7 +42,7 @@ function BlogPostRoute() {
   );
 
   if (!post) {
-    return <NotFound title="Artículo no encontrado" />;
+    return <pages.NotFound title="Artículo no encontrado" />;
   }
 
   const handleDelete = (postSlug: string) => {
@@ -53,7 +56,7 @@ function BlogPostRoute() {
   };
 
   return (
-    <BlogPostPage
+    <pages.BlogPostPage
       post={post}
       onBack={() => navigate("/blog")}
       onEdit={handleEdit}
@@ -62,26 +65,26 @@ function BlogPostRoute() {
   );
 }
 
-function AppRouter() {
+function AppRouter({ pages }: { pages: ThemePages }) {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<pages.Home />} />
 
-      <Route path="/proyecto/:slug" element={<ProjectRoute />} />
+      <Route path="/proyecto/:slug" element={<ProjectRoute pages={pages} />} />
 
-      <Route path="/sobre-mi" element={<AboutPage />} />
+      <Route path="/sobre-mi" element={<pages.AboutPage />} />
 
-      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog" element={<pages.BlogPage />} />
 
-      <Route path="/blog/:slug" element={<BlogPostRoute />} />
+      <Route path="/blog/:slug" element={<BlogPostRoute pages={pages} />} />
 
-      <Route path="/contacto" element={<ContactPage />} />
+      <Route path="/contacto" element={<pages.ContactPage />} />
 
       <Route path="/admin" element={<AdminLoginPage />} />
 
       <Route path="/configuracion" element={<SettingsPage />} />
 
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<pages.NotFound />} />
     </Routes>
   );
 }
