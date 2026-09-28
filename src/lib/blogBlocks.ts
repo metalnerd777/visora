@@ -15,7 +15,7 @@ export function buildId(): string {
 
 export function toDraft(block: BlogBlock): BlockDraft {
   if (block.type === "separator") {
-    return { id: block.id, type: "separator" };
+    return { id: block.id, type: "separator", column: block.column };
   }
 
   return {
@@ -31,11 +31,16 @@ export function toDraft(block: BlogBlock): BlockDraft {
     alt: block.alt,
     caption: block.caption,
     provider: block.provider,
+    column: block.column,
   };
 }
 
 export function toBlock(draft: BlockDraft): BlogBlock {
-  const base: BlogBlock = { id: draft.id, type: draft.type };
+  const base: BlogBlock = {
+    id: draft.id,
+    type: draft.type,
+    column: draft.column,
+  };
 
   if (draft.type === "separator") {
     return base;

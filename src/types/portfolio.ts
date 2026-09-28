@@ -82,6 +82,8 @@ export type EmbedProvider =
   | "behance"
   | "flickr";
 
+export type BlogColumn = "auto" | "left" | "right" | "full";
+
 export interface BlogBlock {
   id: string;
   type: "text" | "image" | "embed" | "separator";
@@ -91,11 +93,14 @@ export interface BlogBlock {
   alt?: string;
   caption?: string;
   provider?: EmbedProvider;
+  column?: BlogColumn;
 }
 
 export type ThemeMode = "system" | "light" | "dark";
 
 export type ThemeId = "minimal" | "editorial";
+
+export type BlogPostDesignId = "classic" | "cinematic" | "magazine" | "columns";
 
 export interface SiteSettings {
   version?: number;
@@ -148,5 +153,6 @@ export interface BlogPost {
   coverFocusY?: number;
   date: string;
   status: BlogPostStatus;
+  design?: BlogPostDesignId;
   blocks: BlogBlock[];
 }

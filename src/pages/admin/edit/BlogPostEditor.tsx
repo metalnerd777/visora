@@ -20,7 +20,6 @@ import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
 import ImageUpload from "../../../components/ImageUpload";
 import ImageCropModal from "../../../components/ImageCropModal";
-import PostBody from "../../../components/PostBody";
 import { BlogBlockEditor } from "../../../components/blog/BlogBlockEditor";
 
 import { usePortfolio } from "../../../lib/usePortfolio";
@@ -34,7 +33,8 @@ import {
   type BlockDraft,
 } from "../../../lib/blogAutosave";
 
-import type { BlogPost, BlogPostStatus } from "../../../types/portfolio";
+import type { BlogPost, BlogPostDesignId, BlogPostStatus } from "../../../types/portfolio";
+import { BLOG_DESIGN_OPTIONS, blogDesignFor } from "../../../blogDesigns";
 
 type BlockDraftType = "text" | "image" | "embed" | "separator";
 
@@ -95,6 +95,9 @@ export function BlogPostEditor({
   const [status, setStatus] = useState<BlogPostStatus>(
     savedDraft?.status ?? initial?.status ?? "draft",
   );
+  const [design, setDesign] = useState<BlogPostDesignId>(
+    savedDraft?.design ?? initial?.design ?? "classic",
+  );
 
   const [blocks, setBlocks] = useState<BlockDraft[]>(
     savedDraft
@@ -106,6 +109,7 @@ export function BlogPostEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [cropOpen, setCropOpen] = useState(false);
+  const [coverCropOpen, setCoverCropOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,6 +128,7 @@ export function BlogPostEditor({
     coverFocusY,
     date,
     status,
+    design,
     blocks,
   });
 
@@ -240,8 +245,6 @@ export function BlogPostEditor({
 
     if (!slug.trim()) return "El slug es obligatorio.";
 
-    if (!cover.trim()) return "La portada es obligatoria.";
-
     return null;
   };
 
@@ -268,6 +271,7 @@ export function BlogPostEditor({
       coverFocusY,
       date: date || new Date().toISOString().slice(0, 10),
       status: targetStatus,
+      design,
       blocks: blocks.map(toBlock),
     };
 
@@ -318,6 +322,7 @@ export function BlogPostEditor({
     coverFocusY,
     date,
     status,
+    design,
     blocks: blocks.map(toBlock),
   };
 
@@ -407,6 +412,7 @@ export function BlogPostEditor({
             onImage={(url) => setCover(url)}
             onRemove={() => setCover("")}
             className="h-48 sm:h-64"
+            onCrop={() => setCoverCropOpen(true)}
           />
 
           {cover && (
@@ -455,6 +461,48 @@ export function BlogPostEditor({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+            Diseño de la entrada
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {BLOG_DESIGN_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setDesign(option.id)}
+                className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors ${
+                  design === option.id
+                    ? "border-(--visora-accent) bg-(--visora-accent)/10"
+                    : "border-neutral-200 hover:border-neutral-400 dark:border-[#27243A] dark:hover:border-[#4A4468]"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="flex gap-1">
+                    {option.swatch.map((color) => (
+                      <span
+                        key={color}
+                        aria-hidden="true"
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </span>
+
+                  <span className="text-sm font-medium text-neutral-900 dark:text-[#F5F3FF]">
+                    {option.label}
+                  </span>
+                </span>
+
+                <span className="text-xs leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+                  {option.description}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -577,7 +625,7 @@ export function BlogPostEditor({
         </div>
       </div>
 
-      {/* Crop modal */}
+      {/* Crop modal (focal point) */}
       <ImageCropModal
         open={cropOpen}
         onClose={() => setCropOpen(false)}
@@ -589,6 +637,22 @@ export function BlogPostEditor({
         }}
       />
 
+      {/* Crop modal (free recortar) */}
+      {cover && (
+        <ImageCropModal
+          open={coverCropOpen}
+          onClose={() => setCoverCropOpen(false)}
+          image={cover}
+          free
+          onExport={(dataUrl) => {
+            setCover(dataUrl);
+            setCoverFocusX(50);
+            setCoverFocusY(50);
+            setCoverCropOpen(false);
+          }}
+        />
+      )}
+
       {/* Preview modal */}
       <Modal
         open={previewOpen}
@@ -596,39 +660,19 @@ export function BlogPostEditor({
         title="Vista previa"
         wide
       >
-        <article className="mx-auto max-w-3xl">
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
-            {previewPost.date
-              ? new Date(`${previewPost.date}T00:00:00`).toLocaleDateString(
-                  "es-ES",
-                  { day: "numeric", month: "long", year: "numeric" },
-                )
-              : ""}
-          </p>
+        {(() => {
+          const Design = blogDesignFor(previewPost.design).Page;
 
-          <h1 className="mt-4 text-4xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-5xl">
-            {previewPost.title}
-          </h1>
-
-          {previewPost.excerpt && (
-            <p className="mt-5 text-lg leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-              {previewPost.excerpt}
-            </p>
-          )}
-
-          {previewPost.cover && (
-            <img
-              src={previewPost.cover}
-              alt={previewPost.title}
-              className="mb-10 mt-8 w-full rounded-3xl object-cover"
-              style={{
-                objectPosition: `${coverFocusX}% ${coverFocusY}%`,
-              }}
+          return (
+            <Design
+              post={previewPost}
+              onBack={() => setPreviewOpen(false)}
+              onEdit={() => setPreviewOpen(false)}
+              onDelete={() => setPreviewOpen(false)}
+              preview
             />
-          )}
-
-          <PostBody blocks={previewPost.blocks} />
-        </article>
+          );
+        })()}
       </Modal>
     </section>
   );

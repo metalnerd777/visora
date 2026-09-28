@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import BlogCard from "../components/BlogCard";
 
@@ -7,7 +7,6 @@ import { isAuthenticated } from "../lib/auth";
 import { usePortfolio } from "../lib/usePortfolio";
 import { clearAutosave, loadAutosave, type AutosaveDraft } from "../lib/blogAutosave";
 
-import type { BlogPost } from "../types/portfolio";
 import type { EditorResult } from "./admin/edit/BlogPostEditor";
 
 const BlogPostEditor = lazy(() =>
@@ -16,21 +15,10 @@ const BlogPostEditor = lazy(() =>
 
 function BlogPage() {
   const { blogPosts } = usePortfolio();
-  const location = useLocation();
+  const navigate = useNavigate();
   const [admin, setAdmin] = useState(isAuthenticated());
 
-  const [initialPost] = useState<BlogPost | null>(() => {
-    const editSlug = (location.state as { editSlug?: string } | null)?.editSlug;
-
-    if (editSlug && isAuthenticated()) {
-      return blogPosts.find((p) => p.slug === editSlug) ?? null;
-    }
-
-    return null;
-  });
-
-  const [editorOpen, setEditorOpen] = useState(Boolean(initialPost));
-  const [editing, setEditing] = useState<BlogPost | null>(initialPost);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState<AutosaveDraft | null>(
     null,
   );
@@ -56,21 +44,17 @@ function BlogPage() {
   }, [toast]);
 
   const openNew = () => {
-    setEditing(null);
     setRestoredDraft(null);
     setEditorOpen(true);
   };
 
-  const openEdit = (post: BlogPost) => {
-    setEditing(post);
-    setRestoredDraft(null);
-    setEditorOpen(true);
+  const openEdit = (postSlug: string) => {
+    navigate(`/blog/${postSlug}`, { state: { editSlug: postSlug } });
   };
 
   const openRecover = () => {
     if (!pendingDraft) return;
 
-    setEditing(null);
     setRestoredDraft(pendingDraft);
     setEditorOpen(true);
   };
@@ -82,7 +66,6 @@ function BlogPage() {
 
   const closeEditor = (result?: EditorResult) => {
     setEditorOpen(false);
-    setEditing(null);
     setRestoredDraft(null);
 
     setPendingDraft(isAuthenticated() ? loadAutosave() : null);
@@ -185,7 +168,7 @@ function BlogPage() {
           </div>
         )}
 
-        {/* Editor inline */}
+        {/* Editor inline (solo publicación nueva) */}
         {admin && editorOpen && (
           <Suspense
             fallback={
@@ -193,7 +176,7 @@ function BlogPage() {
             }
           >
             <BlogPostEditor
-              initial={editing}
+              initial={null}
               restoredDraft={restoredDraft}
               onClose={closeEditor}
             />
@@ -209,7 +192,7 @@ function BlogPage() {
                   {admin && (
                     <button
                       type="button"
-                      onClick={() => openEdit(post)}
+                      onClick={() => openEdit(post.slug)}
                       aria-label={`Editar ${post.title}`}
                       className="absolute -top-2 right-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-(--visora-accent)/30 bg-white/80 text-(--visora-accent) shadow-lg backdrop-blur-md transition-colors hover:border-(--visora-accent) hover:bg-(--visora-accent)/10 dark:bg-[#161327]/80"
                     >

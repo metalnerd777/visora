@@ -10,6 +10,7 @@ function ImageUpload({
   onRemove,
   className = "h-48 sm:h-64",
   allowMultiple = false,
+  onCrop,
 }: {
   label: string;
   image?: string;
@@ -17,6 +18,7 @@ function ImageUpload({
   onRemove: () => void;
   className?: string;
   allowMultiple?: boolean;
+  onCrop?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<ProcessingStatus>({ state: "idle" });
@@ -51,40 +53,52 @@ function ImageUpload({
       </label>
 
       {image ? (
-        <div className="relative overflow-hidden rounded-2xl">
-          <img
-            src={image}
-            alt="Preview"
-            className={`w-full object-cover ${className}`}
-          />
+        <>
+          <div className="relative overflow-hidden rounded-2xl">
+            <img
+              src={image}
+              alt="Preview"
+              className={`w-full object-cover ${className}`}
+            />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
-          <div className="absolute bottom-4 left-4 flex gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-white/60 hover:bg-black/60">
-              Cambiar
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  resetInput();
-                  if (f) void handleFiles([f]);
-                }}
-              />
-            </label>
+            <div className="absolute bottom-4 left-4 flex gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-white/60 hover:bg-black/60">
+                Cambiar
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    resetInput();
+                    if (f) void handleFiles([f]);
+                  }}
+                />
+              </label>
 
-            <button
-              type="button"
-              onClick={onRemove}
-              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-red-400/60 hover:bg-black/60"
-            >
-              Eliminar
-            </button>
+              {onCrop && (
+                <button
+                  type="button"
+                  onClick={onCrop}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-white/60 hover:bg-black/60"
+                >
+                  Recortar
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={onRemove}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-red-400/60 hover:bg-black/60"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div
           {...dragProps}

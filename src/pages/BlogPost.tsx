@@ -99,15 +99,17 @@ function BlogPostPage({ post, onBack, onEdit, onDelete }: BlogPostPageProps) {
         </header>
 
         {/* Portada */}
-        <img
-          src={resizeUrl(post.cover, 1800)}
-          alt={post.title}
-          fetchPriority="high"
-          style={{
-            objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
-          }}
-          className="mb-12 h-auto w-full rounded-3xl object-cover"
-        />
+        {post.cover && (
+          <img
+            src={resizeUrl(post.cover, 1800)}
+            alt={post.title}
+            fetchPriority="high"
+            style={{
+              objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
+            }}
+            className="mb-12 h-auto w-full rounded-3xl object-cover"
+          />
+        )}
 
         {/* Contenido por bloques */}
         <article>

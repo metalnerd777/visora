@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { useLocation } from "react-router-dom";
-
 import { usePortfolio } from "./usePortfolio";
 import { isAuthenticated } from "./auth";
 import {
@@ -10,27 +8,14 @@ import {
   type AutosaveDraft,
 } from "./blogAutosave";
 
-import type { BlogPost } from "../types/portfolio";
 import type { EditorResult } from "../pages/admin/edit/BlogPostEditor";
 
 export function useBlogList() {
   const { blogPosts } = usePortfolio();
-  const location = useLocation();
 
   const [admin, setAdmin] = useState(isAuthenticated());
 
-  const [initialPost] = useState<BlogPost | null>(() => {
-    const editSlug = (location.state as { editSlug?: string } | null)?.editSlug;
-
-    if (editSlug && isAuthenticated()) {
-      return blogPosts.find((p) => p.slug === editSlug) ?? null;
-    }
-
-    return null;
-  });
-
-  const [editorOpen, setEditorOpen] = useState(Boolean(initialPost));
-  const [editing, setEditing] = useState<BlogPost | null>(initialPost);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState<AutosaveDraft | null>(
     null,
   );
@@ -56,13 +41,6 @@ export function useBlogList() {
   }, [toast]);
 
   const openNew = () => {
-    setEditing(null);
-    setRestoredDraft(null);
-    setEditorOpen(true);
-  };
-
-  const openEdit = (post: BlogPost) => {
-    setEditing(post);
     setRestoredDraft(null);
     setEditorOpen(true);
   };
@@ -70,7 +48,6 @@ export function useBlogList() {
   const openRecover = () => {
     if (!pendingDraft) return;
 
-    setEditing(null);
     setRestoredDraft(pendingDraft);
     setEditorOpen(true);
   };
@@ -82,7 +59,6 @@ export function useBlogList() {
 
   const closeEditor = (result?: EditorResult) => {
     setEditorOpen(false);
-    setEditing(null);
     setRestoredDraft(null);
 
     setPendingDraft(isAuthenticated() ? loadAutosave() : null);
@@ -101,13 +77,11 @@ export function useBlogList() {
   return {
     admin,
     editorOpen,
-    editing,
     restoredDraft,
     pendingDraft,
     toast,
     visiblePosts,
     openNew,
-    openEdit,
     openRecover,
     discardDraft,
     closeEditor,

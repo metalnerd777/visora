@@ -97,7 +97,7 @@ src/
 │   ├── Footer.tsx             (sticky, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Hero.tsx               (imagen fondo dual desktop/móvil, object-position, consume usePortfolio)
-│   ├── ImageCropModal.tsx     (cropper react-easy-crop, focal point como porcentaje)
+│   ├── ImageCropModal.tsx     (cropper react-easy-crop; modo foco: focal point % + zoom, aspect fijo; modo libre: presets 1:1/4:3/3:2/16:9/4:5/9:16 + slider de proporción continua default "Original", exporta JPEG ≤2400)
 │   ├── ImageProcessingIndicator.tsx (feedback de subida: original → final, error, spinners)
 │   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar, drag & drop, processImage)
 │   ├── MasonryGallery.tsx     (grid masonry dinámico, columnas por count)
@@ -173,7 +173,7 @@ src/
 │   ├── usePortfolio.ts        (hook usePortfolio)
 │   ├── useAdmin.ts            (hook sesión admin: polling isAuthenticated cada 500ms)
 │   ├── usePhotoViewer.ts      (hook visor: openViewer/closeViewer/prev/next sobre array Photo)
-│   ├── useBlogList.ts         (hook listado/blog completo: editor inline lazy, autoguardado, toasts)
+│   ├── useBlogList.ts         (hook listado/blog: editor inline lazy SOLO para crear publicaciones nuevas, autoguardado, toasts)
 │   ├── useThemeShell.ts       (hook compartido de todos los temas: dark mode, CSS vars de apariencia, data-theme, polling admin, publicLocked)
 │   ├── socials.ts             (socialUrl(), socialLabel(), nonEmptySocials() genéricos)
 │   ├── storage.ts             (loadJSON, saveJSON helpers)
@@ -475,13 +475,16 @@ El Hero soporta dos imágenes: una para desktop y una para móvil (opcional).
 
 **ImageCropModal:** src/components/ImageCropModal.tsx
 
-- Wrapper de react-easy-crop
+- Wrapper de react-easy-crop (react-easy-crop exige `aspect` numérico; pasar `undefined` NO da recorte libre — cae a 4/3)
 - Arrastras para elegir qué parte de la imagen se ve
 - Slider de zoom (1x a 3x)
 - Botón "Centrar" (resetea a 50% 50%)
 - Botón "Aplicar" (guarda coordenadas como porcentajes)
 - Aspect ratio configurable (16/9 desktop, 9/16 mobile)
+- **Modo libre (`free`)**: para recortar en cualquier proporción. Por defecto usa la proporción real de la foto ("Original") + 7 presets (1:1, 4:3, 3:2, 16:9, 4:5, 9:16) + slider de proporción continua (0.5–3.0). Al aplicar exporta la zona recortada como JPEG ≤2400px (data URL) vía `getCroppedImg` + `onExport`. Sin "Centrar".
 - Modo export opcional: si se pasan `exportSize` + `onExport`, al aplicar genera la imagen recortada redimensionada a ese tamaño como data URL JPEG (via canvas) en lugar de solo el focal point — usado por la ogImage del SEO (1200×630). `onSave` es opcional.
+
+**ImageUpload:** además de cambiar/eliminar, acepta `onCrop` opcional que pinta un botón "Recortar" junto a Cambiar/Eliminar (sobre la imagen). Eliminar la portada resetea el focal point a 50/50.
 
 ---
 
@@ -535,7 +538,7 @@ Logout: pills rojos discretos en desktop y menú móvil cuando autenticado.
 - **About** (componente + página): label, aboutTitle, aboutDescription, ubicación, socialLinks
 - **PhotoViewer**: visor fullscreen, teclado, click fuera, aria-labels genéricos; si está activa la marca de agua (settings.privacy.watermarkEnabled) muestra la imagen con la marca quemada vía canvas (src/lib/watermark.ts)
 - **ProjectCard**: tarjeta clickeable, navega por slug, sombras, gradiente
-- **BlogCard**: tarjeta con portada rounded-3xl, fecha pill glass
+- **BlogCard**: tarjeta con portada rounded-3xl (o placeholder con el título si no hay), fecha pill glass
 - **EmbedBlock**: iframe YouTube/Vimeo, tarjeta-enlace para otras redes
 - **DocumentHead**: título dinámico `profile.name - profile.profession`, favicon
 - **Footer**: sticky, socialLinks[], links internos, copyright, logout cuando autenticado
@@ -562,7 +565,7 @@ Persistencia:
 
 Tipos de bloques:
 - text: editor visual TipTap (negrita, cursiva, subrayado, tachado, H1-H3, listas, cita, enlace, alineación, deshacer/rehacer)
-- image: imagen con URL, alt y caption opcional
+- image: imagen con URL, alt y caption opcional. En el editor, el bloque imagen SIEMPRE muestra el formulario completo (thumbnail + campos "Pie de foto (opcional)" y "Texto alternativo (ALT)"); al editar el pie, el ALT se copia automáticamente solo si está vacío o coincide con el pie anterior (un ALT escrito a mano se preserva). El botón "Recortar" (junto a Cambiar/Eliminar) abre el `ImageCropModal` en modo libre y reemplaza la imagen por el recorte.
 - embed: URL de redes + caption; proveedor detectado automáticamente
 - separator: línea divisoria `<hr>` sin contenido (no se edita, solo se reordena/borra)
 
@@ -574,10 +577,13 @@ Soporte de embeds (src/lib/embeds.ts):
 Los 3 posts de demo incluyen: historia con fotos, video YouTube, embeds de Instagram y Behance.
 
 Editor de publicaciones (src/pages/admin/edit/BlogPostEditor.tsx):
-- INLINE (no modal), aparece entre el encabezado del Blog y el listado cuando autenticado
-- "Nueva publicación" y "Editar" (desde el listado o el detalle) → abre el editor inline
+- INLINE (no modal), se integra en la entrada que se está viendo/creando.
+  - **Editar un post existente**: el editor se monta EN el propio /blog/:slug (sustituye al artículo mientras se edita), NO en el listado. Al guardar/publicar vuelve a mostrar la entrada actualizada; si se guarda como borrador también se queda en /blog/:slug (visible para el admin).
+  - **Crear una publicación nueva**: no hay URL propia todavía, así que el editor aparece en el listado /blog bajo [+ Nueva publicación]. Solo crea posts nuevos; la edición de existentes vive en el post.
+- "Nueva publicación" (listado) y "Editar" (detalle) → abren el editor
 - Título obligatorio → genera slug automáticamente (colisión → variante -2, -3, ...); slug editable
-- Extracto opcional, Portada (ImageUpload + focal point con ImageCropModal), Fecha, Estado (Borrador/Publicado)
+- Extracto opcional, Portada **opcional** (ImageUpload + focal point con ImageCropModal + botón "Recortar" en la imagen que abre el modo libre y reemplaza la imagen reseteando el focal point a 50/50; si no hay portada, la entrada muestra solo fecha/título/extracto), Fecha, Estado (Borrador/Publicado)
+- **Diseño de la entrada** (nuevo): selector de diseño por publicación, INDEPENDIENTE del tema del sitio. Solo afecta a /blog/:slug
 - Bloques: [+ Texto] [+ Imagen] [+ Embed] [+ Separador]; reordenados por arrastrar (dnd-kit, mango + botones Subir/Bajar), edición/borrado
 - Acciones: Cancelar, Vista previa, Guardar borrador, Publicar
 - Lazy-loaded (React.lazy): TipTap solo se descarga cuando el admin abre el editor
@@ -597,18 +603,23 @@ Autoguardado temporal (solo para publicaciones NUEVAS, src/lib/blogAutosave.ts +
 
 Guardar borrador / Publicar (Partes 10 y 11):
 - Validan campos, generan/validan slug, guardan en la colección definitiva con status "draft" o "published"
-- Eliminan el autoguardado, cierran el editor y muestran confirmación (toast transitorio en la página Blog)
+- Eliminan el autoguardado, cierran el editor y muestran confirmación (toast transitorio en el propio /blog/:slug)
 - El editor cierra vía `onClose(result?: EditorResult)` con "saved-draft" | "published" | "discarded" | "cancelled"
-- El borrador aparece en /blog para el admin con badge "BORRADOR" y NO aparece para visitantes públicos
+- El borrador guardado desde una entrada queda en /blog/:slug visible SOLO para el admin (no para visitantes)
 - El post publicado aparece inmediatamente en /blog
 
 Eliminar (Parte 14):
 - Confirmación previa con confirm(); al confirmar se elimina de la persistencia y se limpia el autoguardado
 
 Borradores:
-- Los borradores NO aparecen en /blog público ni en /blog/:slug (router solo resuelve posts "published")
+- Los borradores NO aparecen en /blog público
+- En /blog/:slug el router (`BlogPostRoute`) resuelve el post si está `published` O si hay sesión admin → el admin
+  puede ver/editar borradores en su propia URL; los visitantes sin sesión solo ven posts publicados
 - El admin ve todos los posts en /blog (con badge "Borrador")
-- Editar desde el detalle navega a /blog con state { editSlug }
+- La edición de un post existente se integra en el propio /blog/:slug: el lápiz del listado navega a esa URL con
+  `state { editSlug }` (BlogPostRoute lo abre en edición vía `editingSlug`); el botón [✏ Editar] del detalle
+  activa la edición in situ. El listado NUNCA edita posts existentes (solo crea), así el sitio no "crece"
+  infinitamenta al editar con muchos post
 
 Vista previa y renderer compartido (Parte 12):
 - Un único renderer: src/components/PostBody.tsx (text/image/embed/separator) usado INDISTINTAMENTE por la
@@ -625,8 +636,34 @@ Helpers de bloques (src/lib/blogBlocks.ts):
 - buildId(), toDraft(), toBlock() + re-export BlockDraft — compartidos entre BlogPostEditor y BlogBlockEditor para no duplicar la conversión draft↔bloque
 
 Cuando autenticado:
-- Blog listing muestra botón [+ Nueva publicación] y un lápiz por tarjeta para editar
-- Blog post muestra botones [✏ Editar] y [🗑 Eliminar] (funcionales)
+- Blog listing muestra botón [+ Nueva publicación] (abre el editor en el listado, solo para crear) y un lápiz por tarjeta que navega al post para editar
+- Blog post muestra botones [✏ Editar] y [🗑 Eliminar]; [✏ Editar] abre el editor integrado en el propio post
+
+## 14b. Diseños de entrada del blog (independientes del tema)
+
+Cada publicación puede elegir un **diseño propio para /blog/:slug**, independiente del tema del sitio (minimal/editorial). Se elige en el editor de publicaciones (selector "Diseño de la entrada") y se guarda en `BlogPost.design` (AutosaveDraft también lo persiste).
+
+- `BlogPostDesignId`: `"classic" | "cinematic" | "magazine" | "columns"` en src/types/portfolio.ts
+- Registro `src/blogDesigns/index.ts`: `BLOG_DESIGNS` (mapa id → definición), `BLOG_DESIGN_OPTIONS` (para el selector del editor), `blogDesignFor(id)` con fallback a `classic`
+- Cada diseño define su propia página `Page` (`src/blogDesigns/<design>/<Design>BlogPost.tsx`) que renderiza /blog/:slug completo:
+  - **Clásico** (classic): una columna centrada, portada redondeada, tipografía ligera
+  - **Cinemático** (cinematic): portada a sangre completa con título sobre la imagen (dark overlay)
+  - **Revista** (magazine): cabecera de magacín con display serif, regla doble, portada amplia, artículo con ritmo editorial
+  - **Dos columnas** (columns): texto e imágenes/video intercalados en dos columnas — cada bloque elige su columna (ver abajo)
+- `BlogPostBar.tsx` (compartido): barra Volver al blog + Editar/Eliminar cuando autenticado (usa `useAdmin`); se oculta en la vista previa del editor (`preview` prop en `BlogPostDesignProps`)
+- Router (`src/router.tsx` BlogPostRoute): resuelve el post por slug (publicado, o borrador si hay sesión admin) e integra la edición: si `editingSlug` coincide (auto-abierto vía `state { editSlug }` desde el listado, o el botón [✏ Editar]) renderiza el `BlogPostEditor` lazy en el propio /blog/:slug. Si `post.design` está definido → renderiza la `Page` del diseño; si NO → renderiza la página del tema (`pages.BlogPostPage`, compatibilidad con datos existentes)
+- La vista previa del editor (`BlogPostEditor`) renderiza la `Page` del diseño elegido (no un layout fijo), así el admin ve el resultado real
+- Los posts demo usan cinematic/magazine/columns para mostrar los diseños
+
+## 14c. Bloques con distribución de columnas (diseño "Dos columnas")
+
+Todo bloque (`BlogBlock` / `BlockDraft`) tiene un campo opcional `column: "auto" | "left" | "right" | "full"` (default `auto`).
+
+- **Auto (default)**: el bloque rellena el lado libre de la fila actual (izquierda/derecha); si la fila ya está llena, alterna y empieza una fila nueva (preservando las colisiones explícitas), así texto e imagen/video se intercalan sin configurar nada. Si el campo viene `undefined` (datos viejos) también se trata como `auto` → no queda todo pegado a una columna.
+- Editor: el control `ColumnPicker` en cada tarjeta de bloque (BlogBlockEditor) elige `Auto` (alterna), `←` (izquierda), `→` (derecha) o `⇔` (ancho completo)
+- Diseño "columns" (`src/blogDesigns/columns/ColumnsBlogPost.tsx`): los bloques se agrupan en **filas** vía `buildRows()` (cada bloque con columna explícita ocupa la suya dentro de la fila actual; bloques consecutivos con columnas opuestas quedan **lado a lado en la misma fila**); bloques `full` ocupan una fila de ancho completo; un bloque solo en su fila se estira a ambas columnas (`md:col-span-2`). Evita usar `resolveSides()` con `col-start` por bloque, porque el auto-placement del grid colocaba derecha→izquierda en filas distintas (la imagen quedaba debajo del texto)
+- En los otros diseños el campo `column` se ignora (no afecta el render); el picker de columnas aparece igualmente en el editor para todos los bloques
+- `PostBody` expone `PostBodyBlock` (render de un bloque individual) reutilizado por el diseño de columnas
 
 ---
 
@@ -678,7 +715,7 @@ La arquitectura favorece esta separación:
 - Portada (cover) en la Home: mancheta con profesión, `brand` serif grande uppercase, regla doble, CTAs, imagen desktop/móvil con focal points y pie de foto (masthead figure).
 - Destacadas: grid de fotos sin huecos (gap-px) con numeración editorial `01..08`.
 - Proyectos: **índice numerado** con filas 01/02/…, portada flotante al hacer hover y conteo de obras.
-- Blog: **índice tipo magacín** (fecha + título serif + extracto + portada en la columna derecha), aviso de autoguardado, toasts y editor inline lazy compartido.
+- Blog: **índice tipo magacín** (fecha + título serif + extracto + portada en la columna derecha), aviso de autoguardado, toasts y editor inline lazy compartido (solo para crear posts nuevos; la edición de existentes se integra en el propio post).
 - Artículo de blog: cabecera de revista con fecha/kicker, título serif grande, extracto como lead; portada; PostBody.
 - Contacto: canales (Instagram/WhatsApp/Email) como **columnas numeradas 01/02/03** con "Ir →".
 - 404 editorial con `404` serif gigante y reglas.

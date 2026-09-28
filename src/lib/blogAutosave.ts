@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 
-import type { BlogPostStatus, EmbedProvider } from "../types/portfolio";
+import type { BlogColumn, BlogPostDesignId, BlogPostStatus, EmbedProvider } from "../types/portfolio";
 
 export interface BlockDraft {
   id: string;
@@ -10,6 +10,7 @@ export interface BlockDraft {
   alt?: string;
   caption?: string;
   provider?: EmbedProvider;
+  column?: BlogColumn;
 }
 
 export interface AutosaveDraft {
@@ -22,6 +23,7 @@ export interface AutosaveDraft {
   coverFocusY: number;
   date: string;
   status: BlogPostStatus;
+  design?: BlogPostDesignId;
   blocks: BlockDraft[];
 }
 

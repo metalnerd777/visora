@@ -26,21 +26,31 @@ function BlogCard({ post }: BlogCardProps) {
       className="group text-left"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">
-        <img
-          src={resizeUrl(post.cover, 1400)}
-          alt={post.title}
-          loading="lazy"
-          decoding="async"
-          style={{
-            objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
-          }}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-        />
+        {post.cover ? (
+          <>
+            <img
+              src={resizeUrl(post.cover, 1400)}
+              alt={post.title}
+              loading="lazy"
+              decoding="async"
+              style={{
+                objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
+              }}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
 
-        {/* Fecha en pill de cristal */}
-        <p className="absolute left-4 top-4 rounded-full bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white/90 backdrop-blur-md">
-          {formatDate(post.date)}
-        </p>
+            {/* Fecha en pill de cristal */}
+            <p className="absolute left-4 top-4 rounded-full bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white/90 backdrop-blur-md">
+              {formatDate(post.date)}
+            </p>
+          </>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-(--visora-accent)/10 p-6 text-center transition-colors group-hover:bg-(--visora-accent)/15">
+            <h3 className="text-2xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-3xl">
+              {post.title}
+            </h3>
+          </div>
+        )}
       </div>
 
       <div className="mt-6">

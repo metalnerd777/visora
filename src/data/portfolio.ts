@@ -191,6 +191,7 @@ export const blogPosts: BlogPost[] = [
       "https://images.unsplash.com/photo-1507504031003-b417219a0fde",
     date: "2026-08-10",
     status: "published",
+    design: "cinematic",
     blocks: [
       {
         id: "b1",
@@ -228,6 +229,7 @@ export const blogPosts: BlogPost[] = [
       "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     date: "2026-07-28",
     status: "published",
+    design: "magazine",
     blocks: [
       {
         id: "b1",
@@ -258,27 +260,40 @@ export const blogPosts: BlogPost[] = [
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f",
     date: "2026-07-02",
     status: "published",
+    design: "columns",
     blocks: [
       {
-        id: "b1",
+        id: "c1",
         type: "text",
+        column: "left",
         text: "Últimamente mi tablero de inspiración gira alrededor del color como estructura narrativa: paletas limitadas, contrastes controlados y composiciones donde cada elemento tiene una razón para existir.",
       },
       {
-        id: "b2",
+        id: "c2",
+        type: "image",
+        column: "right",
+        url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f",
+        alt: "Paleta de color en editorial",
+        caption: "Estudio de color para una serie editorial.",
+      },
+      {
+        id: "c3",
         type: "embed",
+        column: "left",
         provider: "instagram",
         url: "https://www.instagram.com/p/CxKq2LhR7tP/",
         caption: "Uno de mis hallazgos recientes.",
       },
       {
-        id: "b3",
+        id: "c4",
         type: "text",
+        column: "left",
         text: "Si quieres ver más referencias y trabajos en proceso, sígueme en redes o revisa mis tableros públicos.",
       },
       {
-        id: "b4",
+        id: "c5",
         type: "embed",
+        column: "full",
         provider: "behance",
         url: "https://www.behance.net/gallery/185432701/Color-Studies",
       },

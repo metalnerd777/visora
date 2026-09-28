@@ -1,8 +1,10 @@
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
+import { useState } from "react";
 
 import Field from "../Field";
 import ImageUpload from "../ImageUpload";
+import ImageCropModal from "../ImageCropModal";
 import { RichTextEditor } from "../RichTextEditor";
 import { RichTextView } from "../RichTextView";
 import EmbedBlock from "../EmbedBlock";
@@ -14,6 +16,14 @@ import { toBlock } from "../../lib/blogBlocks";
 import type { BlockDraft } from "../../lib/blogAutosave";
 
 /* ─── Block editing forms ─── */
+
+function nextWithCaption(draft: BlockDraft, caption: string): BlockDraft {
+  const prevCaption = draft.caption ?? "";
+  const alt = draft.alt ?? "";
+  const syncedAlt = !alt || alt === prevCaption ? caption : alt;
+
+  return { ...draft, caption, alt: syncedAlt };
+}
 
 function TextBlockForm({
   draft,
@@ -37,6 +47,8 @@ function ImageBlockForm({
   draft: BlockDraft;
   onChange: (next: BlockDraft) => void;
 }) {
+  const [cropOpen, setCropOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
       <ImageUpload
@@ -45,21 +57,37 @@ function ImageBlockForm({
         onImage={(url) => onChange({ ...draft, url })}
         onRemove={() => onChange({ ...draft, url: "" })}
         className="h-40"
+        onCrop={() => setCropOpen(true)}
       />
 
-      <Field
-        label="Texto alternativo"
-        value={draft.alt ?? ""}
-        onChange={(v) => onChange({ ...draft, alt: v })}
-        placeholder="Descripción de la imagen"
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Pie de foto (opcional)"
+          value={draft.caption ?? ""}
+          onChange={(v) => onChange(nextWithCaption(draft, v))}
+          placeholder="Texto que se muestra bajo la imagen"
+        />
 
-      <Field
-        label="Pie de foto (opcional)"
-        value={draft.caption ?? ""}
-        onChange={(v) => onChange({ ...draft, caption: v })}
-        placeholder="Caption"
-      />
+        <Field
+          label="Texto alternativo (ALT)"
+          value={draft.alt ?? ""}
+          onChange={(v) => onChange({ ...draft, alt: v })}
+          placeholder="Descripción de la imagen"
+        />
+      </div>
+
+      {draft.url && (
+        <ImageCropModal
+          open={cropOpen}
+          onClose={() => setCropOpen(false)}
+          image={draft.url}
+          free
+          onExport={(dataUrl) => {
+            onChange({ ...draft, url: dataUrl });
+            setCropOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -93,13 +121,19 @@ function EmbedBlockForm({
         label="Pie de foto (opcional)"
         value={draft.caption ?? ""}
         onChange={(v) => onChange({ ...draft, caption: v })}
-        placeholder="Caption"
+        placeholder="Texto que se muestra bajo el embed"
       />
     </div>
   );
 }
 
-function BlockPreview({ block }: { block: BlockDraft }) {
+function BlockPreview({
+  block,
+  onChange,
+}: {
+  block: BlockDraft;
+  onChange: (next: BlockDraft) => void;
+}) {
   if (block.type === "text") {
     if (block.content) {
       return (
@@ -118,11 +152,27 @@ function BlockPreview({ block }: { block: BlockDraft }) {
 
   if (block.type === "image") {
     return block.url ? (
-      <div className="p-3">
+      <div className="flex flex-col gap-3 p-3">
         <img
           src={block.url}
           alt={block.alt ?? ""}
           className="h-40 w-full rounded-xl object-cover"
+        />
+
+        <input
+          type="text"
+          value={block.caption ?? ""}
+          onChange={(e) => onChange(nextWithCaption(block, e.target.value))}
+          placeholder="Pie de foto (opcional)"
+          className="w-full rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-left text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+        />
+
+        <input
+          type="text"
+          value={block.alt ?? ""}
+          onChange={(e) => onChange({ ...block, alt: e.target.value })}
+          placeholder="Texto alternativo (ALT) — descripción de la imagen"
+          className="w-full rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-left text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
         />
       </div>
     ) : (
@@ -154,6 +204,46 @@ function BlockPreview({ block }: { block: BlockDraft }) {
     <p className="px-4 py-3 text-sm text-neutral-400 dark:text-[#6F6A80]">
       Sin URL
     </p>
+  );
+}
+
+function ColumnPicker({
+  column,
+  onChange,
+}: {
+  column: BlockDraft["column"];
+  onChange: (next: BlockDraft["column"]) => void;
+}) {
+  const options: { value: BlockDraft["column"]; label: string; title: string }[] = [
+    { value: "auto", label: "Auto", title: "Automático (alterna columnas)" },
+    { value: "left", label: "←", title: "Columna izquierda" },
+    { value: "right", label: "→", title: "Columna derecha" },
+    { value: "full", label: "⇔", title: "Ancho completo" },
+  ];
+
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-lg bg-neutral-100 p-0.5 dark:bg-white/5"
+      role="group"
+      aria-label="Posición del bloque en dos columnas"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-label={option.title}
+          title={option.title}
+          onClick={() => onChange(option.value)}
+          className={`flex h-6 items-center justify-center rounded-md px-1.5 text-xs transition-colors ${
+            (column ?? "auto") === option.value
+              ? "bg-white text-neutral-800 shadow-sm dark:bg-[#2A273F] dark:text-[#F5F3FF]"
+              : "text-neutral-400 hover:text-neutral-700 dark:text-[#6F6A80] dark:hover:text-[#A8A3B8]"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -284,36 +374,43 @@ export function BlogBlockEditor({
           </span>
         )}
 
-        <div className="ml-auto flex items-center gap-0.5">
-          <MiniButton label="Subir" onClick={() => onMove(-1)}>
-            <path d="M12 19V5M5 12l7-7 7 7" />
-          </MiniButton>
+        <div className="ml-auto flex items-center gap-1.5">
+          <ColumnPicker
+            column={block.column}
+            onChange={(column) => onChange({ ...block, column })}
+          />
 
-          <MiniButton label="Bajar" onClick={() => onMove(1)}>
-            <path d="M12 5v14M19 12l-7 7-7-7" />
-          </MiniButton>
-
-          {block.type !== "separator" && (
-            <MiniButton
-              label={editing ? "Cerrar" : "Editar"}
-              onClick={onToggleEdit}
-            >
-              {editing ? (
-                <path d="M18 6L6 18M6 6l12 12" />
-              ) : (
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-              )}
+          <div className="flex items-center gap-0.5">
+            <MiniButton label="Subir" onClick={() => onMove(-1)}>
+              <path d="M12 19V5M5 12l7-7 7 7" />
             </MiniButton>
-          )}
 
-          <MiniButton label="Eliminar" onClick={onRemove} danger>
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-          </MiniButton>
+            <MiniButton label="Bajar" onClick={() => onMove(1)}>
+              <path d="M12 5v14M19 12l-7 7-7-7" />
+            </MiniButton>
+
+            {block.type !== "separator" && (
+              <MiniButton
+                label={editing ? "Cerrar" : "Editar"}
+                onClick={onToggleEdit}
+              >
+                {editing ? (
+                  <path d="M18 6L6 18M6 6l12 12" />
+                ) : (
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                )}
+              </MiniButton>
+            )}
+
+            <MiniButton label="Eliminar" onClick={onRemove} danger>
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+            </MiniButton>
+          </div>
         </div>
       </div>
 
-      {editing ? (
+      {editing || block.type === "image" ? (
         <div className="p-3">
           {block.type === "text" && (
             <TextBlockForm draft={block} onChange={onChange} />
@@ -326,7 +423,7 @@ export function BlogBlockEditor({
           )}
         </div>
       ) : (
-        <BlockPreview block={block} />
+        <BlockPreview block={block} onChange={onChange} />
       )}
     </div>
   );

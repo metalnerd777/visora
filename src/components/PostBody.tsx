@@ -5,7 +5,7 @@ import { resizeUrl } from "../lib/image";
 
 import type { BlogBlock } from "../types/portfolio";
 
-function Block({ block }: { block: BlogBlock }) {
+export function PostBodyBlock({ block }: { block: BlogBlock }) {
   if (block.type === "text") {
     if (block.content) {
       return <RichTextView content={block.content} />;
@@ -59,7 +59,7 @@ function PostBody({ blocks }: { blocks: BlogBlock[] }) {
   return (
     <div>
       {blocks.map((block) => (
-        <Block key={block.id} block={block} />
+        <PostBodyBlock key={block.id} block={block} />
       ))}
     </div>
   );
