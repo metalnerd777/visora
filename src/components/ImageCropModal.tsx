@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 
 import Modal from "./Modal";
+import { hasTransparency } from "../lib/image";
 
 type CroppedArea = { x: number; y: number; width: number; height: number };
 
@@ -38,6 +39,17 @@ async function getCroppedImg(
     outputSize.width,
     outputSize.height,
   );
+
+  // Si la imagen fuente tiene transparencia se exporta WebP (o PNG como
+  // fallback), para no perder el alpha. JPEG rellena los píxeles
+  // transparentes de negro.
+  if (await hasTransparency(imageSrc)) {
+    const webp = canvas.toDataURL("image/webp", 0.92);
+
+    if (webp.startsWith("data:image/webp")) return webp;
+
+    return canvas.toDataURL("image/png");
+  }
 
   return canvas.toDataURL("image/jpeg", 0.9);
 }
@@ -97,24 +109,8 @@ function ImageCropModal({
   const handleCropComplete = useCallback(
     (_croppedArea: CroppedArea, croppedAreaPixels: CroppedArea) => {
       setCroppedPixels(croppedAreaPixels);
-
-      if (free || !onSave) return;
-
-      const centerX = croppedAreaPixels.x + croppedAreaPixels.width / 2;
-      const centerY = croppedAreaPixels.y + croppedAreaPixels.height / 2;
-
-      const img = new Image();
-
-      img.src = image;
-
-      img.onload = () => {
-        onSave?.(
-          Math.round((centerX / img.naturalWidth) * 1000) / 10,
-          Math.round((centerY / img.naturalHeight) * 1000) / 10,
-        );
-      };
     },
-    [image, onSave, free],
+    [],
   );
 
   const handleSave = () => {
@@ -141,6 +137,26 @@ function ImageCropModal({
     }
 
     const aspectRatio = aspect ?? 1;
+
+    if (croppedPixels) {
+      const centerX = croppedPixels.x + croppedPixels.width / 2;
+      const centerY = croppedPixels.y + croppedPixels.height / 2;
+
+      const img = new Image();
+
+      img.src = image;
+
+      img.onload = () => {
+        onSave?.(
+          Math.round((centerX / img.naturalWidth) * 1000) / 10,
+          Math.round((centerY / img.naturalHeight) * 1000) / 10,
+        );
+
+        onClose();
+      };
+
+      return;
+    }
 
     const img = new Image();
 

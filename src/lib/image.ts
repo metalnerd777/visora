@@ -202,6 +202,50 @@ export function isDataUrl(url: string): boolean {
   return url.startsWith("data:");
 }
 
+/**
+ * Detecta si una imagen tiene algún píxel con transparencia (canal alpha < 255).
+ * Útil para saber cuándo conviene mostrar un fondo degradado detrás de la foto.
+ * Devuelve false si la imagen no se puede leer o el canvas no está disponible.
+ */
+export async function hasTransparency(url: string): Promise<boolean> {
+  if (!url) return false;
+
+  return new Promise((resolve) => {
+    if (typeof HTMLCanvasElement === "undefined") {
+      resolve(false);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.min(img.naturalWidth, 64);
+        canvas.height = Math.min(img.naturalHeight, 64);
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          resolve(false);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] < 255) {
+            resolve(true);
+            return;
+          }
+        }
+        resolve(false);
+      } catch {
+        resolve(false);
+      }
+    };
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
 /** Libera un ObjectURL de forma segura (no-op si no es blob:) */
 export function releaseObjectURL(url: string | undefined | null): void {
   if (url && isBlobUrl(url)) {

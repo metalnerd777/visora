@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Link, useLocation } from "react-router-dom";
 
@@ -13,14 +13,39 @@ import { useAdmin } from "../../../lib/useAdmin";
 import { usePhotoViewer } from "../../../lib/usePhotoViewer";
 import { loadJSON } from "../../../lib/storage";
 import { resizeUrl } from "../../../lib/image";
+import { useImageOrientation } from "../../../lib/useImageOrientation";
+import {
+  heroGradientFor,
+  heroGradientBackground,
+  heroImageMask,
+} from "../../../lib/appearance";
 
 interface HeroConfig {
-  heroImageMobile?: string;
   heroImageFocusX?: number;
   heroImageFocusY?: number;
-  heroImageMobileFocusX?: number;
-  heroImageMobileFocusY?: number;
   showSecondary?: boolean;
+  heroGradient?: boolean;
+  heroGradientId?: string;
+  fadeTop?: boolean;
+  fadeBottom?: boolean;
+  fadeLeft?: boolean;
+  fadeRight?: boolean;
+  portraitAlign?: "left" | "center" | "right";
+  primaryLink?: string;
+  secondaryLink?: string;
+}
+
+function getPortraitAlignClass(align: string | undefined): string {
+  switch (align) {
+    case "left":
+      return "mr-auto";
+    case "center":
+      return "mx-auto";
+    case "right":
+      return "ml-auto";
+    default:
+      return "mx-auto";
+  }
 }
 
 function EditorialHome() {
@@ -54,7 +79,7 @@ function EditorialHome() {
       {/* Portada */}
       <section
         id="home"
-        className="relative border-b border-double border-[#1C1C1F]/20 px-6 py-16 md:px-10 md:py-20"
+        className="relative border-b border-double border-[#1C1C1F]/20 px-0 py-0 lg:px-10 lg:py-14 dark:border-[#E9E6DF]/20"
       >
         <div className="mx-auto max-w-7xl">
           {admin ? (
@@ -70,7 +95,7 @@ function EditorialHome() {
       {/* Destacadas */}
       <section
         id="featured"
-        className="border-b border-[#1C1C1F]/15 px-6 py-20 md:px-10 dark:border-[#E9E6DF]/15"
+        className="border-b border-[#1C1C1F]/15 px-6 py-14 md:px-10 dark:border-[#E9E6DF]/15"
       >
         <div className="mx-auto max-w-7xl">
           {admin ? (
@@ -122,7 +147,7 @@ function EditorialHome() {
       {/* Proyectos */}
       <section
         id="projects"
-        className="border-b border-[#1C1C1F]/15 px-6 py-20 md:px-10 dark:border-[#E9E6DF]/15"
+        className="border-b border-[#1C1C1F]/15 px-6 py-14 md:px-10 dark:border-[#E9E6DF]/15"
       >
         <div className="mx-auto max-w-7xl">
           {admin ? (
@@ -204,97 +229,263 @@ function CoverContent() {
     showSecondary: true,
     heroImageFocusX: 50,
     heroImageFocusY: 50,
-    heroImageMobileFocusX: 50,
-    heroImageMobileFocusY: 50,
+    heroGradient: false,
+    heroGradientId: "midnight-violet",
+    fadeTop: false,
+    fadeBottom: true,
+    fadeLeft: false,
+    fadeRight: false,
+    portraitAlign: "center",
   });
 
   const brand = settings.general.brandName || profile.name;
   const profession = settings.general.profession || profile.profession;
 
-  const desktopImage = profile.heroImage;
-  const mobileImage = heroConfig.heroImageMobile || profile.heroImage;
-  const useSeparateMobile =
-    heroConfig.heroImageMobile && heroConfig.heroImageMobile !== desktopImage;
+  const heroImage = profile.heroImage;
 
-  const desktopFocusX = heroConfig.heroImageFocusX ?? 50;
-  const desktopFocusY = heroConfig.heroImageFocusY ?? 50;
-  const mobileFocusX = heroConfig.heroImageMobileFocusX ?? 50;
-  const mobileFocusY = heroConfig.heroImageMobileFocusY ?? 50;
+  const focusX = heroConfig.heroImageFocusX ?? 50;
+  const focusY = heroConfig.heroImageFocusY ?? 50;
 
   const showSecondary = heroConfig.showSecondary ?? true;
 
+  const isHeroPortrait = useImageOrientation(heroImage) === "portrait";
+
+  const imageMask = heroImageMask({
+    top: heroConfig.fadeTop,
+    bottom: heroConfig.fadeBottom,
+    left: heroConfig.fadeLeft,
+    right: heroConfig.fadeRight,
+  });
+
+  const manchetaRef = useRef<HTMLDivElement>(null);
+  const [manchetaHeight, setManchetaHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    const el = manchetaRef.current;
+    if (!el) return;
+
+    const update = () => setManchetaHeight(el.offsetHeight);
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, [isHeroPortrait]);
+
+  const mancheta = (
+    <div ref={manchetaRef} className="lg:col-span-5">
+      <Mancheta
+        profession={profession}
+        brand={brand}
+        description={profile.description}
+        showSecondary={showSecondary}
+        heroPrimaryButton={profile.heroPrimaryButton}
+        heroSecondaryButton={profile.heroSecondaryButton}
+        primaryLink={heroConfig.primaryLink ?? "#projects"}
+        secondaryLink={heroConfig.secondaryLink ?? "/contacto"}
+      />
+    </div>
+  );
+
   return (
-    <div className="grid gap-12 lg:grid-cols-12">
-      {/* Mancheta */}
-      <div className="lg:col-span-5">
-        <p className="text-xs uppercase tracking-[0.35em] text-black/50 dark:text-[#F3EFE6]/50">
-          {profession}
-        </p>
+    <>
+      {/* Mobile: imagen de fondo a sangre + mancheta encima */}
+      <div className="relative flex h-[70vh] min-h-[520px] max-h-[760px] items-center overflow-hidden bg-neutral-950 text-white lg:hidden">
+        {heroConfig.heroGradient && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background: heroGradientBackground(
+                heroGradientFor(heroConfig.heroGradientId),
+              ),
+            }}
+          />
+        )}
 
-        <h1 className="mt-6 text-5xl font-semibold uppercase leading-[1.05] tracking-tight text-black dark:text-[#F3EFE6] sm:text-6xl md:text-7xl">
-          {brand}
-        </h1>
+        {heroImage && (
+          <img
+            src={heroImage}
+            alt=""
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{
+              objectPosition: `${focusX}% ${focusY}%`,
+              ...imageMask,
+            }}
+          />
+        )}
 
-        <div className="my-8 flex items-center gap-4">
-          <span className="h-px w-16 bg-black/30 dark:bg-[#F3EFE6]/30" />
-          <span className="text-xs uppercase tracking-[0.3em] text-black/40 dark:text-[#F3EFE6]/40">
-            Portfolio
-          </span>
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-6">
+          <div className="max-w-xl py-20">
+            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_2px_8px_rgba(0,0,0,0.5)]">
+              {profession}
+            </p>
+
+            <h1 className="text-5xl font-semibold uppercase leading-[1.05] tracking-tight [text-shadow:0_2px_4px_rgba(0,0,0,0.55),0_6px_18px_rgba(0,0,0,0.5)] sm:text-6xl">
+              {brand}
+            </h1>
+
+            <div className="my-8 flex items-center gap-4">
+              <span className="h-px w-16 bg-white/40" />
+              <span className="text-xs uppercase tracking-[0.3em] text-white/70 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">
+                Portfolio
+              </span>
+            </div>
+
+            <p className="max-w-md text-base leading-relaxed text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_3px_10px_rgba(0,0,0,0.5)]">
+              {profile.description}
+            </p>
+
+            <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
+              <HeroLink
+                to={heroConfig.primaryLink ?? "#projects"}
+                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-white px-7 py-3 text-sm text-black transition-colors hover:bg-white/90"
+              >
+                {profile.heroPrimaryButton ?? "Ver portfolio"}
+              </HeroLink>
+
+              {showSecondary && (
+<HeroLink
+                to={heroConfig.secondaryLink ?? "/contacto"}
+                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-colors hover:border-white hover:bg-white/15 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]"
+              >
+                {profile.heroSecondaryButton ?? "Destacadas"}
+              </HeroLink>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
 
-        <p className="max-w-md text-base leading-relaxed text-black/70 dark:text-[#F3EFE6]/70">
-          {profile.description}
-        </p>
+      {/* Desktop: grid editorial mancheta + imagen */}
+      <div className="hidden items-start gap-12 lg:grid lg:grid-cols-12">
+        {mancheta}
 
-        <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
-          <a
-            href="#projects"
-            className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-black px-7 py-3 text-sm text-white transition-colors hover:bg-[#1C1C1F] dark:bg-[#F3EFE6] dark:text-black dark:hover:bg-white"
-          >
-            {profile.heroPrimaryButton ?? "Ver portfolio"}
-          </a>
+        {/* Imagen */}
+        <div className="lg:col-span-7">
+          {heroImage && (
+            <figure className="relative">
+              {heroConfig.heroGradient && (
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background: heroGradientBackground(
+                      heroGradientFor(heroConfig.heroGradientId),
+                    ),
+                  }}
+                />
+              )}
 
-          {showSecondary && (
-            <a
-              href="#featured"
-              className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-black/30 px-7 py-3 text-sm text-black transition-colors hover:border-black hover:bg-black/5 dark:border-[#F3EFE6]/30 dark:text-[#F3EFE6] dark:hover:border-[#F3EFE6] dark:hover:bg-white/5"
-            >
-              {profile.heroSecondaryButton ?? "Destacadas"}
-            </a>
+              <div className="relative">
+                <img
+                  src={heroImage}
+                  alt=""
+                  fetchPriority="high"
+                  className={`relative object-cover ${
+                    isHeroPortrait
+                      ? `h-auto w-auto max-w-full ${getPortraitAlignClass(heroConfig.portraitAlign)}`
+                      : "w-full"
+                  }`}
+                  style={{
+                    maxHeight: isHeroPortrait ? manchetaHeight : undefined,
+                    objectPosition: `${focusX}% ${focusY}%`,
+                    ...imageMask,
+                  }}
+                />
+              </div>
+            </figure>
           )}
         </div>
       </div>
+    </>
+  );
+}
 
-      {/* Imagen */}
-      <div className="lg:col-span-7">
-        {desktopImage && (
-          <figure>
-            <img
-              src={desktopImage}
-              alt=""
-              fetchPriority="high"
-              className={`w-full object-cover ${useSeparateMobile ? "hidden md:block" : ""}`}
-              style={{ objectPosition: `${desktopFocusX}% ${desktopFocusY}%` }}
-            />
+function Mancheta({
+  profession,
+  brand,
+  description,
+  showSecondary,
+  heroPrimaryButton,
+  heroSecondaryButton,
+  primaryLink,
+  secondaryLink,
+}: {
+  profession: string;
+  brand: string;
+  description: string;
+  showSecondary: boolean;
+  heroPrimaryButton?: string;
+  heroSecondaryButton?: string;
+  primaryLink: string;
+  secondaryLink: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.35em] text-black/50 dark:text-[#F3EFE6]/50">
+        {profession}
+      </p>
 
-            {useSeparateMobile && (
-              <img
-                src={mobileImage}
-                alt=""
-                fetchPriority="high"
-                className="w-full object-cover md:hidden"
-                style={{ objectPosition: `${mobileFocusX}% ${mobileFocusY}%` }}
-              />
-            )}
+      <h1 className="mt-6 text-5xl font-semibold uppercase leading-[1.05] tracking-tight text-black dark:text-[#F3EFE6] sm:text-6xl md:text-7xl">
+        {brand}
+      </h1>
 
-            <figcaption className="mt-3 flex items-center justify-between border-t border-[#1C1C1F]/15 pt-3 text-xs uppercase tracking-[0.2em] text-black/50 dark:border-[#E9E6DF]/15 dark:text-[#F3EFE6]/50">
-              <span>{brand}</span>
-              <span>{profession}</span>
-            </figcaption>
-          </figure>
+      <div className="my-8 flex items-center gap-4">
+        <span className="h-px w-16 bg-black/30 dark:bg-[#F3EFE6]/30" />
+        <span className="text-xs uppercase tracking-[0.3em] text-black/40 dark:text-[#F3EFE6]/40">
+          Portfolio
+        </span>
+      </div>
+
+      <p className="max-w-md text-base leading-relaxed text-black/70 dark:text-[#F3EFE6]/70">
+        {description}
+      </p>
+
+      <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
+        <HeroLink
+          to={primaryLink}
+          className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-black px-7 py-3 text-sm text-white transition-colors hover:bg-[#1C1C1F] dark:bg-[#F3EFE6] dark:text-black dark:hover:bg-white"
+        >
+          {heroPrimaryButton ?? "Ver portfolio"}
+        </HeroLink>
+
+        {showSecondary && (
+          <HeroLink
+            to={secondaryLink}
+            className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-black/30 px-7 py-3 text-sm text-black transition-colors hover:border-black hover:bg-black/5 dark:border-[#F3EFE6]/30 dark:text-[#F3EFE6] dark:hover:border-[#F3EFE6] dark:hover:bg-white/5"
+          >
+            {heroSecondaryButton ?? "Destacadas"}
+          </HeroLink>
         )}
       </div>
     </div>
+  );
+}
+
+function HeroLink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (to.startsWith("#")) {
+    return (
+      <a href={to} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={to} className={className}>
+      {children}
+    </Link>
   );
 }
 

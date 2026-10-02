@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
+import SaveButton from "../../../components/SaveButton";
 import ImageProcessingIndicator, {
   type ProcessingStatus,
 } from "../../../components/ImageProcessingIndicator";
@@ -73,9 +74,15 @@ function EditProfileModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Perfil">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar Perfil"
+      wide
+      actions={<SaveButton onClick={handleSave} />}
+    >
       <div className="flex flex-col gap-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <Field
             label="Ubicación"
             value={data.location}
@@ -95,20 +102,20 @@ function EditProfileModal({
             required
             error={emailError}
           />
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-            Descripción
-          </label>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+              Descripción
+            </label>
 
-          <textarea
-            value={data.description}
-            onChange={(e) => update({ description: e.target.value })}
-            placeholder="Una breve descripción de tu trabajo"
-            rows={2}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
-          />
+            <textarea
+              value={data.description}
+              onChange={(e) => update({ description: e.target.value })}
+              placeholder="Una breve descripción de tu trabajo"
+              rows={2}
+              className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -162,16 +169,6 @@ function EditProfileModal({
           El nombre, la profesión y las redes sociales se gestionan desde{" "}
           <strong>Configuración</strong>.
         </p>
-
-        <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
-          >
-            Guardar
-          </button>
-        </div>
       </div>
     </Modal>
   );

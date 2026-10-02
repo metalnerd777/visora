@@ -96,7 +96,7 @@ src/
 │   ├── FaviconPicker.tsx       (selector de favicon: 10 presets SVG + subida redimensionada a 64×64)
 │   ├── Footer.tsx             (sticky, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
-│   ├── Hero.tsx               (imagen fondo dual desktop/móvil, object-position, consume usePortfolio)
+│   ├── Hero.tsx               (imagen fondo única con punto de importancia, object-position, consume usePortfolio)
 │   ├── ImageCropModal.tsx     (cropper react-easy-crop; modo foco: focal point % + zoom, aspect fijo; modo libre: presets 1:1/4:3/3:2/16:9/4:5/9:16 + slider de proporción continua default "Original", exporta JPEG ≤2400)
 │   ├── ImageProcessingIndicator.tsx (feedback de subida: original → final, error, spinners)
 │   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar, drag & drop, processImage)
@@ -128,7 +128,7 @@ src/
 │       ├── Settings.tsx        (página /configuracion, categorías: General/SEO/Apariencia/Privacidad/Publicación, solo admin)
 │       └── edit/
 │           ├── EditableSection.tsx    (wrapper con botones [Editar] / [+ Agregar])
-│           ├── EditHeroModal.tsx      (imagen desktop + móvil + focal points + botones)
+│           ├── EditHeroModal.tsx      (imagen única + punto de importancia + fades + botones)
 │           ├── EditProfileModal.tsx   (nombre, profesión, descripción, avatar, redes)
 │           ├── EditAboutModal.tsx     (título, descripción, imagen)
 │           ├── EditFeaturedModal.tsx   (selección proyectos con DnD)
@@ -165,6 +165,7 @@ src/
 │   ├── favicons.ts            (10 presets SVG de favicon por profesión + svgToDataUrl, presetDataUrl, fileToFaviconDataUrl)
 │   ├── image.ts               (pipeline central: processImage/processImages, variantes 640/1600/2400, validateImage, formatBytes, releaseObjectURL)
 │   ├── useImageDrop.ts        (hook drag & drop de imágenes: useImageDrop -> { isDragging, dragProps })
+│   ├── useImageOrientation.ts (hook detección de orientación de imagen: useImageOrientation(url) -> "landscape" | "portrait" | "square" | null)
 │   ├── appearance.ts          (presets de apariencia: 6 acentos, colores de fondo, radio, botones, 6 fuentes + loadGoogleFont)
 │   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
 │   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
@@ -234,9 +235,7 @@ src/types/portfolio.ts
 - **PortfolioProfile** — información del profesional:
   - name, profession, description
   - avatar? (string URL)
-  - heroImage?, heroImageMobile? (URLs)
-  - heroImageFocusX?, heroImageFocusY? (0-100, focal point desktop)
-  - heroImageMobileFocusX?, heroImageMobileFocusY? (0-100, focal point móvil)
+  - heroImage?, heroImageFocusX?, heroImageFocusY? (URL + 0-100, focal point/punto de importancia)
   - heroPrimaryButton?, heroSecondaryButton?
   - aboutTitle, aboutDescription
   - contactTitle?, contactDescription?
@@ -307,17 +306,16 @@ Keys:
 - `visora-admin-auth` — estado de autenticación mock ("true" o null)
 - `visora-admin-profile` — perfil completo:
   - name, profession, description, avatar, email, location, socialLinks
-  - heroImage, heroImageMobile, heroImageFocusX/Y, heroImageMobileFocusX/Y
+  - heroImage, heroImageFocusX/Y (0-100, default 50)
   - heroPrimaryButton, heroSecondaryButton
   - aboutTitle, aboutDescription
   - contactTitle, contactDescription
 - `visora-admin-hero` — config hero:
-  - heroImage, heroImageMobile
-  - heroImageFocusX/Y (0-100, default 50)
-  - heroImageMobileFocusX/Y (0-100, default 50)
+  - heroImage
+  - heroImageFocusX/Y (0-100, default 50) — punto de importancia
   - title, description
-  - primaryText, primaryLink
-  - secondaryText, secondaryLink
+  - primaryText, primaryLink (select, default `#projects`)
+  - secondaryText, secondaryLink (select, default `/contacto`)
   - showSecondary (boolean)
 - `visora-admin-about` — sobre mí (title, description, image?, focusX?, focusY?); la imagen también se persiste como `aboutImage` (más `aboutImageFocusX/Y`) en `visora-admin-profile` (fuente única vía `usePortfolio`)
 - `visora-admin-contact` — contacto config:
@@ -385,6 +383,7 @@ Helpers exportados:
 - `releaseObjectURL(url)` — libera ObjectURLs de forma segura (no-op si no es `blob:`)
 - `validateImage(file, maxSizeMB?)`, `isSupportedImage(file)`, `isBlobUrl`, `isDataUrl`
 - `VARIANT_SIZES` = `{ thumb: 640, preview: 1600, full: 2400 }`
+- `hasTransparency(url)` — detecta (canvas, `willReadFrequently`, sampleo de alpha) si la imagen tiene píxeles con transparencia (alpha < 255). Usado por EditHeroModal para mostrar el toggle "Fondo degradado". Resuelve `false` si la imagen no se puede leer o el canvas está bloqueado.
 - `resizeUrl(url, width, quality?)` — añade `?auto=format&w=N&q=Q` SOLO a URLs remotas http(s); devuelve intactas las URLs `data:`/`blob:`. Sustituye a concatenar los parámetros CDN a mano (que rompía las URLs data/blob → imagenes en blanco). Lo usan Project, MasonryGallery, ProjectCard, BlogCard, BlogPost, PostBody, PhotoViewer y watermark.
 
 **Drag & drop**: `src/lib/useImageDrop.ts` exporta `useImageDrop(onFiles)` → `{ isDragging, dragProps }` para hacer zonas de soltar imágenes desde el explorador (no requiere abrir una carpeta).
@@ -392,7 +391,7 @@ Helpers exportados:
 **Feedback de subida**: `src/components/ImageProcessingIndicator.tsx` muestra "Optimizando…" (spinner), error, o "Original: X → Final: Y".
 
 **Puntos donde se aplica el procesamiento** (ninguna subida lo evita):
-- `ImageUpload.tsx` — componente compartido (hero desktop/móvil, about, portada blog, bloques imagen del blog). Soporta drag & drop + procesamiento al subir.
+- `ImageUpload.tsx` — componente compartido (hero, about, portada blog, bloques imagen del blog). Soporta drag & drop + procesamiento al subir.
 - `EditProfileModal.tsx` — avatar.
 - `EditProjectsModal.tsx` — galería + portadas con **compresión al guardar** (ver nota abajo).
 
@@ -445,33 +444,55 @@ El sitio público ES el admin cuando hay sesión activa. No hay barra extra ni t
 | Blog post | [✏ Editar] + [🗑 Eliminar] |
 
 **Modales de edición (6):**
-- EditHeroModal — imagen desktop + móvil + focal points + botones + toggle secundario
-- EditProfileModal — nombre, profesión, descripción, avatar, redes
-- EditAboutModal — título, descripción, imagen
+- EditHeroModal — imagen única + punto de importancia (ImageUploadFocalPoint) + fades + botones + toggle secundario
+- EditProfileModal — ubicación, email, descripción, avatar
+- EditAboutModal — título, descripción, imagen (recorte 4:5 + posición)
 - EditFeaturedModal — selección de proyectos con DnD
 - EditProjectsModal — lista + formulario, DnD, imágenes
 - EditContactModal — título, descripción, email + asunto, WhatsApp (prefijo `+56 9` + 8 números, mensaje ≤100) y redes sociales (settings.socials)
 
+**Diseño de los modales (desktop):**
+- El botón **Guardar** vive en el **header del modal, arriba a la derecha** (nuevo prop `actions` en `Modal.tsx`, junto al botón cerrar) — ya no en el footer. Componente compartido `SaveButton` (`src/components/SaveButton.tsx`).
+- Formularios con cuerpo en **2 columnas** en desktop: Hero (imagen única + punto de importancia + fades + fondo degradado + temas de fondo, título+descripción, botones), Perfil (ubicación+email, descripción a ancho completo), Sobre mí (imagen a la izquierda, título+descripción a la derecha), Destacadas (orden seleccionadas | proyectos disponibles), Proyectos (info+portada | imágenes), Contacto (título+ubicación, WhatsApp, email+asunto).
+- `Modal` `wide` ampliado a `sm:max-w-5xl` para acomodar las 2 columnas.
+
 ---
 
-# 10. Hero — Imagen dual con focal point
+# 10. Hero — Imagen única con punto de importancia
 
-El Hero soporta dos imágenes: una para desktop y una para móvil (opcional).
+El Hero usa una **única imagen** (desktop = móvil). El recorte en móvil se centra
+en el **punto de importancia** (`object-position`), así el sujeto principal no se pierde
+al adaptar la imagen al viewport vertical.
 
 **Componente:** src/components/Hero.tsx
 
-- Dos `<img>` con Tailwind:
-  - Desktop: `hidden md:block` con `objectPosition` del focal point desktop
-  - Mobile: `md:hidden` con `objectPosition` del focal point mobile
-- Si no hay imagen móvil, una sola imagen con el focal point desktop
-- Focal point: `object-position: ${x}% ${y}%` (0-100, default 50% 50% = centrado)
+- Un solo `<img>` (con `object-cover`) en todos los viewports
+- Focal point/punto de importancia: `object-position: ${x}% ${y}%` (0-100, default 50% 50% = centrado)
+- En móvil el `object-cover` recorta y **centra en el punto de importancia** marcado
+- **La imagen se contiene dentro de `max-w-7xl`** (igual que el resto de la Home), de modo que en pantallas grandes no toca los bordes de la pantalla; el fondo `bg-neutral-950` de la sección sí es de ancho completo.
+- **Sombras de texto en mobile** (`[text-shadow:0_2px_4px_rgba(0,0,0,0.55),0_6px_18px_rgba(0,0,0,0.5)]` en el título; capas de 1-3px + difuminado en profesión/descripción/botón secundario): evita que las letras se pierdan contra la imagen en móvil. Las utilidades `text-shadow-lg/md` de Tailwind no sirven (generan negro al 10% de opacidad, invisible); se usan valores arbitrarios explícitos.
+- **Orientación automática** (`useImageOrientation`, src/lib/useImageOrientation.ts): si la imagen es vertical (`portrait`), en desktop se muestra **a la derecha a altura completa** (`md:right-0 md:w-auto` manteniendo `h-full`) en vez de `object-cover` a todo el ancho, que recortaría la imagen vertical. En móvil sigue llenando la pantalla con cover.
+
+**ImageUploadFocalPoint:** src/components/ImageUploadFocalPoint.tsx
+
+- Componente **unificado** de carga + punto de importancia: subir/cambiar/eliminar la imagen **y** marcar el punto en un solo área
+- Con imagen: preview **completa** (`object-contain`) sobre fondo oscuro, **marcador de cruz** + líneas de referencia en la posición actual, chip "Punto X% · Y%", botón Centrar (50/50), y botones Cambiar/Recortar/Eliminar superpuestos
+- **Click o arrastre** sobre la imagen → convierte las coordenadas del puntero a porcentajes (`clientX` relativo al `rect`) y actualiza `focusX/focusY`; flechas del teclado para ajuste fino
+- Sin imagen: zona de drag & drop / clic para subir (procesamiento `processImage` con feedback de `ImageProcessingIndicator`)
+- Props: `{ label, image, focusX?, focusY?, onImage, onFocusChange, onRemove, onCrop? }` — reutilizable
 
 **EditHeroModal:** src/pages/admin/edit/EditHeroModal.tsx
 
-- Campo "Imagen de fondo (desktop)" + botón "Ajustar posición"
-- Campo "Imagen de fondo (móvil) — opcional" + botón "Ajustar posición"
+- Campo "Imagen de fondo" con `ImageUploadFocalPoint` (subir/cambiar/eliminar + punto de importancia en la misma área), ligado a `heroImageFocusX/Y` (los ajusta al instante)
 - Toggle mostrar/ocultar botón secundario
-- Coordenadas del focal point visibles junto al botón
+- **Formulario en secciones tipo tarjeta** (`HeroSection`: título uppercase con color accent + `rounded-2xl border border-neutral-200/70 bg-white/70 p-5 shadow-sm`) para destacar cada bloque también en tema claro. Orden: Imagen de fondo (más nota Photoroom) → grid [Fondo degradado y atenuación | Temas de fondo] → Alineación de la imagen vertical (si es portrait; va ANTES de Título/Descripción) → Título y descripción (grid sm:grid-cols-2) → grid [Botón principal | Botón secundario con toggle].
+- **Destinos de los botones como selectores** (`LinkSelect` + `LINK_OPTIONS`): `#featured` (Destacadas), `#projects` (Proyectos), `/sobre-mi`, `/blog`, `/contacto`. Reemplazan los inputs de enlace libres (evita rutas mal escritas). Se guardan como `primaryLink`/`secondaryLink` en `visora-admin-hero` (defaults `#projects` / `/contacto`).
+- **Los botones del hero consumen los enlaces configurados**: el componente compartido `HeroLink` (Hero.tsx, EditorialHome via `Mancheta`) renderiza `<a href>` si el destino empieza por `#` (ancla a sección) o `<Link>` si es una ruta (`/sobre-mi`, etc.). Los fallbacks sin config son `#projects` (principal) y `/contacto` (secundario), coherentes con el default del modal.
+- **El recorte del hero usa SOLO el modo real**: "Recortar" abre el `ImageCropModal` en **modo libre** (`free` + `onExport`) y reemplaza la imagen del hero por la zona recortada exportada como data URL (WebP/PNG si hay transparencia, JPEG si no; ≤2400px), reseteando el punto de importancia a 50/50 (se reajusta con el picker al instante).
+- **Selector de alineación de imagen vertical** (`portraitAlign`, valores `left | center | right`, default `center` en `visora-admin-hero`): aparece cuando la imagen es vertical y se aplica SOLO en el tema Editorial (la imagen portrait del cover se alinea con `mr-auto` / `mx-auto` / `ml-auto` dentro de su columna). En el minimal la imagen vertical se alinea a la derecha automáticamente.
+- **Fondo degradado para imágenes con transparencia** (`hasTransparency`, src/lib/image.ts): si la imagen tiene píxeles con canal alpha < 255, aparece el toggle "Fondo degradado" (`heroGradient` en `visora-admin-hero`). Cuando está activo, aparecen los **presets de gradiente propios del hero** (`HERO_GRADIENT_PRESETS` en src/lib/appearance.ts — Noche violácea, Mar profundo, Atardecer, Esmeralda, Grafito elegante —, guardado como `heroGradientId`). El degradado ya NO depende de los colores de apariencia del sitio: `heroGradientBackground(preset)` (radial con el `glow` del preset + linear con `color1`→`color2`). Se renderiza detrás de la imagen en BOTH temas: `Hero.tsx` (minimal, sobre `bg-neutral-950`) y en el `CoverContent` editorial (detrás de la foto del cover).
+- **Atenuación de la imagen (fades)** (`fadeTop`/`fadeBottom`/`fadeLeft`/`fadeRight` en `visora-admin-hero`, default `bottom: true`): se aplica como **máscara CSS directamente sobre el `<img>`** (`heroImageMask` en src/lib/appearance.ts — `mask-image` + `-webkit-mask-image` con `mask-composite: intersect` si hay varios lados), de modo que el **borde de la imagen se funde con el fondo** y no se ve el "corte" rectangular del recorte. Se usa en AMBOS temas (`Hero.tsx` minimal y `CoverContent` editorial). Reemplaza el "oscurecimiento lateral" fijo del tema minimal.
+- Bajo la imagen se muestra una nota recomendando **Photoroom** para eliminar fondos con transparencia (enlace a `https://www.photoroom.com/tools/background-remover`).
 
 **ImageCropModal:** src/components/ImageCropModal.tsx
 
@@ -479,10 +500,11 @@ El Hero soporta dos imágenes: una para desktop y una para móvil (opcional).
 - Arrastras para elegir qué parte de la imagen se ve
 - Slider de zoom (1x a 3x)
 - Botón "Centrar" (resetea a 50% 50%)
-- Botón "Aplicar" (guarda coordenadas como porcentajes)
+- Botón "Aplicar" (guarda el **centro** del área recortada como porcentajes, calculado con `croppedPixels` reales de react-easy-crop; no usa el esquema de viewport fijo que apuntaba a la esquina y desviaba el foco en imágenes verticales)
 - Aspect ratio configurable (16/9 desktop, 9/16 mobile)
 - **Modo libre (`free`)**: para recortar en cualquier proporción. Por defecto usa la proporción real de la foto ("Original") + 7 presets (1:1, 4:3, 3:2, 16:9, 4:5, 9:16) + slider de proporción continua (0.5–3.0). Al aplicar exporta la zona recortada como JPEG ≤2400px (data URL) vía `getCroppedImg` + `onExport`. Sin "Centrar".
-- Modo export opcional: si se pasan `exportSize` + `onExport`, al aplicar genera la imagen recortada redimensionada a ese tamaño como data URL JPEG (via canvas) en lugar de solo el focal point — usado por la ogImage del SEO (1200×630). `onSave` es opcional.
+- Modo export opcional: si se pasan `exportSize` + `onExport`, al aplicar genera la imagen recortada redimensionada a ese tamaño como data URL (via canvas) en lugar de solo el focal point — usado por la ogImage del SEO (1200×630). `onSave` es opcional.
+- **Transparencia preservada en el export**: `getCroppedImg` detecta alpha con `hasTransparency` (src/lib/image.ts) y, si la imagen fuente tiene transparencia, exporta **WebP con alpha** (fallback a PNG); solo exporta JPEG (que rellenaría los transparentes de negro) cuando la imagen no tiene transparencia.
 
 **ImageUpload:** además de cambiar/eliminar, acepta `onCrop` opcional que pinta un botón "Recortar" junto a Cambiar/Eliminar (sobre la imagen). Eliminar la portada resetea el focal point a 50/50.
 
@@ -712,7 +734,9 @@ La arquitectura favorece esta separación:
 
 **Editorial (v2 — rediseño visual completo)**: ahora sí es un tema propio, no solo tokens:
 - Header masthead de revista: marca serif capitular, nav uppercase con separadores, regla con `border-top`, toggle claro/oscuro y sesión admin; menú móvil fullscreen.
-- Portada (cover) en la Home: mancheta con profesión, `brand` serif grande uppercase, regla doble, CTAs, imagen desktop/móvil con focal points y pie de foto (masthead figure).
+- Portada (cover) en la Home, **responsive**:
+  - **Mobile (< lg)**: imagen de fondo **a sangre** con la mancheta encima (texto blanco + text-shadow), replicando el hero minimal: `h-[70vh] min-h-[520px] max-h-[760px]`, `bg-neutral-950`, fades y gradiente aplicados. La sección va sin padding (`px-0 py-0`).
+  - **Desktop (lg+)**: grid editorial mancheta izquierda / imagen derecha. Mancheta con profesión, `brand` serif grande uppercase, regla doble, CTAs (extracto `Mancheta` reutilizable). Si la imagen es vertical (`useImageOrientation`), se limita a la altura de la mancheta: el grid usa `items-start` y un `ResizeObserver` mide la altura natural de la mancheta (`manchetaHeight`) que se aplica como `maxHeight` a la imagen, así la columna de texto define el alto y la foto no estira la sección. La **alineación** de la imagen vertical dentro de su columna se controla con `heroConfig.portraitAlign` (`left`→`mr-auto`, `center`→`mx-auto`, `right`→`ml-auto`; default `center`) elegida en el modal Editar Hero. Las imágenes horizontales mantienen `w-full object-cover`.
 - Destacadas: grid de fotos sin huecos (gap-px) con numeración editorial `01..08`.
 - Proyectos: **índice numerado** con filas 01/02/…, portada flotante al hacer hover y conteo de obras.
 - Blog: **índice tipo magacín** (fecha + título serif + extracto + portada en la columna derecha), aviso de autoguardado, toasts y editor inline lazy compartido (solo para crear posts nuevos; la edición de existentes se integra en el propio post).
@@ -769,11 +793,8 @@ Modelo **mono-tenant por cliente**: cada cliente tiene su propio proyecto Supaba
 - `description` text
 - `avatar` text — URL CDN del avatar
 - `hero_image` text — URL CDN
-- `hero_image_mobile` text (nullable)
 - `hero_image_focus_x` int2 (0–100, default 50)
 - `hero_image_focus_y` int2 (0–100, default 50)
-- `hero_image_mobile_focus_x` int2 (0–100, default 50)
-- `hero_image_mobile_focus_y` int2 (0–100, default 50)
 - `hero_primary_button` text
 - `hero_secondary_button` text
 - `about_title` text
@@ -891,7 +912,7 @@ Clientes y carpetas (paths) sugeridos por tipo de contenido:
 
 **Bucket `portfolio-images`** — fotos de proyectos, avatar, hero y about:
 - `portfolio-images/avatars/*` — avatar del perfil
-- `portfolio-images/hero/*` — hero desktop/móvil
+- `portfolio-images/hero/*` — hero
 - `portfolio-images/about/*` — imagen "sobre mí"
 - `portfolio-images/projects/{project_id}/*.webp` — fotos de álbumes (3 variantes por foto: `_thumb` 640 / `_preview` 1600 / `_full` 2400)
 
@@ -963,7 +984,7 @@ Se busca crear sitios profesionales que puedan venderse individualmente de forma
 
 # 21. Próximo objetivo técnico
 
-ESTADO: Sitio público + inline editing completado. 6 modales de edición funcionales. Hero con imagen dual + crop. Blog con editor inline de publicaciones (TipTap, borradores/borrador, bloques, portada con focal point).
+ESTADO: Sitio público + inline editing completado. 6 modales de edición funcionales. Hero con imagen única + punto de importancia (ImageUploadFocalPoint) + crop. Blog con editor inline de publicaciones (TipTap, borradores/borrador, bloques, portada con focal point).
 
 PRÓXIMO PASO: Conectar Supabase (lectura de datos, storage de imágenes, autenticación real).
 

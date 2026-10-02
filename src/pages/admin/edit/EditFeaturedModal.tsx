@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import Modal from "../../../components/Modal";
+import SaveButton from "../../../components/SaveButton";
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
 
@@ -167,102 +168,100 @@ function EditFeaturedModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Destacadas" wide>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar Destacadas"
+      wide
+      actions={<SaveButton onClick={handleSave} />}
+    >
       <div className="flex flex-col gap-6">
-        {/* Selected */}
-        <div>
-          <p className="mb-3 text-sm font-medium">
-            Orden de destacadas ({selected.length})
-          </p>
-
-          {selectedProjects.length > 0 ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={selected}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex flex-col gap-2">
-                  {selectedProjects.map((project) => (
-                    <SortableSelected
-                      key={project.slug}
-                      project={project}
-                      onRemove={() => remove(project.slug)}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <p className="text-sm text-neutral-400 dark:text-[#6F6A80]">
-              Selecciona proyectos de la lista.
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Selected */}
+          <div>
+            <p className="mb-3 text-sm font-medium">
+              Orden de destacadas ({selected.length})
             </p>
-          )}
-        </div>
 
-        {/* Available */}
-        <div>
-          <p className="mb-3 text-sm font-medium">Proyectos disponibles</p>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            {allProjects.map((project) => {
-              const isSelected = selected.includes(project.slug);
-
-              return (
-                <button
-                  key={project.slug}
-                  type="button"
-                  onClick={() => toggle(project.slug)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                    isSelected
-                      ? "border-(--visora-accent)/30 bg-(--visora-accent)/5 dark:border-(--visora-accent)/30 dark:bg-(--visora-accent)/10"
-                      : "border-neutral-200/70 bg-white/60 hover:border-neutral-300 dark:border-[#27243A]/70 dark:bg-[#161327]/60 dark:hover:border-[#4A4468]"
-                  }`}
+            {selectedProjects.length > 0 ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={selected}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <div
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  <div className="flex flex-col gap-2">
+                    {selectedProjects.map((project) => (
+                      <SortableSelected
+                        key={project.slug}
+                        project={project}
+                        onRemove={() => remove(project.slug)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <p className="text-sm text-neutral-400 dark:text-[#6F6A80]">
+                Selecciona proyectos de la lista.
+              </p>
+            )}
+          </div>
+
+          {/* Available */}
+          <div>
+            <p className="mb-3 text-sm font-medium">Proyectos disponibles</p>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {allProjects.map((project) => {
+                const isSelected = selected.includes(project.slug);
+
+                return (
+                  <button
+                    key={project.slug}
+                    type="button"
+                    onClick={() => toggle(project.slug)}
+                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
                       isSelected
-                        ? "border-(--visora-accent) bg-(--visora-accent)"
-                        : "border-neutral-300 dark:border-[#4A4468]"
+                        ? "border-(--visora-accent)/30 bg-(--visora-accent)/5 dark:border-(--visora-accent)/30 dark:bg-(--visora-accent)/10"
+                        : "border-neutral-200/70 bg-white/60 hover:border-neutral-300 dark:border-[#27243A]/70 dark:bg-[#161327]/60 dark:hover:border-[#4A4468]"
                     }`}
                   >
-                    {isSelected && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-white">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
+                    <div
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                        isSelected
+                          ? "border-(--visora-accent) bg-(--visora-accent)"
+                          : "border-neutral-300 dark:border-[#4A4468]"
+                      }`}
+                    >
+                      {isSelected && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-white">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
 
-                  <div className="h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-white/5">
-                    {project.cover ? (
-                      <img
-                        src={project.cover}
-                        alt={project.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : null}
-                  </div>
+                    <div className="h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-white/5">
+                      {project.cover ? (
+                        <img
+                          src={project.cover}
+                          alt={project.title}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
 
-                  <p className="min-w-0 flex-1 truncate text-sm">
-                    {project.title}
-                  </p>
-                </button>
-              );
-            })}
+                    <p className="min-w-0 flex-1 truncate text-sm">
+                      {project.title}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-
-        <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
-          >
-            Guardar
-          </button>
         </div>
       </div>
     </Modal>

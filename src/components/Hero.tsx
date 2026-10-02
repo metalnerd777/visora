@@ -2,14 +2,26 @@ import { Link } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { loadJSON } from "../lib/storage";
+import { useImageOrientation } from "../lib/useImageOrientation";
+import {
+  heroGradientFor,
+  heroGradientBackground,
+  heroImageMask,
+} from "../lib/appearance";
 
 interface HeroConfig {
-  heroImageMobile?: string;
   heroImageFocusX?: number;
   heroImageFocusY?: number;
-  heroImageMobileFocusX?: number;
-  heroImageMobileFocusY?: number;
   showSecondary?: boolean;
+  heroGradient?: boolean;
+  heroGradientId?: string;
+  heroTransparent?: boolean;
+  fadeTop?: boolean;
+  fadeBottom?: boolean;
+  fadeLeft?: boolean;
+  fadeRight?: boolean;
+  primaryLink?: string;
+  secondaryLink?: string;
 }
 
 function Hero() {
@@ -18,89 +30,104 @@ function Hero() {
     showSecondary: true,
     heroImageFocusX: 50,
     heroImageFocusY: 50,
-    heroImageMobileFocusX: 50,
-    heroImageMobileFocusY: 50,
+    heroGradient: false,
+    heroGradientId: "midnight-violet",
+    fadeTop: false,
+    fadeBottom: true,
+    fadeLeft: false,
+    fadeRight: false,
   });
+
+  const primaryLink = heroConfig.primaryLink ?? "#projects";
+  const secondaryLink = heroConfig.secondaryLink ?? "/contacto";
 
   const brand = settings.general.brandName || profile.name;
   const profession = settings.general.profession || profile.profession;
 
   const showSecondary = heroConfig.showSecondary ?? true;
-  const mobileImage = heroConfig.heroImageMobile || profile.heroImage;
-  const desktopImage = profile.heroImage;
+  const heroImage = profile.heroImage;
 
-  const desktopFocusX = heroConfig.heroImageFocusX ?? 50;
-  const desktopFocusY = heroConfig.heroImageFocusY ?? 50;
-  const mobileFocusX = heroConfig.heroImageMobileFocusX ?? 50;
-  const mobileFocusY = heroConfig.heroImageMobileFocusY ?? 50;
+  const focusX = heroConfig.heroImageFocusX ?? 50;
+  const focusY = heroConfig.heroImageFocusY ?? 50;
 
-  const useSeparateMobile =
-    heroConfig.heroImageMobile && heroConfig.heroImageMobile !== desktopImage;
+  const hasTransparentImage = heroConfig.heroTransparent === true;
+  const showDarkBg = !hasTransparentImage || heroConfig.heroGradient;
+
+  const isPortrait = useImageOrientation(heroImage) === "portrait";
+
+  const imageMask = heroImageMask({
+    top: heroConfig.fadeTop,
+    bottom: heroConfig.fadeBottom,
+    left: heroConfig.fadeLeft,
+    right: heroConfig.fadeRight,
+  });
 
   return (
     <section
       id="home"
-      className="relative flex h-[70vh] min-h-[520px] max-h-[760px] items-center overflow-hidden bg-neutral-950 text-white"
+      className={`relative flex h-[70vh] min-h-[520px] max-h-[760px] items-center overflow-hidden text-white ${showDarkBg ? "bg-neutral-950" : ""}`}
     >
-      {/* Imagen desktop — hidden on mobile */}
-      <img
-        src={desktopImage}
-        alt=""
-        fetchPriority="high"
-        className={`absolute inset-0 h-full w-full object-cover ${useSeparateMobile ? "hidden md:block" : ""}`}
-        style={{ objectPosition: `${desktopFocusX}% ${desktopFocusY}%` }}
-      />
-
-      {/* Imagen móvil — shown on mobile, hidden on desktop */}
-      {useSeparateMobile && (
-        <img
-          src={mobileImage}
-          alt=""
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover md:hidden"
-          style={{ objectPosition: `${mobileFocusX}% ${mobileFocusY}%` }}
+      {/* Fondo degradado (imágenes con transparencia) */}
+      {heroConfig.heroGradient && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background: heroGradientBackground(
+              heroGradientFor(heroConfig.heroGradientId),
+            ),
+          }}
         />
       )}
 
-      {/* Oscurecimiento lateral */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      {/* Contenido + imagen dentro del mismo ancho que el resto de la página */}
+      <div className="relative mx-auto flex h-full w-full max-w-7xl items-center px-6 sm:px-10">
+        {/* Imagen de fondo (recortada según el punto de importancia) */}
+        <img
+          src={heroImage}
+          alt=""
+          fetchPriority="high"
+          className={`absolute h-full object-cover ${
+            isPortrait
+              ? "inset-x-0 top-0 w-full left-0 md:bottom-auto md:left-auto md:right-0 md:top-1/2 md:h-[85%] md:w-auto md:-translate-y-1/2"
+              : "inset-x-0 top-0 w-full"
+          }`}
+          style={{ objectPosition: `${focusX}% ${focusY}%`, ...imageMask }}
+        />
 
-      {/* Degradado inferior */}
-      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
-
-      {/* Contenido */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 sm:px-10">
-        <div className="max-w-xl">
-          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70">
+        <div className="relative z-10 w-full">
+          <div className="max-w-xl">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70 max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_2px_8px_rgba(0,0,0,0.5)]">
             {profession}
           </p>
 
-          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl">
+          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl max-md:[text-shadow:0_2px_4px_rgba(0,0,0,0.55),0_6px_18px_rgba(0,0,0,0.5)]">
             {brand}
           </h1>
 
-          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_3px_10px_rgba(0,0,0,0.5)]">
             {profile.description}
           </p>
 
           <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
-            <a
-              href="#projects"
+            <HeroLink
+              to={primaryLink}
               className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
             >
               {profile.heroPrimaryButton ?? "Ver portfolio"}
-            </a>
+            </HeroLink>
 
             {showSecondary && (
-              <Link
-                to="/contacto"
-                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15"
+              <HeroLink
+                to={secondaryLink}
+                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15 max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7)]"
               >
                 {profile.heroSecondaryButton ?? "Contacto"}
-              </Link>
+              </HeroLink>
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Indicador de scroll */}
@@ -114,6 +141,30 @@ function Hero() {
         </span>
       </a>
     </section>
+  );
+}
+
+function HeroLink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (to.startsWith("#")) {
+    return (
+      <a href={to} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={to} className={className}>
+      {children}
+    </Link>
   );
 }
 

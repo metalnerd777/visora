@@ -3,6 +3,7 @@ import { useState } from "react";
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
 import SocialLinksEditor from "../../../components/SocialLinksEditor";
+import SaveButton from "../../../components/SaveButton";
 
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
@@ -130,7 +131,13 @@ function EditContactModal({
     : null;
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Contacto" wide>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar Contacto"
+      wide
+      actions={<SaveButton onClick={handleSave} />}
+    >
       <div className="flex flex-col gap-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -295,16 +302,6 @@ function EditContactModal({
             links={settings.socials}
             onChange={(links) => setSettings({ ...settings, socials: links })}
           />
-        </div>
-
-        <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
-          >
-            Guardar
-          </button>
         </div>
       </div>
     </Modal>

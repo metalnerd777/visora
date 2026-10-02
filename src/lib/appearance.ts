@@ -68,6 +68,77 @@ export const PRESET_GRADIENTS: {
   { id: "paper-teal", label: "Papel · verde azulado", base: "#F2F6F5", accent: "#2EC4B6", dark: false },
 ];
 
+// --- Presets de gradiente del hero (imágenes con transparencia) ---
+
+export interface HeroGradientPreset {
+  id: string;
+  label: string;
+  glow: string; // color del halo radial (acento)
+  color1: string; // color inicial del degradado lineal
+  color2: string; // color final del degradado lineal
+}
+
+export const HERO_GRADIENT_PRESETS: HeroGradientPreset[] = [
+  { id: "midnight-violet", label: "Noche violácea", glow: "#7C6CFF", color1: "#2A1E5C", color2: "#0B0A14" },
+  { id: "deep-ocean", label: "Mar profundo", glow: "#2EC4B6", color1: "#0E2433", color2: "#080D1A" },
+  { id: "sunset-ember", label: "Atardecer", glow: "#F97316", color1: "#3B1D2E", color2: "#120C14" },
+  { id: "emerald-mist", label: "Esmeralda", glow: "#10B981", color1: "#0F2418", color2: "#0A0F0D" },
+  { id: "elegant-graphite", label: "Grafito elegante", glow: "#3A3A44", color1: "#232329", color2: "#0C0C0F" },
+];
+
+export function heroGradientFor(id: string | undefined): HeroGradientPreset {
+  return (
+    HERO_GRADIENT_PRESETS.find((p) => p.id === id) ?? HERO_GRADIENT_PRESETS[0]
+  );
+}
+
+export function heroGradientBackground(preset: HeroGradientPreset): string {
+  return `radial-gradient(120% 150% at 85% 10%, color-mix(in srgb, ${preset.glow} 45%, transparent), transparent 60%), linear-gradient(160deg, ${preset.color1} 0%, ${preset.color2} 100%)`;
+}
+
+// --- Suavizado de bordes de la imagen del hero (mask) ---------------------
+// Máscara CSS aplicada directamente a la imagen (style de los <img>) para
+// que sus bordes se fundan con el fondo y no se vea el "corte" rectangular.
+// Se usa en el Hero minimal y en el CoverContent editorial.
+
+export interface HeroFadeSides {
+  top?: boolean;
+  bottom?: boolean;
+  left?: boolean;
+  right?: boolean;
+}
+
+export function heroImageMask(
+  fades: HeroFadeSides,
+): {
+  maskImage?: string;
+  WebkitMaskImage?: string;
+  maskComposite?: string;
+  WebkitMaskComposite?: string;
+} {
+  const layers: string[] = [];
+
+  if (fades.top)
+    layers.push("linear-gradient(180deg, transparent 0%, #000 25%)");
+  if (fades.bottom)
+    layers.push("linear-gradient(0deg, transparent 0%, #000 25%)");
+  if (fades.left)
+    layers.push("linear-gradient(90deg, transparent 0%, #000 25%)");
+  if (fades.right)
+    layers.push("linear-gradient(270deg, transparent 0%, #000 25%)");
+
+  if (layers.length === 0) return {};
+
+  const mask = layers.join(", ");
+
+  return {
+    maskImage: mask,
+    WebkitMaskImage: mask,
+    maskComposite: layers.length > 1 ? "intersect" : undefined,
+    WebkitMaskComposite: layers.length > 1 ? "intersect" : undefined,
+  };
+}
+
 // Mapas de radio y botones (valores en rem).
 export const RADIUS_OPTIONS: { value: "sm" | "md" | "lg"; label: string }[] = [
   { value: "sm", label: "Sutil" },

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# opencode memory del agente (no se commitea)
+.opencode/memory/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
-import ImageUpload from "../../../components/ImageUpload";
 import Toggle from "../../../components/Toggle";
 import ImageCropModal from "../../../components/ImageCropModal";
+import SaveButton from "../../../components/SaveButton";
+import ImageUploadFocalPoint from "../../../components/ImageUploadFocalPoint";
 
 import { loadJSON, saveJSON } from "../../../lib/storage";
 import { usePortfolio } from "../../../lib/usePortfolio";
+import { useImageOrientation } from "../../../lib/useImageOrientation";
+import { hasTransparency } from "../../../lib/image";
+import { HERO_GRADIENT_PRESETS } from "../../../lib/appearance";
 
 import { profile as defaultProfile } from "../../../data/portfolio";
 
@@ -15,13 +19,16 @@ import { isNonEmpty, sanitizeText } from "../../../lib/validation";
 
 import type { PortfolioProfile } from "../../../types/portfolio";
 
+export type PortraitAlign = "left" | "center" | "right";
+
 interface HeroConfig {
   heroImage?: string;
-  heroImageMobile?: string;
   heroImageFocusX: number;
   heroImageFocusY: number;
-  heroImageMobileFocusX: number;
-  heroImageMobileFocusY: number;
+  fadeTop: boolean;
+  fadeBottom: boolean;
+  fadeLeft: boolean;
+  fadeRight: boolean;
   title: string;
   description: string;
   primaryText: string;
@@ -29,16 +36,21 @@ interface HeroConfig {
   secondaryText: string;
   secondaryLink: string;
   showSecondary: boolean;
+  heroGradient?: boolean;
+  heroGradientId?: string;
+  heroTransparent?: boolean;
+  portraitAlign?: PortraitAlign;
 }
 
 function loadHero(): HeroConfig {
   return loadJSON<HeroConfig>("visora-admin-hero", {
     heroImage: defaultProfile.heroImage,
-    heroImageMobile: undefined,
     heroImageFocusX: 50,
     heroImageFocusY: 50,
-    heroImageMobileFocusX: 50,
-    heroImageMobileFocusY: 50,
+    fadeTop: false,
+    fadeBottom: true,
+    fadeLeft: false,
+    fadeRight: false,
     title: defaultProfile.name,
     description: defaultProfile.description,
     primaryText: defaultProfile.heroPrimaryButton ?? "Ver portfolio",
@@ -46,7 +58,81 @@ function loadHero(): HeroConfig {
     secondaryText: defaultProfile.heroSecondaryButton ?? "Contacto",
     secondaryLink: "/contacto",
     showSecondary: true,
+    heroGradient: false,
+    heroGradientId: HERO_GRADIENT_PRESETS[0].id,
+    heroTransparent: false,
+    portraitAlign: "center",
   });
+}
+
+const PORTRAIT_ALIGN_OPTIONS: { value: PortraitAlign; label: string }[] = [
+  { value: "left", label: "Izquierda" },
+  { value: "center", label: "Centro" },
+  { value: "right", label: "Derecha" },
+];
+
+const LINK_OPTIONS: { value: string; label: string }[] = [
+  { value: "#featured", label: "Destacadas" },
+  { value: "#projects", label: "Proyectos" },
+  { value: "/sobre-mi", label: "Sobre mí" },
+  { value: "/blog", label: "Blog" },
+  { value: "/contacto", label: "Contacto" },
+];
+
+function LinkSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:text-[#F5F3FF]"
+      >
+        {LINK_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function HeroSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200/70 bg-white/70 p-5 shadow-sm dark:border-[#2A273F] dark:bg-[#0B0A14]/50">
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-(--visora-accent)">
+          {title}
+        </p>
+        {description && (
+          <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+            {description}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
 }
 
 function EditHeroModal({
@@ -61,11 +147,32 @@ function EditHeroModal({
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
 
   const [cropOpen, setCropOpen] = useState(false);
-  const [cropTarget, setCropTarget] = useState<"desktop" | "mobile">("desktop");
+
+  const isDesktopPortrait =
+    useImageOrientation(config.heroImage) === "portrait";
 
   const update = (patch: Partial<HeroConfig>) => {
     setConfig((prev) => ({ ...prev, ...patch }));
   };
+
+  const [heroTransparent, setHeroTransparent] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void hasTransparency(config.heroImage ?? "").then((value) => {
+      if (!cancelled) {
+        setHeroTransparent(value);
+        if (config.heroTransparent !== value) {
+          update({ heroTransparent: value });
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config.heroImage, config.heroTransparent]);
 
   const handleSave = () => {
     if (!isNonEmpty(config.title)) {
@@ -83,6 +190,7 @@ function EditHeroModal({
       secondaryText: sanitizeText(config.secondaryText).trim(),
       primaryLink: config.primaryLink.trim(),
       secondaryLink: config.secondaryLink.trim(),
+      heroTransparent: config.heroTransparent ?? false,
     };
 
     saveJSON("visora-admin-hero", cleaned);
@@ -97,11 +205,8 @@ function EditHeroModal({
       name: cleaned.title,
       description: cleaned.description,
       heroImage: cleaned.heroImage,
-      heroImageMobile: cleaned.heroImageMobile,
       heroImageFocusX: cleaned.heroImageFocusX,
       heroImageFocusY: cleaned.heroImageFocusY,
-      heroImageMobileFocusX: cleaned.heroImageMobileFocusX,
-      heroImageMobileFocusY: cleaned.heroImageMobileFocusY,
       heroPrimaryButton: cleaned.primaryText,
       heroSecondaryButton: cleaned.secondaryText,
     });
@@ -110,31 +215,40 @@ function EditHeroModal({
     onClose();
   };
 
-  const openCrop = (target: "desktop" | "mobile") => {
-    setCropTarget(target);
+  const openCrop = () => {
     setCropOpen(true);
   };
 
-  const currentImage =
-    cropTarget === "desktop" ? config.heroImage : config.heroImageMobile;
-
-  const handleCropSave = (x: number, y: number) => {
-    if (cropTarget === "desktop") {
-      update({ heroImageFocusX: x, heroImageFocusY: y });
-    } else {
-      update({ heroImageMobileFocusX: x, heroImageMobileFocusY: y });
-    }
+  const handleCropExport = (dataUrl: string) => {
+    update({
+      heroImage: dataUrl,
+      heroImageFocusX: 50,
+      heroImageFocusY: 50,
+    });
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Hero">
-      <div className="flex flex-col gap-6">
-        {/* Imagen desktop */}
-        <div className="flex flex-col gap-3">
-          <ImageUpload
-            label="Imagen de fondo (desktop)"
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar Hero"
+      wide
+      actions={<SaveButton onClick={handleSave} />}
+>
+      <div className="flex flex-col gap-5">
+        <HeroSection
+          title="Imagen de fondo"
+          description="Carga o cambia la imagen y marca el punto de importancia (se ajusta con clic, arrastre o flechas)."
+        >
+          <ImageUploadFocalPoint
+            label="Imagen de fondo"
             image={config.heroImage}
+            focusX={config.heroImageFocusX}
+            focusY={config.heroImageFocusY}
             onImage={(url) => update({ heroImage: url })}
+            onFocusChange={(x, y) =>
+              update({ heroImageFocusX: x, heroImageFocusY: y })
+            }
             onRemove={() =>
               update({
                 heroImage: undefined,
@@ -142,159 +256,233 @@ function EditHeroModal({
                 heroImageFocusY: 50,
               })
             }
+            onCrop={config.heroImage ? openCrop : undefined}
           />
 
-          {config.heroImage && (
-            <button
-              type="button"
-              onClick={() => openCrop("desktop")}
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8]"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
-                <path d="M15 3h6v6" />
-                <path d="M10 14L21 3" />
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              </svg>
-              Ajustar posición
-              <span className="text-neutral-400 dark:text-[#6F6A80]">
-                ({config.heroImageFocusX}% {config.heroImageFocusY}%)
-              </span>
-            </button>
-          )}
-        </div>
-
-        {/* Imagen móvil */}
-        <div className="flex flex-col gap-3">
-          <ImageUpload
-            label="Imagen de fondo (móvil) — opcional"
-            image={config.heroImageMobile}
-            onImage={(url) => update({ heroImageMobile: url })}
-            onRemove={() =>
-              update({
-                heroImageMobile: undefined,
-                heroImageMobileFocusX: 50,
-                heroImageMobileFocusY: 50,
-              })
-            }
-          />
-
-          {config.heroImageMobile && (
-            <button
-              type="button"
-              onClick={() => openCrop("mobile")}
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8]"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
-                <path d="M15 3h6v6" />
-                <path d="M10 14L21 3" />
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              </svg>
-              Ajustar posición
-              <span className="text-neutral-400 dark:text-[#6F6A80]">
-                ({config.heroImageMobileFocusX}% {config.heroImageMobileFocusY}%)
-              </span>
-            </button>
-          )}
-
-          <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
-            Si no subes una imagen móvil, se usará la de desktop con su ajuste.
+          <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 shrink-0">
+              <path d="M12 9v4m0 4h.01" />
+              <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+            <span>
+              Si necesitas eliminar el fondo de tu imagen, te recomendamos la
+              herramienta que posee{" "}
+              <a
+                href="https://www.photoroom.com/tools/background-remover"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-(--visora-accent) underline decoration-(--visora-accent)/40 underline-offset-2 hover:decoration-(--visora-accent)"
+              >
+                Photoroom
+              </a>
+              .
+            </span>
           </p>
+        </HeroSection>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <HeroSection
+            title="Fondo degradado y atenuación"
+            description="El degradado se muestra detrás de imágenes con transparencia; la atenuación difumina el borde (por defecto solo el inferior)."
+          >
+            <div className="flex flex-col gap-4">
+              {heroTransparent ? (
+                <Toggle
+                  label="Fondo degradado"
+                  checked={config.heroGradient ?? false}
+                  onChange={(v) => update({ heroGradient: v })}
+                />
+              ) : (
+                <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                  Tu imagen no tiene transparencia, así que el fondo degradado
+                  no se aplica.
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-4">
+                <Toggle
+                  label="Atenuar arriba"
+                  checked={config.fadeTop}
+                  onChange={(v) => update({ fadeTop: v })}
+                />
+                <Toggle
+                  label="Atenuar abajo"
+                  checked={config.fadeBottom}
+                  onChange={(v) => update({ fadeBottom: v })}
+                />
+                <Toggle
+                  label="Atenuar izquierda"
+                  checked={config.fadeLeft}
+                  onChange={(v) => update({ fadeLeft: v })}
+                />
+                <Toggle
+                  label="Atenuar derecha"
+                  checked={config.fadeRight}
+                  onChange={(v) => update({ fadeRight: v })}
+                />
+              </div>
+            </div>
+          </HeroSection>
+
+          <HeroSection
+            title="Temas de fondo"
+            description="Degradado que se muestra detrás de la imagen con transparencia."
+          >
+            {heroTransparent && (config.heroGradient ?? false) ? (
+              <div className="flex flex-wrap gap-2">
+                {HERO_GRADIENT_PRESETS.map((preset) => {
+                  const active =
+                    (config.heroGradientId ?? HERO_GRADIENT_PRESETS[0].id) ===
+                    preset.id;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      title={preset.label}
+                      aria-label={`Degradado ${preset.label}`}
+                      onClick={() => update({ heroGradientId: preset.id })}
+                      className={`flex h-10 w-20 cursor-pointer items-center justify-center rounded-xl border-2 transition-transform hover:scale-105 ${
+                        active
+                          ? "border-neutral-900 dark:border-white"
+                          : "border-neutral-200/70 dark:border-[#2A273F]"
+                      }`}
+                      style={{
+                        background: `linear-gradient(135deg, ${preset.color1} 0%, ${preset.color2} 100%)`,
+                      }}
+                    >
+                      <span className="rounded-full bg-black/35 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-white backdrop-blur-sm">
+                        {preset.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                Activa "Fondo degradado" para elegir un tema de fondo.
+              </p>
+            )}
+          </HeroSection>
         </div>
 
-        <Field
-          label="Título"
-          value={config.title}
-          onChange={(v) => {
-            update({ title: v });
-            setTitleError(undefined);
-          }}
-          placeholder="Tu nombre"
-          required
-          error={titleError}
-        />
+        {isDesktopPortrait && (
+          <HeroSection
+            title="Alineación de la imagen vertical"
+            description="Se aplica en el tema Editorial. En el minimal la imagen se alinea automáticamente."
+          >
+            <div className="flex w-fit rounded-xl border border-neutral-200 bg-neutral-50 p-1 dark:border-[#27243A] dark:bg-[#0B0A14]/60">
+              {PORTRAIT_ALIGN_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => update({ portraitAlign: option.value })}
+                  className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${
+                    (config.portraitAlign ?? "center") === option.value
+                      ? "bg-white text-black shadow-sm dark:bg-[#27243A] dark:text-[#F5F3FF]"
+                      : "text-neutral-500 hover:text-neutral-700 dark:text-[#A8A3B8] dark:hover:text-[#F5F3FF]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </HeroSection>
+        )}
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-            Descripción
-          </label>
-
-          <textarea
-            value={config.description}
-            onChange={(e) => update({ description: e.target.value })}
-            placeholder="Una breve descripción..."
-            rows={3}
-            className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
-          />
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <p className="text-sm font-medium">Botón principal</p>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+        <HeroSection
+          title="Título y descripción"
+          description="Textos principales del hero."
+        >
+          <div className="grid gap-6 sm:grid-cols-2">
             <Field
-              label="Texto"
-              value={config.primaryText}
-              onChange={(v) => update({ primaryText: v })}
-              placeholder="Ver portfolio"
+              label="Título"
+              value={config.title}
+              onChange={(v) => {
+                update({ title: v });
+                setTitleError(undefined);
+              }}
+              placeholder="Tu nombre"
+              required
+              error={titleError}
             />
 
-            <Field
-              label="Enlace"
-              value={config.primaryLink}
-              onChange={(v) => update({ primaryLink: v })}
-              placeholder="#projects o /ruta"
-            />
-          </div>
-        </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+                Descripción
+              </label>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <p className="text-sm font-medium">Botón secundario</p>
-
-            <Toggle
-              label="Mostrar"
-              checked={config.showSecondary}
-              onChange={(v) => update({ showSecondary: v })}
-            />
-          </div>
-
-          {config.showSecondary && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Texto"
-                value={config.secondaryText}
-                onChange={(v) => update({ secondaryText: v })}
-                placeholder="Contacto"
-              />
-
-              <Field
-                label="Enlace"
-                value={config.secondaryLink}
-                onChange={(v) => update({ secondaryLink: v })}
-                placeholder="/contacto"
+              <textarea
+                value={config.description}
+                onChange={(e) => update({ description: e.target.value })}
+                placeholder="Una breve descripción..."
+                rows={3}
+                className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
               />
             </div>
-          )}
-        </div>
+          </div>
+        </HeroSection>
 
-        <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
+        <div className="grid gap-5 sm:grid-cols-2">
+          <HeroSection
+            title="Botón principal"
+            description="Texto y destino al que lleva el botón principal."
           >
-            Guardar
-          </button>
+            <div className="flex flex-col gap-4">
+              <Field
+                label="Texto"
+                value={config.primaryText}
+                onChange={(v) => update({ primaryText: v })}
+                placeholder="Ver portfolio"
+              />
+
+              <LinkSelect
+                label="Destino"
+                value={config.primaryLink}
+                onChange={(v) => update({ primaryLink: v })}
+              />
+            </div>
+          </HeroSection>
+
+          <HeroSection
+            title="Botón secundario"
+            description="Texto y destino del botón secundario."
+          >
+            <div className="flex flex-col gap-4">
+              {/* Toggle
+              <Toggle
+                label="Mostrar botón secundario"
+                checked={config.showSecondary}
+                onChange={(v) => update({ showSecondary: v })}
+              />
+              */}
+
+              <div className="flex flex-col gap-4">
+                <Field
+                  label="Texto"
+                  value={config.secondaryText}
+                  onChange={(v) => update({ secondaryText: v })}
+                  placeholder="Contacto"
+                />
+
+                <LinkSelect
+                  label="Destino"
+                  value={config.secondaryLink}
+                  onChange={(v) => update({ secondaryLink: v })}
+                />
+              </div>
+            </div>
+          </HeroSection>
         </div>
       </div>
 
-      {currentImage && (
+      {config.heroImage && (
         <ImageCropModal
           open={cropOpen}
           onClose={() => setCropOpen(false)}
-          image={currentImage}
-          aspect={cropTarget === "desktop" ? 16 / 9 : 9 / 16}
-          onSave={handleCropSave}
+          image={config.heroImage}
+          free
+          onExport={handleCropExport}
         />
       )}
     </Modal>

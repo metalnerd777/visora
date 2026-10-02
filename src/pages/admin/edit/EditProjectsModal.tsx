@@ -543,7 +543,24 @@ function EditProjectsModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Proyectos" wide>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar Proyectos"
+      wide
+      actions={
+        view === "form" ? (
+          <button
+            type="button"
+            onClick={() => void saveForm()}
+            disabled={!formTitle.trim() || saving}
+            className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-5 py-2.5 text-sm text-white transition-colors hover:bg-(--visora-accent) disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
+          >
+            {saving ? "Guardando…" : "Guardar proyecto"}
+          </button>
+        ) : undefined
+      }
+    >
       {view === "list" ? (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -601,6 +618,12 @@ function EditProjectsModal({
           >
             ← Volver a la lista
           </button>
+
+          {formError && (
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formError}
+            </p>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Left: info */}
@@ -837,25 +860,6 @@ function EditProjectsModal({
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-[#27243A]">
-            <div className="flex flex-1 flex-col items-start justify-center gap-1">
-              {formError && (
-                <p className="text-xs text-red-500 dark:text-red-400">
-                  {formError}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void saveForm()}
-              disabled={!formTitle.trim() || saving}
-              className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-6 py-3 text-sm text-white transition-colors hover:bg-(--visora-accent) disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#F5F3FF] dark:text-black dark:hover:bg-(--visora-accent) dark:hover:text-white"
-            >
-              {saving ? "Guardando…" : "Guardar proyecto"}
-            </button>
           </div>
         </div>
       )}
