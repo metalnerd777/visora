@@ -68,7 +68,7 @@ function Footer() {
                 >
                   <SocialIcon
                     platform={link.platform}
-                    className="h-3.5 w-3.5 text-current"
+                    className="h-4 w-4 shrink-0 text-current"
                   />
                   {socialLabel(link.platform)}
                 </a>
@@ -135,7 +135,6 @@ function Footer() {
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
-
                 Administrador
               </Link>
             )}
@@ -149,10 +148,15 @@ function Footer() {
           </span>
 
           {settings.privacy.notice && (
-            <span className="max-w-md text-right">{settings.privacy.notice}</span>
+            <span className="max-w-md text-right">
+              {settings.privacy.notice}
+            </span>
           )}
 
-          <span>Desarrollado por @draugur_dev</span>
+          <span>
+            Desarrollado por Juan Andrés PM{" "}
+            <a href="https://instagram.com/draugur_dev">@draugur_dev</a>
+          </span>
         </div>
       </div>
     </footer>

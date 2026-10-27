@@ -103,7 +103,7 @@ function EditorialFooter() {
                   >
                     <SocialIcon
                       platform={link.platform}
-                      className="h-3.5 w-3.5 shrink-0 text-black/50 transition-colors group-hover:text-black dark:text-[#F3EFE6]/50 dark:group-hover:text-[#F3EFE6]"
+                      className="h-4 w-4 shrink-0 text-black/50 transition-colors group-hover:text-black dark:text-[#F3EFE6]/50 dark:group-hover:text-[#F3EFE6]"
                     />
                     {socialLabel(link.platform)}
                   </a>
@@ -138,13 +138,20 @@ function EditorialFooter() {
 
         {/* Línea final */}
         <div className="mt-12 flex flex-col gap-2 border-t border-[#1C1C1F]/10 pt-6 text-xs text-black/50 transition-colors dark:border-[#E9E6DF]/10 dark:text-[#F3EFE6]/50 md:flex-row md:justify-between">
-          <span>© {new Date().getFullYear()} {brand}</span>
+          <span>
+            © {new Date().getFullYear()} {brand}
+          </span>
 
           {settings.privacy.notice && (
-            <span className="max-w-md text-right">{settings.privacy.notice}</span>
+            <span className="max-w-md text-right">
+              {settings.privacy.notice}
+            </span>
           )}
 
-          <span>Desarrollado por @draugur_dev</span>
+          <span>
+            Desarrollado por Juan Andrés PM{" "}
+            <a href="https://instagram.com/draugur_dev">@draugur_dev</a>
+          </span>
         </div>
       </div>
     </footer>

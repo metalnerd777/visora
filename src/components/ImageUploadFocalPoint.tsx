@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { processImage, formatBytes } from "../lib/image";
 import { useImageDrop } from "../lib/useImageDrop";
 import { ImageProcessingIndicator, type ProcessingStatus } from "./ImageProcessingIndicator";
+import { heroGradientBackground, heroGradientFor } from "../lib/appearance";
 
 function ImageUploadFocalPoint({
   label,
@@ -13,6 +14,8 @@ function ImageUploadFocalPoint({
   onRemove,
   onCrop,
   className = "h-52 sm:h-72",
+  showGradient = false,
+  gradientId,
 }: {
   label: string;
   image?: string;
@@ -23,6 +26,8 @@ function ImageUploadFocalPoint({
   onRemove: () => void;
   onCrop?: () => void;
   className?: string;
+  showGradient?: boolean;
+  gradientId?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
@@ -54,14 +59,17 @@ function ImageUploadFocalPoint({
 
   const setFromPointer = useCallback(
     (clientX: number, clientY: number) => {
-      const el = layerRef.current;
-      if (!el) return;
+      const container = layerRef.current?.parentElement;
+      if (!container) return;
 
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
+      const img = container.querySelector("img");
+      if (!img) return;
 
-      const px = ((clientX - rect.left) / rect.width) * 100;
-      const py = ((clientY - rect.top) / rect.height) * 100;
+      const imgRect = img.getBoundingClientRect();
+      if (imgRect.width === 0 || imgRect.height === 0) return;
+
+      const px = ((clientX - imgRect.left) / imgRect.width) * 100;
+      const py = ((clientY - imgRect.top) / imgRect.height) * 100;
 
       onFocusChange(
         Math.min(100, Math.max(0, Math.round(px))),
@@ -97,13 +105,25 @@ function ImageUploadFocalPoint({
       {image ? (
         <>
           <div
-            className={`relative overflow-hidden rounded-2xl bg-black/40 ${className}`}
+            className={`relative overflow-hidden rounded-2xl ${showGradient && gradientId ? "" : "bg-black/40"} ${className}`}
+            style={
+              showGradient && gradientId
+                ? { background: heroGradientBackground(heroGradientFor(gradientId)) }
+                : undefined
+            }
           >
+            {showGradient && gradientId && (
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 z-0"
+                style={{ background: heroGradientBackground(heroGradientFor(gradientId)) }}
+              />
+            )}
             <img
               src={image}
               alt="Preview"
               draggable={false}
-              className="pointer-events-none block h-full w-full object-contain"
+              className="pointer-events-none relative z-10 block h-full w-full object-contain"
             />
 
             {/* Capa interactiva para marcar el punto */}
@@ -130,22 +150,22 @@ function ImageUploadFocalPoint({
                   Math.min(100, Math.max(0, ny)),
                 );
               }}
-              className="absolute inset-0 cursor-crosshair touch-none outline-none focus-visible:ring-2 focus-visible:ring-(--visora-accent) select-none"
+              className="absolute inset-0 z-20 cursor-crosshair touch-none outline-none focus-visible:ring-2 focus-visible:ring-(--visora-accent) select-none"
             >
               {/* Líneas de referencia */}
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute"
-                style={{ left: `${focusX}%`, top: 0, bottom: 0 }}
+                style={{ left: `${focusX}%`, top: 0, bottom: 0, transform: "translateX(-50%)" }}
               >
-                <div className="h-full w-px bg-white/50" />
+                <div className="h-full w-px bg-white/90 drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
               </div>
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute"
-                style={{ top: `${focusY}%`, left: 0, right: 0 }}
+                style={{ top: `${focusY}%`, left: 0, right: 0, transform: "translateY(-50%)" }}
               >
-                <div className="h-px w-full bg-white/50" />
+                <div className="h-px w-full bg-white/90 drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
               </div>
 
               {/* Marcador de cruz */}
@@ -154,16 +174,16 @@ function ImageUploadFocalPoint({
                 className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
                 style={{ left: `${focusX}%`, top: `${focusY}%` }}
               >
-                <div className="relative h-8 w-8">
-                  <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
-                  <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
-                  <div className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-white/20 backdrop-blur-[1px]" />
+                <div className="relative h-7 w-7">
+                  <div className="absolute left-1/2 top-1/2 h-3.5 w-px -translate-x-1/2 -translate-y-1/2 bg-white drop-shadow-[0_0_3px_rgba(0,0,0,0.95)]" />
+                  <div className="absolute left-1/2 top-1/2 h-px w-3.5 -translate-x-1/2 -translate-y-1/2 bg-white drop-shadow-[0_0_3px_rgba(0,0,0,0.95)]" />
+                  <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-white/30 backdrop-blur-[1px] shadow-[0_0_4px_rgba(0,0,0,0.9)]" />
                 </div>
               </div>
             </div>
 
             {/* Punto actual + centrar */}
-            <div className="absolute right-3 top-3 flex items-center gap-2">
+            <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
               <span className="rounded-full border border-white/25 bg-black/50 px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] text-white/80 backdrop-blur-md">
                 Punto {focusX}% · {focusY}%
               </span>
@@ -181,7 +201,7 @@ function ImageUploadFocalPoint({
             </div>
 
             {/* Acciones */}
-            <div className="absolute bottom-4 left-4 flex gap-2">
+            <div className="absolute bottom-4 left-4 z-30 flex gap-2">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-black/40 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white backdrop-blur-md transition-colors hover:border-white/60 hover:bg-black/60">
                 Cambiar
                 <input

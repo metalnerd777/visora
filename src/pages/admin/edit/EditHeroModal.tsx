@@ -238,7 +238,7 @@ function EditHeroModal({
       <div className="flex flex-col gap-5">
         <HeroSection
           title="Imagen de fondo"
-          description="Carga o cambia la imagen y marca el punto de importancia (se ajusta con clic, arrastre o flechas)."
+          description="Carga o cambia la imagen y marca el punto de importancia solo sobre la imagen visible."
         >
           <ImageUploadFocalPoint
             label="Imagen de fondo"
@@ -257,7 +257,36 @@ function EditHeroModal({
               })
             }
             onCrop={config.heroImage ? openCrop : undefined}
+            showGradient={heroTransparent && (config.heroGradient ?? false)}
+            gradientId={config.heroGradientId}
           />
+
+          {isDesktopPortrait && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-neutral-600 dark:text-[#A8A3B8]">
+                Alineación de la imagen vertical
+              </p>
+              <div className="flex w-fit rounded-xl border border-neutral-200 bg-neutral-50 p-1 dark:border-[#27243A] dark:bg-[#0B0A14]/60">
+                {PORTRAIT_ALIGN_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => update({ portraitAlign: option.value })}
+                    className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${
+                      (config.portraitAlign ?? "center") === option.value
+                        ? "bg-white text-black shadow-sm dark:bg-[#27243A] dark:text-[#F5F3FF]"
+                        : "text-neutral-500 hover:text-neutral-700 dark:text-[#A8A3B8] dark:hover:text-[#F5F3FF]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                Se aplica en el tema Editorial. En el minimal la imagen se alinea automáticamente.
+              </p>
+            </div>
+          )}
 
           <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 shrink-0">
@@ -282,113 +311,89 @@ function EditHeroModal({
 
         <div className="grid gap-5 sm:grid-cols-2">
           <HeroSection
-            title="Fondo degradado y atenuación"
-            description="El degradado se muestra detrás de imágenes con transparencia; la atenuación difumina el borde (por defecto solo el inferior)."
+            title="Atenuación de bordes"
+            description="Difumina los bordes de la imagen para integrarla mejor con el fondo."
+          >
+            <div className="flex flex-wrap gap-4">
+              <Toggle
+                label="Atenuar arriba"
+                checked={config.fadeTop}
+                onChange={(v) => update({ fadeTop: v })}
+              />
+              <Toggle
+                label="Atenuar abajo"
+                checked={config.fadeBottom}
+                onChange={(v) => update({ fadeBottom: v })}
+              />
+              <Toggle
+                label="Atenuar izquierda"
+                checked={config.fadeLeft}
+                onChange={(v) => update({ fadeLeft: v })}
+              />
+              <Toggle
+                label="Atenuar derecha"
+                checked={config.fadeRight}
+                onChange={(v) => update({ fadeRight: v })}
+              />
+            </div>
+          </HeroSection>
+
+          <HeroSection
+            title="Fondo degradado"
+            description="Se muestra detrás de la imagen con transparencia."
           >
             <div className="flex flex-col gap-4">
-              {heroTransparent ? (
+              <div className="flex flex-col gap-2">
                 <Toggle
                   label="Fondo degradado"
-                  checked={config.heroGradient ?? false}
-                  onChange={(v) => update({ heroGradient: v })}
+                  checked={heroTransparent ? (config.heroGradient ?? false) : false}
+                  onChange={(v) => update({ heroGradient: heroTransparent ? v : false })}
+                  disabled={!heroTransparent}
                 />
+                {!heroTransparent && (
+                  <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                    Para poner un fondo degradado la imagen debe tener un fondo
+                    transparente.
+                  </p>
+                )}
+              </div>
+
+              {heroTransparent && (config.heroGradient ?? false) ? (
+                <div className="flex flex-wrap gap-2">
+                  {HERO_GRADIENT_PRESETS.map((preset) => {
+                    const active =
+                      (config.heroGradientId ?? HERO_GRADIENT_PRESETS[0].id) ===
+                      preset.id;
+
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        title={preset.label}
+                        aria-label={`Degradado ${preset.label}`}
+                        onClick={() => update({ heroGradientId: preset.id })}
+                        className={`relative h-10 w-20 overflow-hidden rounded-xl border-2 transition-transform hover:scale-105 ${
+                          active
+                            ? "border-neutral-900 dark:border-white"
+                            : "border-neutral-200/70 dark:border-[#2A273F]"
+                        }`}
+                        style={{
+                          background: `linear-gradient(135deg, ${preset.color1} 0%, ${preset.color2} 100%)`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
                 <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
-                  Tu imagen no tiene transparencia, así que el fondo degradado
-                  no se aplica.
+                  {heroTransparent
+                    ? "Activa 'Fondo degradado' para ver las opciones de color."
+                    : "La imagen actual no tiene transparencia."}
                 </p>
               )}
-
-              <div className="flex flex-wrap gap-4">
-                <Toggle
-                  label="Atenuar arriba"
-                  checked={config.fadeTop}
-                  onChange={(v) => update({ fadeTop: v })}
-                />
-                <Toggle
-                  label="Atenuar abajo"
-                  checked={config.fadeBottom}
-                  onChange={(v) => update({ fadeBottom: v })}
-                />
-                <Toggle
-                  label="Atenuar izquierda"
-                  checked={config.fadeLeft}
-                  onChange={(v) => update({ fadeLeft: v })}
-                />
-                <Toggle
-                  label="Atenuar derecha"
-                  checked={config.fadeRight}
-                  onChange={(v) => update({ fadeRight: v })}
-                />
-              </div>
             </div>
-          </HeroSection>
-
-          <HeroSection
-            title="Temas de fondo"
-            description="Degradado que se muestra detrás de la imagen con transparencia."
-          >
-            {heroTransparent && (config.heroGradient ?? false) ? (
-              <div className="flex flex-wrap gap-2">
-                {HERO_GRADIENT_PRESETS.map((preset) => {
-                  const active =
-                    (config.heroGradientId ?? HERO_GRADIENT_PRESETS[0].id) ===
-                    preset.id;
-
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      title={preset.label}
-                      aria-label={`Degradado ${preset.label}`}
-                      onClick={() => update({ heroGradientId: preset.id })}
-                      className={`flex h-10 w-20 cursor-pointer items-center justify-center rounded-xl border-2 transition-transform hover:scale-105 ${
-                        active
-                          ? "border-neutral-900 dark:border-white"
-                          : "border-neutral-200/70 dark:border-[#2A273F]"
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${preset.color1} 0%, ${preset.color2} 100%)`,
-                      }}
-                    >
-                      <span className="rounded-full bg-black/35 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-white backdrop-blur-sm">
-                        {preset.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
-                Activa "Fondo degradado" para elegir un tema de fondo.
-              </p>
-            )}
           </HeroSection>
         </div>
-
-        {isDesktopPortrait && (
-          <HeroSection
-            title="Alineación de la imagen vertical"
-            description="Se aplica en el tema Editorial. En el minimal la imagen se alinea automáticamente."
-          >
-            <div className="flex w-fit rounded-xl border border-neutral-200 bg-neutral-50 p-1 dark:border-[#27243A] dark:bg-[#0B0A14]/60">
-              {PORTRAIT_ALIGN_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => update({ portraitAlign: option.value })}
-                  className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${
-                    (config.portraitAlign ?? "center") === option.value
-                      ? "bg-white text-black shadow-sm dark:bg-[#27243A] dark:text-[#F5F3FF]"
-                      : "text-neutral-500 hover:text-neutral-700 dark:text-[#A8A3B8] dark:hover:text-[#F5F3FF]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </HeroSection>
-        )}
 
         <HeroSection
           title="Título y descripción"

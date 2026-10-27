@@ -109,9 +109,9 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
               <>
                 <Link
                   to="/configuracion"
-                  className="ml-2 rounded-full px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/5 dark:hover:text-[#F5F3FF]"
+                  className="rounded-full px-4 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F3FF]"
                 >
-                  ⚙ Configuración
+                  Configuración
                 </Link>
 
                 <button
@@ -220,9 +220,9 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
                 <Link
                   to="/configuracion"
                   onClick={() => setOpen(false)}
-                  className="mt-2 rounded-xl px-3 py-3 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 dark:text-[#A8A3B8] dark:hover:bg-white/5"
+                  className="mt-2 rounded-full px-4 py-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/5 dark:hover:text-[#F5F3FF]"
                 >
-                  ⚙ Configuración
+                  Configuración
                 </Link>
 
                 <button

@@ -119,9 +119,9 @@ function EditorialHeader({ darkMode, onToggleDarkMode }: HeaderProps) {
               <>
                 <Link
                   to="/configuracion"
-                  className="text-xs uppercase tracking-[0.18em] text-black/60 transition-colors hover:text-black dark:text-[#F3EFE6]/60 dark:hover:text-[#F3EFE6]"
+                  className="text-xs uppercase tracking-[0.18em] text-black/70 transition-colors hover:text-black dark:text-[#F3EFE6]/70 dark:hover:text-[#F3EFE6]"
                 >
-                  ⚙ Config
+                  Configuración
                 </Link>
 
                 <button
@@ -215,9 +215,10 @@ function EditorialHeader({ darkMode, onToggleDarkMode }: HeaderProps) {
                   <Link
                     to="/configuracion"
                     onClick={() => setOpen(false)}
-                    className="block border border-black/20 px-4 py-3 text-center text-xs uppercase tracking-[0.2em] text-black/80 dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/80"
+                    className="flex items-center justify-between rounded-none py-4 text-sm uppercase tracking-[0.2em] text-black/80 transition-colors hover:text-black dark:text-[#F3EFE6]/80 dark:hover:text-[#F3EFE6]"
                   >
-                    Configuración
+                    <span>Configuración</span>
+                    <span className="text-black/30 dark:text-[#F3EFE6]/30">→</span>
                   </Link>
 
                   <button

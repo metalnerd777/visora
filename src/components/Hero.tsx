@@ -97,15 +97,15 @@ function Hero() {
 
         <div className="relative z-10 w-full">
           <div className="max-w-xl">
-          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70 max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_2px_8px_rgba(0,0,0,0.5)]">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70 [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_3px_10px_rgba(0,0,0,0.75),0_8px_32px_rgba(0,0,0,0.7)] max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_4px_14px_rgba(0,0,0,0.85),0_10px_40px_rgba(0,0,0,0.75)]">
             {profession}
           </p>
 
-          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl max-md:[text-shadow:0_2px_4px_rgba(0,0,0,0.55),0_6px_18px_rgba(0,0,0,0.5)]">
+          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl [text-shadow:0_2px_4px_rgba(0,0,0,0.85),0_6px_18px_rgba(0,0,0,0.8),0_14px_48px_rgba(0,0,0,0.75)] max-md:[text-shadow:0_3px_6px_rgba(0,0,0,0.95),0_8px_22px_rgba(0,0,0,0.85),0_16px_56px_rgba(0,0,0,0.8)]">
             {brand}
           </h1>
 
-          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7),0_3px_10px_rgba(0,0,0,0.5)]">
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base [text-shadow:0_1px_3px_rgba(0,0,0,0.85),0_4px_12px_rgba(0,0,0,0.75),0_10px_32px_rgba(0,0,0,0.7)] max-md:[text-shadow:0_1px_4px_rgba(0,0,0,0.95),0_5px_16px_rgba(0,0,0,0.85),0_12px_40px_rgba(0,0,0,0.75)]">
             {profile.description}
           </p>
 
