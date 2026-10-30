@@ -85,6 +85,34 @@ html {
 }
 
 /* --- Rich text editor --- */
+.rich-text-editor {
+  max-height: 22rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--visora-accent) 40%, transparent)
+    transparent;
+}
+
+.rich-text-editor::-webkit-scrollbar {
+  width: 10px;
+}
+
+.rich-text-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rich-text-editor::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+  background-color: color-mix(in srgb, var(--visora-accent) 40%, transparent);
+}
+
+.rich-text-editor::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--visora-accent) 60%, transparent);
+}
+
 .rich-text-editor .ProseMirror {
   min-height: 12rem;
   padding: 1.25rem 1.25rem 1.5rem;
@@ -181,6 +209,114 @@ html {
 
 .rich-text-editor .ProseMirror p[data-align="center"] {
   text-align: center;
+}
+
+/* --- Contenido enriquecido de "Sobre mí" --- */
+.about-rich > * + * {
+  margin-top: 1rem;
+}
+
+.about-rich strong {
+  font-weight: 600;
+}
+
+.about-rich em {
+  font-style: italic;
+}
+
+.about-rich u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.about-rich s {
+  text-decoration: line-through;
+}
+
+.about-rich a {
+  color: var(--visora-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.about-rich a:hover {
+  opacity: 0.8;
+}
+
+.about-rich ul,
+.about-rich ol {
+  margin: 1rem 0;
+  padding-left: 1.35rem;
+}
+
+.about-rich ul {
+  list-style: disc;
+}
+
+.about-rich ol {
+  list-style: decimal;
+}
+
+.about-rich li + li {
+  margin-top: 0.35rem;
+}
+
+.about-rich blockquote {
+  margin: 1.25rem 0;
+  border-left: 3px solid var(--visora-accent);
+  padding-left: 1rem;
+  font-style: italic;
+}
+
+.about-rich h1,
+.about-rich h2,
+.about-rich h3,
+.about-rich h4 {
+  margin: 1.5rem 0 0.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.about-rich h1 {
+  font-size: 1.5rem;
+}
+
+.about-rich h2 {
+  font-size: 1.35rem;
+}
+
+.about-rich h3 {
+  font-size: 1.15rem;
+}
+
+.about-rich h4 {
+  font-size: 1rem;
+}
+
+.about-rich > :first-child {
+  margin-top: 0;
+}
+
+.about-rich--editorial > * + * {
+  margin-top: 1.5rem;
+}
+
+.about-rich--dropcap > p:first-child::first-letter {
+  float: left;
+  margin-right: 0.6rem;
+  font-family: var(--visora-font-display);
+  font-size: 3.5rem;
+  font-weight: 600;
+  line-height: 0.85;
+}
+
+@media (min-width: 768px) {
+  .about-rich--dropcap > p:first-child::first-letter {
+    margin-right: 0.75rem;
+    font-size: 6rem;
+    line-height: 0.8;
+  }
 }
 
 /* --- Tema Editorial -------------------------------------------------------

@@ -30,6 +30,7 @@ export interface PortfolioProfile {
   aboutTitle: string;
   aboutDescription: string;
   aboutImage?: string;
+  aboutImageAspect?: number | null;
   aboutImageFocusX?: number;
   aboutImageFocusY?: number;
 

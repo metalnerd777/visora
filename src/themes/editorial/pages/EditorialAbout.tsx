@@ -8,6 +8,7 @@ import { useAdmin } from "../../../lib/useAdmin";
 import { nonEmptySocials, socialLabel, socialUrl } from "../../../lib/socials";
 import { resizeUrl } from "../../../lib/image";
 import SocialIcon from "../../../components/SocialIcon";
+import RichHtml from "../../../components/RichHtml";
 
 function EditorialAbout() {
   const { profile, settings } = usePortfolio();
@@ -18,8 +19,10 @@ function EditorialAbout() {
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
   const socials = nonEmptySocials(rawSocials);
   const portrait = profile.aboutImage ?? profile.avatar;
-  const focusX = profile.aboutImageFocusX ?? 50;
-  const focusY = profile.aboutImageFocusY ?? 50;
+  const aspect =
+    profile.aboutImageAspect === null
+      ? null
+      : (profile.aboutImageAspect ?? 4 / 5);
 
   return (
     <main>
@@ -54,8 +57,8 @@ function EditorialAbout() {
                       alt={`Retrato de ${profile.name}`}
                       loading="lazy"
                       decoding="async"
-                      style={{ objectPosition: `${focusX}% ${focusY}%` }}
-                      className="aspect-4/5 w-full object-cover"
+                      style={aspect ? { aspectRatio: aspect } : undefined}
+                      className={`w-full ${aspect ? "object-cover" : ""}`}
                     />
                   </div>
 
@@ -69,7 +72,10 @@ function EditorialAbout() {
                   </figcaption>
                 </figure>
               ) : (
-                <div className="flex aspect-4/5 w-full items-center justify-center ring-1 ring-black/10 dark:ring-white/10">
+                <div
+                  style={{ aspectRatio: aspect ?? 4 / 5 }}
+                  className="flex w-full items-center justify-center ring-1 ring-black/10 dark:ring-white/10"
+                >
                   <div className="text-center">
                     <span className="text-7xl font-semibold uppercase text-black/20 dark:text-[#F3EFE6]/20 font-[family-name:var(--visora-font-display)]">
                       {profile.name.charAt(0)}
@@ -179,22 +185,12 @@ function AboutIntro() {
 function AboutBody() {
   const { profile } = usePortfolio();
 
-  const paragraphs = profile.aboutDescription.split(/\n\s*\n/);
-
   return (
     <article className="mt-12 max-w-prose border-t-[3px] border-double border-black/20 pt-8 dark:border-[#F3EFE6]/20">
-      {paragraphs.map((paragraph, index) => (
-        <p
-          key={index}
-          className={`mt-6 text-sm leading-loose text-black/70 dark:text-[#F3EFE6]/70 first:mt-0 md:text-lg md:leading-loose ${
-            index === 0
-              ? "first-letter:float-left first-letter:mr-3 first-letter:font-[family-name:var(--visora-font-display)] first-letter:text-6xl first-letter:font-semibold first-letter:leading-[0.85] md:first-letter:text-8xl md:first-letter:leading-[0.8]"
-              : ""
-          }`}
-        >
-          {paragraph}
-        </p>
-      ))}
+      <RichHtml
+        html={profile.aboutDescription}
+        className="about-rich about-rich--editorial about-rich--dropcap text-sm leading-loose text-black/70 dark:text-[#F3EFE6]/70 md:text-lg md:leading-loose"
+      />
     </article>
   );
 }

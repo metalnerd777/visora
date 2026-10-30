@@ -20,6 +20,8 @@ El modelo de negocio será:
 
 El nombre "Visora" es principalmente un nombre interno para el proyecto y no necesariamente será el nombre comercial final del producto.
 
+**Convención de copy:** todo el texto de la interfaz se escribe en **español neutro**, sin voseo ("Escribe", "Arrastra", "Puedes", "Elige", "Ajusta", "aquí"), tanto en el sitio público como en el admin.
+
 ---
 
 # 2. Modelo técnico/comercial inicial
@@ -97,6 +99,7 @@ src/
 │   ├── Footer.tsx             (sticky, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Header.tsx             (sticky, glass, consume usePortfolio, botón logout cuando autenticado)
 │   ├── Hero.tsx               (imagen fondo única con punto de importancia, object-position, consume usePortfolio)
+│   ├── ImageCropBox.tsx      (cropper propio inline para Sobre mí: selección directa sobre la imagen, mover/redimensionar, proporción fija o libre; el recorte se aplica al guardar)
 │   ├── ImageCropModal.tsx     (cropper react-easy-crop; modo foco: focal point % + zoom, aspect fijo; modo libre: presets 1:1/4:3/3:2/16:9/4:5/9:16 + slider de proporción continua default "Original", exporta JPEG ≤2400)
 │   ├── ImageProcessingIndicator.tsx (feedback de subida: original → final, error, spinners)
 │   ├── ImageUpload.tsx        (upload con preview, cambiar/eliminar, drag & drop, processImage)
@@ -105,8 +108,10 @@ src/
 │   ├── PhotoViewer.tsx        (visor fullscreen, click fuera, SVGs)
 │   ├── PostBody.tsx           (renderiza bloques del blog; compartido público + vista previa)
 │   ├── ProjectCard.tsx        (tarjeta de proyecto, navega por slug)
-│   ├── RichTextEditor.tsx     (TipTap con toolbar: H1-3, negrita, listas, cita, enlace, alineación, deshacer/rehacer)
+│   ├── RichTextEditor.tsx     (TipTap con toolbar: H1-3, negrita, listas, cita, enlace, alineación y justificado, deshacer/rehacer; el área de texto tiene scroll interno con max-height para no perder la barra; exporta RichTextEditor en JSON y RichTextHtmlEditor en HTML)
 │   ├── RichTextView.tsx       (renderiza JSON TipTap → elementos estilizados)
+│   ├── RichHtml.tsx           (renderiza HTML enriquecido saneado; usado por Sobre mí en ambos temas)
+│   ├── ImageUploadFocalPoint.tsx (subida + punto de importancia draggable, con preview opcional de degradado)
 │   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
 │   ├── SiteGate.tsx           (pantalla "Sitio en construcción" compartida por todos los temas)
 │   ├── CookieBanner.tsx       (banner de aviso de cookies para visitantes, usa settings.privacy.cookieNotice)
@@ -170,6 +175,9 @@ src/
 │   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
 │   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
 │   ├── richtext.ts            (helpers JSON TipTap: doc vacío, texto plano, isRichTextEmpty)
+│   ├── html.ts                (texto plano ↔ HTML, HTML_TAG_RE, sanitizeHtml con allowlist y htmlToText)
+│   ├── cropImage.ts           (recorte a canvas desde coordenadas de react-easy-crop; conserva transparencia; imageSize para dimensiones naturales)
+│   ├── cropRect.ts            (tipos CropRect / FULL_CROP_RECT compartidos por ImageCropBox y EditAboutModal)
 │   ├── slug.ts                (slugify + uniqueSlug para posts/proyectos)
 │   ├── usePortfolio.ts        (hook usePortfolio)
 │   ├── useAdmin.ts            (hook sesión admin: polling isAuthenticated cada 500ms)
@@ -317,7 +325,7 @@ Keys:
   - primaryText, primaryLink (select, default `#projects`)
   - secondaryText, secondaryLink (select, default `/contacto`)
   - showSecondary (boolean)
-- `visora-admin-about` — sobre mí (title, description, image?, focusX?, focusY?); la imagen también se persiste como `aboutImage` (más `aboutImageFocusX/Y`) en `visora-admin-profile` (fuente única vía `usePortfolio`)
+- `visora-admin-about` — sobre mí (title, description en HTML saneado, image?, aspect?); la imagen también se persiste como `aboutImage` (+ `aboutImageAspect`) en `visora-admin-profile` (fuente única vía `usePortfolio`). Ya no usa punto de foco: el encuadre queda fijado en el recorte
 - `visora-admin-contact` — contacto config:
   - title, description
   - email, emailSubject (asunto del mailto)
@@ -453,7 +461,7 @@ El sitio público ES el admin cuando hay sesión activa. No hay barra extra ni t
 
 **Diseño de los modales (desktop):**
 - El botón **Guardar** vive en el **header del modal, arriba a la derecha** (nuevo prop `actions` en `Modal.tsx`, junto al botón cerrar) — ya no en el footer. Componente compartido `SaveButton` (`src/components/SaveButton.tsx`).
-- Formularios con cuerpo en **2 columnas** en desktop: Hero (imagen única + punto de importancia + fades + fondo degradado + temas de fondo, título+descripción, botones), Perfil (ubicación+email, descripción a ancho completo), Sobre mí (imagen a la izquierda, título+descripción a la derecha), Destacadas (orden seleccionadas | proyectos disponibles), Proyectos (info+portada | imágenes), Contacto (título+ubicación, WhatsApp, email+asunto).
+- Formularios por secciones (tarjetas) en el cuerpo del modal: Hero (imagen + punto de importancia + fades + fondo degradado, título+descripción, botones), Perfil (ubicación+email, descripción a ancho completo), Sobre mí (Retrato: proporciones + ayuda + acciones a la izquierda y recorte a la derecha; Textos: título + editor HTML), Destacadas (orden seleccionadas | proyectos disponibles), Proyectos (info+portada | imágenes), Contacto (título+ubicación, WhatsApp, email+asunto).
 - `Modal` `wide` ampliado a `sm:max-w-5xl` para acomodar las 2 columnas.
 
 ---
@@ -648,8 +656,9 @@ Vista previa y renderer compartido (Parte 12):
   página pública /blog/:slug y por la vista previa del editor → misma salida, sin duplicar lógica
 
 Componentes:
-- RichTextEditor.tsx (TipTap con toolbar, compartido en src/components/)
+- RichTextEditor.tsx (TipTap con toolbar, compartido en src/components/; exporta también `RichTextHtmlEditor` que entrega HTML)
 - RichTextView.tsx (renderiza JSON TipTap → elementos estilizados, sin dangerouslySetInnerHTML)
+- RichHtml.tsx (renderiza HTML saneado con allowlist; usado por Sobre mí)
 - PostBody.tsx (renderiza blogPosts / bloques; compartido entre página pública y vista previa)
 - BlogPostEditor.tsx (editor inline completo, reutilizable para crear y editar)
 - blog/BlogBlockEditor.tsx (tarjeta bloque sortable + formularios Texto/Imagen/Embed + preview + MiniButton; helpers de bloques en src/lib/blogBlocks.ts)
@@ -798,9 +807,10 @@ Modelo **mono-tenant por cliente**: cada cliente tiene su propio proyecto Supaba
 - `hero_primary_button` text
 - `hero_secondary_button` text
 - `about_title` text
-- `about_description` text
+- `about_description` text — HTML enriquecido (párrafos, énfasis, listas, citas y enlaces); se sanea con allowlist al guardar y al renderizar
 - `about_image` text (nullable) — retrato opcional; se sube vía "Editar sobre mí" y se renderiza en público (minimal: retrato con marco en el grid; editorial: retrato en la ficha lateral). Fallback al `avatar` si no hay imagen propia. Almacenado en `Profile.aboutImage` (localStorage `visora-admin-about.image` + `visora-admin-profile.aboutImage`)
-- `about_image_focus_x` int2 (0–100, default 50), `about_image_focus_y` int2 (0–100, default 50) — focal point del retrato (GUI: botón "Ajustar posición" en "Editar sobre mí"); si en su lugar el usuario usa "Recortar (retrato 4:5)", el crop se exporta a 800×1000 JPEG y el foco se resetea a 50/50
+- `about_image_aspect` numeric (default 0.8 = 4:5) — proporción elegida en el editor (4:5, 3:4, 1:1, 3:2 o 16:9); el recorte se exporta a 1600 px de lado mayor y la proporción se aplica al renderizar en ambos temas
+- `about_image_focus_x/y` — obsoletos (se mantienen por compatibilidad); Sobre mí ya no usa punto de foco, el encuadre queda fijado en el recorte inline del modal
 - `contact_title` text (nullable)
 - `contact_description` text (nullable)
 - `email` text

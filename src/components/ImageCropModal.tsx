@@ -2,57 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 
 import Modal from "./Modal";
-import { hasTransparency } from "../lib/image";
-
-type CroppedArea = { x: number; y: number; width: number; height: number };
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-async function getCroppedImg(
-  imageSrc: string,
-  pixelCrop: CroppedArea,
-  outputSize: { width: number; height: number },
-): Promise<string> {
-  const image = await loadImage(imageSrc);
-  const canvas = document.createElement("canvas");
-  canvas.width = outputSize.width;
-  canvas.height = outputSize.height;
-  const ctx = canvas.getContext("2d");
-
-  if (!ctx) throw new Error("Canvas no disponible");
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    outputSize.width,
-    outputSize.height,
-  );
-
-  // Si la imagen fuente tiene transparencia se exporta WebP (o PNG como
-  // fallback), para no perder el alpha. JPEG rellena los píxeles
-  // transparentes de negro.
-  if (await hasTransparency(imageSrc)) {
-    const webp = canvas.toDataURL("image/webp", 0.92);
-
-    if (webp.startsWith("data:image/webp")) return webp;
-
-    return canvas.toDataURL("image/png");
-  }
-
-  return canvas.toDataURL("image/jpeg", 0.9);
-}
+import { cropImage, type CroppedArea } from "../lib/cropImage";
 
 const FREE_PRESETS: { label: string; value: number | null }[] = [
   { label: "Original", value: null },
@@ -123,14 +73,14 @@ function ImageCropModal({
         height: Math.round(croppedPixels.height * scale),
       };
 
-      getCroppedImg(image, croppedPixels, outputSize)
+      cropImage(image, croppedPixels, outputSize)
         .then(onExport)
         .finally(() => onClose());
       return;
     }
 
     if (exportSize && onExport && croppedPixels) {
-      getCroppedImg(image, croppedPixels, exportSize)
+      cropImage(image, croppedPixels, exportSize)
         .then(onExport)
         .finally(() => onClose());
       return;

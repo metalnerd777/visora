@@ -24,6 +24,7 @@ interface ActiveState {
   left: boolean;
   center: boolean;
   right: boolean;
+  justify: boolean;
 }
 
 const DEFAULT_ACTIVE: ActiveState = {
@@ -42,6 +43,7 @@ const DEFAULT_ACTIVE: ActiveState = {
   left: false,
   center: false,
   right: false,
+  justify: false,
 };
 
 function IconButton({
@@ -104,12 +106,12 @@ function setupLink(editor: Editor) {
     .run();
 }
 
-export function RichTextEditor({
-  value,
-  onChange,
+function EditorShell({
+  initialContent,
+  onUpdate,
 }: {
-  value: JSONContent;
-  onChange: (doc: JSONContent) => void;
+  initialContent: JSONContent | string;
+  onUpdate: (editor: Editor) => void;
 }) {
   const editor = useEditor({
     extensions: [
@@ -122,9 +124,9 @@ export function RichTextEditor({
         linkOnPaste: true,
       }),
     ],
-    content: value,
+    content: initialContent,
     immediatelyRender: false,
-    onUpdate: ({ editor: ed }) => onChange(ed.getJSON()),
+    onUpdate: ({ editor: ed }) => onUpdate(ed),
   });
 
   const active =
@@ -148,6 +150,7 @@ export function RichTextEditor({
               left: ed.isActive({ textAlign: "left" }),
               center: ed.isActive({ textAlign: "center" }),
               right: ed.isActive({ textAlign: "right" }),
+              justify: ed.isActive({ textAlign: "justify" }),
             }
           : DEFAULT_ACTIVE,
     }) ?? DEFAULT_ACTIVE) as ActiveState;
@@ -330,9 +333,48 @@ export function RichTextEditor({
         >
           <path d="M4 6h16M10 10h10M4 14h16M10 18h10" />
         </IconButton>
+
+        <IconButton
+          label="Justificar"
+          active={active.justify}
+          onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
+        >
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </IconButton>
       </div>
 
       <EditorContent editor={editor} className="rich-text-editor" />
     </div>
   );
 }
+
+export function RichTextEditor({
+  value,
+  onChange,
+}: {
+  value: JSONContent;
+  onChange: (doc: JSONContent) => void;
+}) {
+  return (
+    <EditorShell
+      initialContent={value}
+      onUpdate={(editor) => onChange(editor.getJSON())}
+    />
+  );
+}
+
+export function RichTextHtmlEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (html: string) => void;
+}) {
+  return (
+    <EditorShell
+      initialContent={value}
+      onUpdate={(editor) => onChange(editor.getHTML())}
+    />
+  );
+}
+
