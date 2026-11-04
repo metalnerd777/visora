@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-
+import { initializePortfolio } from "./initializePortfolio";
 import PortfolioContext from "./PortfolioContext";
 
 import {
@@ -143,9 +143,13 @@ function mergeSettings(
 }
 
 function readState() {
+  initializePortfolio();
   const profile = loadProfile();
 
-  const rawProjects = loadJSON<unknown[]>("visora-admin-projects", defaultProjects);
+  const rawProjects = loadJSON<unknown[]>(
+    "visora-admin-projects",
+    defaultProjects,
+  );
 
   const projects = normalizeProjects(rawProjects);
 
@@ -153,7 +157,10 @@ function readState() {
 
   const siteTexts = loadJSON<SiteTexts>("visora-admin-texts", defaultTexts);
 
-  const blogPosts = loadJSON<BlogPost[]>("visora-admin-blog-posts", defaultBlogPosts);
+  const blogPosts = loadJSON<BlogPost[]>(
+    "visora-admin-blog-posts",
+    defaultBlogPosts,
+  );
 
   const storedSettings = loadJSON<Partial<SiteSettings>>(SETTINGS_KEY, {});
 

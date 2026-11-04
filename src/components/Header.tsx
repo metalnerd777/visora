@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
-import { isAuthenticated, logout } from "../lib/auth";
+import { logout } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
 
 interface HeaderProps {
   darkMode: boolean;
@@ -44,7 +45,7 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [admin, setAdmin] = useState(isAuthenticated);
+  const admin = useAdmin();
 
   const brand = settings.general.brandName || profile.name;
 
@@ -62,17 +63,8 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const handleLogout = () => {
     logout();
-    setAdmin(false);
     navigate("/");
   };
 

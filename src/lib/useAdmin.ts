@@ -1,17 +1,14 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
-import { isAuthenticated } from "./auth";
+import { getAuthSnapshot, subscribeAuth } from "./auth";
 
-export function useAdmin() {
-  const [admin, setAdmin] = useState(isAuthenticated());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return admin;
+/**
+ * Sesión admin compartida por toda la app.
+ *
+ * Toda la suscripción vive en el store de auth.ts (una sola fuente de verdad),
+ * así no hay un setInterval por componente. El día que se conecte Supabase Auth,
+ * basta con emitir desde onAuthStateChange para que toda la UI se actualice.
+ */
+export function useAdmin(): boolean {
+  return useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthSnapshot);
 }

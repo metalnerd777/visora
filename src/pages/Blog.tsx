@@ -1,85 +1,27 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 
 import BlogCard from "../components/BlogCard";
 
-import { isAuthenticated } from "../lib/auth";
-import { usePortfolio } from "../lib/usePortfolio";
-import { clearAutosave, loadAutosave, type AutosaveDraft } from "../lib/blogAutosave";
-
-import type { EditorResult } from "./admin/edit/BlogPostEditor";
+import { useBlogList } from "../lib/useBlogList";
 
 const BlogPostEditor = lazy(() =>
   import("./admin/edit/BlogPostEditor").then((m) => ({ default: m.BlogPostEditor })),
 );
 
 function BlogPage() {
-  const { blogPosts } = usePortfolio();
-  const navigate = useNavigate();
-  const [admin, setAdmin] = useState(isAuthenticated());
-
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [restoredDraft, setRestoredDraft] = useState<AutosaveDraft | null>(
-    null,
-  );
-  const [pendingDraft, setPendingDraft] = useState<AutosaveDraft | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const isAdmin = isAuthenticated();
-      setAdmin(isAdmin);
-      setPendingDraft(isAdmin ? loadAutosave() : null);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-
-    const timer = setTimeout(() => setToast(null), 3500);
-
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  const openNew = () => {
-    setRestoredDraft(null);
-    setEditorOpen(true);
-  };
-
-  const openEdit = (postSlug: string) => {
-    navigate(`/blog/${postSlug}`, { state: { editSlug: postSlug } });
-  };
-
-  const openRecover = () => {
-    if (!pendingDraft) return;
-
-    setRestoredDraft(pendingDraft);
-    setEditorOpen(true);
-  };
-
-  const discardDraft = () => {
-    clearAutosave();
-    setPendingDraft(null);
-  };
-
-  const closeEditor = (result?: EditorResult) => {
-    setEditorOpen(false);
-    setRestoredDraft(null);
-
-    setPendingDraft(isAuthenticated() ? loadAutosave() : null);
-
-    if (result === "saved-draft") {
-      setToast("Borrador guardado.");
-    } else if (result === "published") {
-      setToast("Publicación publicada.");
-    }
-  };
-
-  const visiblePosts = [...blogPosts]
-    .filter((p) => admin || p.status === "published")
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const {
+    admin,
+    editorOpen,
+    restoredDraft,
+    pendingDraft,
+    toast,
+    visiblePosts,
+    openNew,
+    openEdit,
+    openRecover,
+    discardDraft,
+    closeEditor,
+  } = useBlogList();
 
   return (
     <main className="px-6 pt-10 pb-20 transition-colors md:px-10 md:pt-5 md:pb-24">

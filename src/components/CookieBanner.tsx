@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { usePortfolio } from "../lib/usePortfolio";
-import { isAuthenticated } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
 
 const STORAGE_KEY = "visora-cookies-accepted";
 
@@ -9,15 +9,10 @@ function CookieBanner() {
   const { settings } = usePortfolio();
   const notice = settings.privacy.cookieNotice?.trim();
 
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const admin = useAdmin();
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem(STORAGE_KEY) === "true",
   );
-
-  useEffect(() => {
-    const interval = setInterval(() => setAdmin(isAuthenticated()), 500);
-    return () => clearInterval(interval);
-  }, []);
 
   if (!notice || admin || dismissed) return null;
 

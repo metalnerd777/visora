@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useBlogList } from "../../../lib/useBlogList";
 import { resizeUrl } from "../../../lib/image";
@@ -22,7 +22,6 @@ function formatDate(date: string): string {
 const issue = "Nº 03";
 
 function EditorialBlog() {
-  const navigate = useNavigate();
   const {
     admin,
     editorOpen,
@@ -31,14 +30,11 @@ function EditorialBlog() {
     toast,
     visiblePosts,
     openNew,
+    openEdit,
     openRecover,
     discardDraft,
     closeEditor,
   } = useBlogList();
-
-  const openEdit = (postSlug: string) => {
-    navigate(`/blog/${postSlug}`, { state: { editSlug: postSlug } });
-  };
 
   return (
     <main>

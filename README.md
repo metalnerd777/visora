@@ -1,75 +1,62 @@
-# React + TypeScript + Vite
+# Visora
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plantilla de portfolios profesionales para fotógrafos, diseñadores e ilustradores.
+Cada cliente recibe su propio sitio con Supabase, Vercel y dominio, bajo un modelo
+de pago único (sin suscripción).
 
-Currently, two official plugins are available:
+La documentación funcional y técnica completa vive en [`context.md`](./context.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React 19 + TypeScript 6 + Vite 8
+- Tailwind CSS 4
+- React Router 7
+- TipTap 3 (editor del blog, carga diferida)
+- dnd-kit (reordenación en el admin)
+- react-easy-crop + browser-image-compression (pipeline de imágenes)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Desarrollo
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Acceso al admin (mock local): `admin@visora.com` / `admin123` en `/admin`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev      # servidor de desarrollo
+npm run build    # typecheck + build de producción
+npm run lint     # ESLint
+npm run preview  # previsualizar el build
+```
+
+## Estado
+
+- Sitio público + edición inline completados.
+- Temas: `minimal` y `editorial`.
+- Blog con bloques, borradores, autoguardado y 4 diseños de entrada.
+- Persistencia actual en `localStorage` (fase previa a Supabase).
+- Próximo paso: conectar Supabase (datos, Storage y Auth real).
+
+## Estructura
 
 ```
+src/
+├── components/      componentes públicos y compartidos
+├── pages/           páginas del tema minimal + admin inline
+├── themes/          registro, shell y páginas por tema
+├── blogDesigns/     diseños de entrada del blog
+├── lib/             hooks, contexto, pipeline de imágenes y utilidades
+├── data/            datos demo y configuración por defecto
+└── types/           tipos del dominio
+```
+
+## Convenciones
+
+- Copy de interfaz en español neutro (sin voseo).
+- Los componentes no contienen textos ligados a una profesión: todo sale de los datos.
+- Toda subida de imágenes pasa por `src/lib/image.ts`.
+- Ejecutar `npm run build` y `npm run lint` antes de cerrar un cambio.

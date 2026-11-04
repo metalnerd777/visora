@@ -8,33 +8,23 @@ import ProjectCard from "../components/ProjectCard";
 import PhotoViewer from "../components/PhotoViewer";
 
 import { usePortfolio } from "../lib/usePortfolio";
-import { isAuthenticated } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
+import { usePhotoViewer } from "../lib/usePhotoViewer";
 
 import EditableSection from "./admin/edit/EditableSection";
 import EditHeroModal from "./admin/edit/EditHeroModal";
 import EditFeaturedModal from "./admin/edit/EditFeaturedModal";
 import EditProjectsModal from "./admin/edit/EditProjectsModal";
 
-import type { Photo } from "../types/portfolio";
-
 function Home() {
   const { projects, featuredPhotos, siteTexts } = usePortfolio();
   const location = useLocation();
-  const [viewerPhotos, setViewerPhotos] = useState<Photo[]>([]);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const viewer = usePhotoViewer(featuredPhotos);
+  const admin = useAdmin();
 
   const [heroOpen, setHeroOpen] = useState(false);
   const [featuredOpen, setFeaturedOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const target = (location.state as { scrollTo?: string } | null)
@@ -48,39 +38,6 @@ function Home() {
       requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth" }));
     }
   }, [location.state]);
-
-  const openViewer = (photos: Photo[], photoId: string) => {
-    const index = photos.findIndex((photo) => photo.id === photoId);
-
-    if (index === -1) return;
-
-    setViewerPhotos(photos);
-    setViewerIndex(index);
-  };
-
-  const closeViewer = () => {
-    setViewerIndex(null);
-  };
-
-  const showPrevious = () => {
-    setViewerIndex((current) => {
-      if (current === null || current <= 0) {
-        return current;
-      }
-
-      return current - 1;
-    });
-  };
-
-  const showNext = () => {
-    setViewerIndex((current) => {
-      if (current === null || current >= viewerPhotos.length - 1) {
-        return current;
-      }
-
-      return current + 1;
-    });
-  };
 
   return (
     <>
@@ -136,7 +93,7 @@ function Home() {
 
           <MasonryGallery
             photos={featuredPhotos}
-            onPhotoClick={(photoId) => openViewer(featuredPhotos, photoId)}
+            onPhotoClick={viewer.openViewer}
           />
         </div>
       </section>
@@ -193,19 +150,20 @@ function Home() {
       </section>
 
       {/* Visor */}
-      {viewerIndex !== null && viewerPhotos[viewerIndex] && (
-        <PhotoViewer
-          imageUrl={viewerPhotos[viewerIndex].url}
-          title={viewerPhotos[viewerIndex].title}
-          currentIndex={viewerIndex}
-          totalPhotos={viewerPhotos.length}
-          hasPrevious={viewerIndex > 0}
-          hasNext={viewerIndex < viewerPhotos.length - 1}
-          onPrevious={showPrevious}
-          onNext={showNext}
-          onClose={closeViewer}
-        />
-      )}
+      {viewer.viewerIndex !== null &&
+        featuredPhotos[viewer.viewerIndex] && (
+          <PhotoViewer
+            imageUrl={featuredPhotos[viewer.viewerIndex].url}
+            title={featuredPhotos[viewer.viewerIndex].title}
+            currentIndex={viewer.viewerIndex}
+            totalPhotos={featuredPhotos.length}
+            hasPrevious={viewer.viewerIndex > 0}
+            hasNext={viewer.viewerIndex < featuredPhotos.length - 1}
+            onPrevious={viewer.showPrevious}
+            onNext={viewer.showNext}
+            onClose={viewer.closeViewer}
+          />
+        )}
 
       {/* Admin modals */}
       {admin && (

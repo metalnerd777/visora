@@ -8,7 +8,7 @@ import ImageCropModal from "../../components/ImageCropModal";
 import FaviconPicker from "../../components/FaviconPicker";
 
 import { usePortfolio } from "../../lib/usePortfolio";
-import { isAuthenticated } from "../../lib/auth";
+import { useAdmin } from "../../lib/useAdmin";
 import { THEME_OPTIONS } from "../../themes";
 import {
   ACCENT_PRESETS,
@@ -204,7 +204,7 @@ function SettingsPage() {
   const navigate = useNavigate();
   const { settings, setSettings } = usePortfolio();
 
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const admin = useAdmin();
   const [active, setActive] = useState<CategoryKey>("general");
   const [saved, setSaved] = useState(false);
 
@@ -242,15 +242,10 @@ function SettingsPage() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!admin) {
       navigate("/admin", { replace: true });
     }
-  }, [navigate]);
-
-  useEffect(() => {
-    const interval = setInterval(() => setAdmin(isAuthenticated()), 500);
-    return () => clearInterval(interval);
-  }, []);
+  }, [admin, navigate]);
 
   useEffect(() => {
     if (!saved) return;

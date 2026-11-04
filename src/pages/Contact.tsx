@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { socialUrl, socialLabel, nonEmptySocials } from "../lib/socials";
 import { loadJSON } from "../lib/storage";
-import { isAuthenticated } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
 import { isSafeUrl } from "../lib/validation";
 
 import EditableSection from "./admin/edit/EditableSection";
@@ -44,7 +44,7 @@ function EnvelopeIcon() {
 
 function ContactPage() {
   const { profile, settings } = usePortfolio();
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const admin = useAdmin();
   const [contactOpen, setContactOpen] = useState(false);
 
   const rawSocials =
@@ -77,14 +77,6 @@ function ContactPage() {
       ? socialUrl("instagram", instagram.handle)
       : "";
   const safeInstagramUrl = isSafeUrl(instagramUrl);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const header = (
     <header className="max-w-3xl pt-16 md:pt-24">

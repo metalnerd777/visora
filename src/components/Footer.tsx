@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-
 import { Link, useNavigate } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { socialUrl, socialLabel, nonEmptySocials } from "../lib/socials";
 import SocialIcon from "./SocialIcon";
-import { isAuthenticated, logout } from "../lib/auth";
+import { logout } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
 
 const exploreLinks = [
   { label: "Inicio", to: "/" },
@@ -17,7 +16,7 @@ const exploreLinks = [
 function Footer() {
   const { profile, settings } = usePortfolio();
   const navigate = useNavigate();
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const admin = useAdmin();
 
   const brand = settings.general.brandName || profile.name;
   const profession = settings.general.profession || profile.profession;
@@ -25,17 +24,8 @@ function Footer() {
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
   const socials = nonEmptySocials(rawSocials);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const handleLogout = () => {
     logout();
-    setAdmin(false);
     navigate("/");
   };
 

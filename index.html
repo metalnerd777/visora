@@ -4,13 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Aplica tema/modo antes del primer paint para evitar el flash de tema. -->
+    <script>
+      (function () {
+        try {
+          var stored = JSON.parse(
+            localStorage.getItem("visora-admin-settings") || "{}",
+          );
+          var appearance = stored.appearance || {};
+          var mode = appearance.mode || "system";
+          var dark =
+            mode === "dark" ||
+            (mode === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+          if (mode === "system") {
+            var saved = localStorage.getItem("visora-theme");
+            if (saved === "dark") dark = true;
+            if (saved === "light") dark = false;
+          }
+
+          if (dark) document.documentElement.classList.add("dark");
+          if (appearance.theme) {
+            document.documentElement.dataset.theme = appearance.theme;
+          }
+        } catch (error) {
+          /* localStorage no disponible: se usa el tema por defecto */
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>visora</title>
+    <title>Visora — Portfolios profesionales</title>
   </head>
   <body>
     <div id="root"></div>

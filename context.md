@@ -425,10 +425,11 @@ El sitio público ES el admin cuando hay sesión activa. No hay barra extra ni t
 4. "Cerrar sesión" en Header (pills rojo) y Footer (pill rojo)
 5. Al cerrar sesión, los botones desaparecen y el sitio queda como público
 
-**Detección de sesión:**
-- `isAuthenticated()` de `src/lib/auth.ts` lee `visora-admin-auth` de localStorage
-- Header y Footer polling cada 500ms con `setInterval` para detectar cambios
-- Cada página (Home, About, Contact, Blog) tiene su propio estado `admin`
+**Detección de sesión (centralizada):**
+- `src/lib/auth.ts` es la única fuente de verdad: guarda el estado en memoria, `login()`/`logout()` emiten cambios y un listener de `storage` sincroniza entre pestañas
+- `useAdmin()` (`src/lib/useAdmin.ts`) consume el store con `useSyncExternalStore`; NO hay polling ni un `setInterval` por componente
+- Header, Footer, CookieBanner, páginas de ambos temas, Settings y `useThemeShell` usan el mismo hook, así el estado de sesión es inmediato y consistente
+- Cuando se conecte Supabase Auth, basta con emitir desde `onAuthStateChange` para que toda la UI reaccione
 
 **Componentes de edición:**
 - `EditableSection` — wrapper con botones `[✏ Editar]` y opcionalmente `[+ Agregar]`
@@ -961,9 +962,11 @@ Administrador:
 
 Técnicos:
 - Blog con oEmbed completo para Instagram/Facebook
-- Dark mode flash en carga
 - Photo.id ya es string — listo para UUID de Supabase
 - Focal points del hero: crop inicia siempre en centro (no restaura posición previa al reabrir crop modal)
+- Bundle principal ~995 KB (302 KB gzip): pendiente aplicar code-splitting por tema/diseños de blog
+- `EditProfileModal.tsx` no está importado por ninguna página (código muerto; decidir si se integra o se elimina)
+- El modo "system" ya sigue al SO tras recargar (antes el valor automático se persistía como override); `visora-theme` solo guarda overrides manuales
 
 ---
 
@@ -1006,3 +1009,26 @@ Después:
 5. Selección de tema / Apariencia — Configuración de Apariencia IMPLEMENTADA (modo claro/oscuro instantáneo, 6 acentos, degradado de fondo, radio, botones, 6 fuentes Google); SISTEMA DE TEMAS IMPLEMENTADO (selector "Diseño", Minimal + Editorial, registro THEME_OPTIONS/THEMES, ThemeShell, useThemeShell, SiteGate); Editorial con rediseño visual completo (Header/Footer/páginas propias); falta añadir otros temas premium (Cinematic, etc.)
 6. Deployment en Vercel
 7. Dominios personalizados
+
+---
+
+# 21b. Limpieza técnica aplicada (2026-11-04)
+
+Auditoría de deuda técnica y primer lote de limpieza:
+
+- **Sesión centralizada**: store en `src/lib/auth.ts` + `useAdmin()` con `useSyncExternalStore`. Se eliminaron los `setInterval` de sesión duplicados en 11 archivos (Header, Footer, CookieBanner, Home, About, Contact, Blog, BlogPost, Settings, EditorialHeader, EditorialFooter, useThemeShell, useBlogList).
+- **Blog sin duplicación**: `pages/Blog.tsx` ahora usa `useBlogList()` (igual que `EditorialBlog`); el hook incorpora `openEdit()` y el autoguardado pendiente se deriva sin polling.
+- **Visor sin duplicación**: `pages/Home.tsx` usa `usePhotoViewer(featuredPhotos)` en lugar de mantener su propio estado de visor.
+- **Modo "system" corregido**: `visora-theme` solo persiste overrides manuales; el modo automático vuelve a seguir al SO tras recargar.
+- **Sin flash de tema**: script inline en `index.html` aplica `dark` y `data-theme` antes del primer paint leyendo `visora-admin-settings`.
+- **TypeScript estricto**: `strict: true` en `tsconfig.app.json` y `tsconfig.node.json` (compila sin errores).
+- **README**: reemplazado el boilerplate de Vite por documentación real del proyecto.
+- Verificado con `npm run build` y `npm run lint`.
+
+Deuda pendiente priorizada (pre-Supabase):
+
+1. **Capa de configuración fuera del contexto**: `Hero.tsx`, `EditorialHome`, `Contact` y `EditorialContact` leen `visora-admin-hero` / `visora-admin-contact` directamente de localStorage durante el render. Conviene centralizarlos en `PortfolioContext` (o un `useSiteConfig`) antes de migrar a Supabase.
+2. **Duplicación de hero y contacto**: `HeroConfig` está declarado dos veces (Hero + EditorialHome) y la derivación de canales de contacto está duplicada (Contact + EditorialContact). Extraer tipos/defaults/helpers compartidos.
+3. **Código muerto**: `EditProfileModal.tsx` sin importadores; exports sin uso (`isPhone`, `isNumberInRange`, `favorites`, tipos internos).
+4. **Bundle**: code-splitting de temas y diseños de blog para bajar el chunk principal de ~995 KB.
+5. **Persistencia frágil**: cuota de localStorage (~5 MB) con imágenes como data URL; es la razón principal para priorizar Supabase Storage.

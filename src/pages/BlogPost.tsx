@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
-
 import PostBody from "../components/PostBody";
 
-import { isAuthenticated } from "../lib/auth";
+import { useAdmin } from "../lib/useAdmin";
 import { resizeUrl } from "../lib/image";
 
 import type { BlogPost } from "../types/portfolio";
@@ -23,15 +21,7 @@ function formatDate(date: string): string {
 }
 
 function BlogPostPage({ post, onBack, onEdit, onDelete }: BlogPostPageProps) {
-  const [admin, setAdmin] = useState(isAuthenticated());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
+  const admin = useAdmin();
 
   const handleDelete = () => {
     if (!confirm("¿Eliminar esta publicación? Esta acción no se puede deshacer.")) {

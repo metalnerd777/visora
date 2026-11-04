@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import { usePortfolio } from "./usePortfolio";
-import { isAuthenticated } from "./auth";
+import { useAdmin } from "./useAdmin";
 import {
   clearAutosave,
   loadAutosave,
@@ -12,25 +14,17 @@ import type { EditorResult } from "../pages/admin/edit/BlogPostEditor";
 
 export function useBlogList() {
   const { blogPosts } = usePortfolio();
-
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const navigate = useNavigate();
+  const admin = useAdmin();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState<AutosaveDraft | null>(
     null,
   );
-  const [pendingDraft, setPendingDraft] = useState<AutosaveDraft | null>(null);
+  const [pendingDraft, setPendingDraft] = useState<AutosaveDraft | null>(() =>
+    admin ? loadAutosave() : null,
+  );
   const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const isAdmin = isAuthenticated();
-      setAdmin(isAdmin);
-      setPendingDraft(isAdmin ? loadAutosave() : null);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -45,10 +39,16 @@ export function useBlogList() {
     setEditorOpen(true);
   };
 
-  const openRecover = () => {
-    if (!pendingDraft) return;
+  const openEdit = (postSlug: string) => {
+    navigate(`/blog/${postSlug}`, { state: { editSlug: postSlug } });
+  };
 
-    setRestoredDraft(pendingDraft);
+  const openRecover = () => {
+    const draft = admin ? loadAutosave() : null;
+
+    if (!draft) return;
+
+    setRestoredDraft(draft);
     setEditorOpen(true);
   };
 
@@ -61,7 +61,7 @@ export function useBlogList() {
     setEditorOpen(false);
     setRestoredDraft(null);
 
-    setPendingDraft(isAuthenticated() ? loadAutosave() : null);
+    setPendingDraft(admin ? loadAutosave() : null);
 
     if (result === "saved-draft") {
       setToast("Borrador guardado.");
@@ -78,10 +78,12 @@ export function useBlogList() {
     admin,
     editorOpen,
     restoredDraft,
-    pendingDraft,
+    // Un visitante nunca ve el aviso de autoguardado, aunque quede uno guardado.
+    pendingDraft: admin ? pendingDraft : null,
     toast,
     visiblePosts,
     openNew,
+    openEdit,
     openRecover,
     discardDraft,
     closeEditor,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { usePortfolio } from "./usePortfolio";
-import { isAuthenticated } from "./auth";
+import { useAdmin } from "./useAdmin";
 import type {
   ThemeMode,
   ThemeId,
@@ -27,8 +27,7 @@ export interface ThemeShell {
 // gate de publicación. Cada tema compone su propio shell visual.
 export function useThemeShell(): ThemeShell {
   const { settings, setSettings } = usePortfolio();
-
-  const [admin, setAdmin] = useState(isAuthenticated());
+  const admin = useAdmin();
 
   // Override manual del visitante (toggle del header) solo en modo sistema.
   const [override, setOverride] = useState<boolean | null>(() => {
@@ -54,13 +53,19 @@ export function useThemeShell(): ThemeShell {
   // Aplica el modo del tema al <html> (sin setState; se deriva en render).
   useEffect(() => {
     document.documentElement.classList.toggle("dark", effectiveDark);
-    if (settings.appearance.mode === "system") {
-      window.localStorage.setItem(
-        "visora-theme",
-        effectiveDark ? "dark" : "light",
-      );
+  }, [effectiveDark]);
+
+  // Solo se persiste el override MANUAL del visitante en modo "system".
+  // (Antes se guardaba también el valor automático del sistema, y al recargar
+  // se congelaba la preferencia del SO: el modo "system" dejaba de seguirlo.)
+  useEffect(() => {
+    if (settings.appearance.mode !== "system" || override === null) {
+      window.localStorage.removeItem("visora-theme");
+      return;
     }
-  }, [effectiveDark, settings.appearance.mode]);
+
+    window.localStorage.setItem("visora-theme", override ? "dark" : "light");
+  }, [settings.appearance.mode, override]);
 
   // Establece el tema de diseño activo sobre <html> para el CSS global (background, tipografía).
   useEffect(() => {
@@ -119,15 +124,6 @@ export function useThemeShell(): ThemeShell {
     settings.appearance.borderRadius,
     settings.appearance.buttonStyle,
   ]);
-
-  // Detección de sesión admin (el sitio público ES el admin cuando hay sesión).
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAdmin(isAuthenticated());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const publicLocked = !admin && settings.site.published === false;
 
