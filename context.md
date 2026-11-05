@@ -114,6 +114,7 @@ src/
 │   ├── ImageUploadFocalPoint.tsx (subida + punto de importancia draggable, con preview opcional de degradado)
 │   ├── ScrollToTop.tsx        (scroll a top en cambio de ruta)
 │   ├── SiteGate.tsx           (pantalla "Sitio en construcción" compartida por todos los temas)
+│   ├── WelcomeScreen.tsx      (bienvenida única: elegir demo o portfolio vacío; no escribe nada hasta elegir)
 │   ├── CookieBanner.tsx       (banner de aviso de cookies para visitantes, usa settings.privacy.cookieNotice)
 │   ├── blog/
 │   │   └── BlogBlockEditor.tsx (tarjeta bloque sortable: mango dnd + Subir/Bajar/Editar/Eliminar, formularios Texto/Imagen/Embed, preview, MiniButton)
@@ -160,6 +161,8 @@ src/
 │
 ├── data/
 │   ├── portfolio.ts           (datos demo: profile, projects, blogPosts, siteTexts)
+│   ├── demo.ts                (demoPortfolio: fuente única del modo "Explorar demo")
+│   ├── emptyPortfolio.ts      (estructura neutra del modo "Comenzar desde cero")
 │   └── settings.ts            (defaultSettings: SiteSettings por defecto)
 │
 ├── lib/
@@ -172,8 +175,9 @@ src/
 │   ├── useImageDrop.ts        (hook drag & drop de imágenes: useImageDrop -> { isDragging, dragProps })
 │   ├── useImageOrientation.ts (hook detección de orientación de imagen: useImageOrientation(url) -> "landscape" | "portrait" | "square" | null)
 │   ├── appearance.ts          (presets de apariencia: 6 acentos, colores de fondo, radio, botones, 6 fuentes + loadGoogleFont)
-│   ├── PortfolioContext.tsx   (Context + PortfolioContextType)
-│   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts)
+│   ├── initializePortfolio.ts (modos demo/vacío, getStoredInitMode, hasPortfolioData, hasBeenInitialized, initializePortfolio no destructivo)
+│   ├── PortfolioContext.tsx   (Context + PortfolioContextType: incluye initialized e initialize)
+│   ├── PortfolioProvider.tsx  (Provider con readState, normalizeProjects, refresh, setBlogPosts, setSettings, initialize; fallbacks demo solo si el modo no es "empty")
 │   ├── richtext.ts            (helpers JSON TipTap: doc vacío, texto plano, isRichTextEmpty)
 │   ├── html.ts                (texto plano ↔ HTML, HTML_TAG_RE, sanitizeHtml con allowlist y htmlToText)
 │   ├── cropImage.ts           (recorte a canvas desde coordenadas de react-easy-crop; conserva transparencia; imageSize para dimensiones naturales)
@@ -192,7 +196,7 @@ src/
 ├── types/
 │   └── portfolio.ts           (PortfolioProfile, Photo, Project, SocialLink, etc.)
 │
-├── App.tsx                    (BrowserRouter → DocumentHead + ThemeSwitcher por settings.appearance.theme)
+├── App.tsx                    (BrowserRouter → AppContent; muestra WelcomeScreen si !initialized, luego DocumentHead + ThemeSwitcher)
 ├── main.tsx                   (entry point React StrictMode)
 ├── router.tsx                 (rutas públicas + /admin login + catch-all 404)
 └── index.css                  (Tailwind v4 + font Montserrat + gradientes de fondo)
@@ -304,6 +308,9 @@ IMPORTANTE:
 Los componentes NO deben contener textos ligados a una profesión específica.
 Todo texto visible viene de los datos (profile o siteTexts).
 
+`src/data/demo.ts` reexporta `demoPortfolio` reutilizando `portfolio.ts` + `defaultSettings` (fuente única de la demo).
+`src/data/emptyPortfolio.ts` define el estado neutro de "Comenzar desde cero": perfil genérico ("Mi portafolio"), arrays vacíos y `emptySettings` derivado de `defaultSettings` (solo reemplaza marca y redes).
+
 ---
 
 # 8. Datos de administrador (localStorage)
@@ -312,6 +319,8 @@ El admin guarda datos temporalmente en localStorage antes de conectar Supabase.
 
 Keys:
 - `visora-admin-auth` — estado de autenticación mock ("true" o null)
+- `visora-init-mode` — elección explícita de inicialización: `"demo"` o `"empty"` (si no existe, Visora aún no fue configurada)
+- `visora-initialized` — marcador histórico de instalaciones previas; sigue suprimiendo la bienvenida
 - `visora-admin-profile` — perfil completo:
   - name, profession, description, avatar, email, location, socialLinks
   - heroImage, heroImageFocusX/Y (0-100, default 50)
@@ -361,6 +370,7 @@ Keys:
   - `site`: published (si false, solo el admin ve el sitio; los visitantes ven "Sitio en construcción")
 - `visora-cookies-accepted` — aceptación del aviso de cookies ("accepted"/"rejected", evita el banner)
 - `visora-blog-draft` — autoguardado temporal del editor (solo en publicaciones nuevas, key separada de la lista definitiva; se borra al Guardar/Publicar/Cancelar)
+- `visora-appearance-preferences` — solo `settings.appearance` rescatado al salir de la demo; se fusiona al inicializar en modo demo o vacío para conservar tema, colores y fuente (ver 21d)
 
 Credenciales mock: `admin@visora.com` / `admin123`
 
@@ -952,6 +962,7 @@ Estructura pública:
 
 Administrador:
 - Configuración global (/configuracion) — IMPLEMENTADO: categorías General/SEO/Apariencia/Privacidad/Publicación (la categoría "Redes" fue ELIMINADA: las redes se editan solo en el form "Editar contacto" de /contacto via `settings.socials`; las categorías "Sitio/Mantenimiento" y "Dominio" fueron ELIMINADAS: se configuran en Vercel, no en la app)
+  - Autosave: cada cambio se persiste al instante; un toast flotante (`SaveToast`, abajo al centro) muestra «Guardando cambios…» con spinner mientras se edita y «Cambios guardados» con check durante 2,4 s al dejar de escribir. Entra y sale con una transición suave hacia abajo. Sustituye al antiguo indicador «Guardado» casi invisible del encabezado. `prefers-reduced-motion` desactiva las animaciones.
   - General: brandName, profession, language, favicon (brand/profession como fuente única); favicon con 10 presets SVG (inicial "V" por defecto, cámara, pincel, lápiz, objetivo, paleta, cámara de video, arquitectura, diseño web, moda) o subida (redimensionada a 64×64)
   - Contacto: botones con iconos — "Envíame un mensaje" (Instagram, principal, abre el perfil), "Escríbeme por WhatsApp" (wa.me con mensaje) y "Escríbeme un correo" (mailto con asunto predefinido)
   - Apariencia: selector "Diseño" (tema gráfico, independiente) + "Modo claro/oscuro" + 6 colores de acento + degradado de fondo (2 colores) + tipografía/radio/botones. Se propaga a TODO el sitio en real (sin recargar) vía CSS vars: `--visora-accent`, `--visora-bg-1/2`, `--visora-font`, `--visora-radius-scale`, `--visora-btn-radius`. El color de acento reemplaza los `#7C6CFF` hardcodeados de todos los componentes. Vista previa en la propia página (botones + tipografía + fondo). Presets en `src/lib/appearance.ts`. El dark/flash es instantáneo y "seguir al sistema" responde en tiempo real (`useThemeShell`).
@@ -1032,3 +1043,34 @@ Deuda pendiente priorizada (pre-Supabase):
 3. **Código muerto**: `EditProfileModal.tsx` sin importadores; exports sin uso (`isPhone`, `isNumberInRange`, `favorites`, tipos internos).
 4. **Bundle**: code-splitting de temas y diseños de blog para bajar el chunk principal de ~995 KB.
 5. **Persistencia frágil**: cuota de localStorage (~5 MB) con imágenes como data URL; es la razón principal para priorizar Supabase Storage.
+
+---
+
+# 21c. Inicialización con dos modos (2026-11-04)
+
+Primera visita con bienvenida única:
+
+- **Flujo**: `AppContent` (en `App.tsx`) lee `initialized` del contexto. Si es `false`, renderiza `WelcomeScreen`; al elegir, llama `initialize(mode)` y el provider recalcula el estado.
+- **Modos**:
+  - `"demo"` → siembra `demoPortfolio` (Alex Morgan: 3 proyectos, 8 destacadas, 3 publicaciones).
+  - `"empty"` → siembra `emptyPortfolio`: perfil neutro ("Mi portafolio" / "Fotografía"), 0 proyectos, 0 destacadas, 0 publicaciones, `siteTexts` genéricos y `settings.site.published: true` para que el sitio público no quede bloqueado por `SiteGate`.
+- **Persistencia**: `visora-init-mode` guarda `"demo"` o `"empty"`; `visora-initialized` se mantiene por compatibilidad.
+- **No destructivo**: `initializePortfolio(mode)` no hace nada si ya existe una elección previa o cualquier clave de datos (`hasPortfolioData()`). El sembrado usa `writeIfAbsent`, así que nunca reemplaza información existente.
+- **Compatibilidad**: cualquier dato previo o el marcador `visora-initialized` cuentan como "ya inicializado" y suprimen la bienvenida; en instalaciones antiguas sin elección se conserva el fallback a la demo.
+- **Modo vacío sin fugas**: cuando `visora-init-mode === "empty"`, `readState`, `normalizeProjects`, la selección de destacadas y los modales `EditHeroModal` / `EditProjectsModal` / `EditFeaturedModal` dejan de usar datos demo como fallback.
+- **UI segura con arrays vacíos**: `Hero` no renderiza `<img>` sin imagen, `MasonryGallery` devuelve `null` sin fotos y `ProjectCard` toma `siteTexts` del contexto en lugar de importar los de la demo.
+- **Migraciones**: las de perfil y settings solo completan campos ausentes y actualizan la versión; ya no sobrescriben textos ni fuerzan `published: true`.
+- **Validación**: `npm run build` y `npm run lint` pasan. Tests temporales (Node + SSR con Vite) verificaron: bienvenida sin escrituras, demo (3/8/3, Alex Morgan), vacío (0/0/0, perfil neutro), persistencia tras "recarga" y preservación de datos existentes. El aviso de chunk >500 kB ya existía.
+
+---
+
+# 21d. Salir de la demo (2026-11-05)
+
+- **Visibilidad**: la opción aparece solo si `initMode === "demo"`. En `empty`, instalaciones legacy o sin elección no se muestra y `exitDemoMode()` devuelve `false` sin tocar nada.
+- **UI**: aviso «Modo demo» al entrar en Configuración, encima de las categorías, con el botón «Salir de la demo». Abre un `Modal` de confirmación con «Cancelar» y «Salir de la demo»; cancelar solo cierra el diálogo.
+- **Lógica**: `exitDemoMode()` en `initializePortfolio.ts` borra las claves de `PORTFOLIO_DATA_KEYS` (perfil, versión de perfil, hero, about, contacto, proyectos, destacadas, textos, blog y settings), `visora-blog-draft`, `visora-init-mode` y `visora-initialized`. Nunca usa `localStorage.clear()`.
+- **Preservación**: se conservan `visora-admin-auth`, `visora-theme`, `visora-cookies-accepted`, claves desconocidas y las preferencias visuales.
+- **Apariencia**: antes de borrar `visora-admin-settings`, su bloque `appearance` se guarda en `visora-appearance-preferences`; `initializePortfolio()` lo vuelve a fusionar sobre la apariencia del modo elegido (demo o vacío).
+- **Regreso a bienvenida**: `PortfolioContext` expone `initMode` y `exitDemo()`; al confirmar, `PortfolioProvider` recalcula `readState()` y `initialized` pasa a `false`, así que `AppContent` muestra `WelcomeScreen` sin recarga. Una recarga posterior tampoco re-inicializa la demo porque ya no quedan `visora-init-mode`, `visora-initialized` ni datos.
+- **Validación**: `npm run build` y `npm run lint` pasan. Tests temporales (Node + SSR) verificaron: solo demo muestra la opción, cancelar no escribe, la salida borra solo datos del portafolio, preserva auth/tema/cookies/preferencias, `initialized: false` tras salir, demo recarga Alex Morgan y vacío no lo recupera.
+

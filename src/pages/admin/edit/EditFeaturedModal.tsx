@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Modal from "../../../components/Modal";
 import SaveButton from "../../../components/SaveButton";
 import { loadJSON, saveJSON } from "../../../lib/storage";
+import { getStoredInitMode } from "../../../lib/initializePortfolio";
 import { usePortfolio } from "../../../lib/usePortfolio";
 
 import { projects as defaultProjects } from "../../../data/portfolio";
@@ -32,9 +33,17 @@ interface ProjectRef {
 }
 
 function getAllProjects(): ProjectRef[] {
+  const useDemoFallback = getStoredInitMode() !== "empty";
+
   return loadJSON<Array<{ slug: string; title: string; cover: string }>>(
     "visora-admin-projects",
-    defaultProjects.map((p) => ({ slug: p.slug, title: p.title, cover: p.cover })),
+    useDemoFallback
+      ? defaultProjects.map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          cover: p.cover,
+        }))
+      : [],
   );
 }
 

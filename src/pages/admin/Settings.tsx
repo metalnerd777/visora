@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,8 @@ import Field from "../../components/Field";
 import Toggle from "../../components/Toggle";
 import ImageCropModal from "../../components/ImageCropModal";
 import FaviconPicker from "../../components/FaviconPicker";
+import Modal from "../../components/Modal";
+import SaveToast from "../../components/SaveToast";
 
 import { usePortfolio } from "../../lib/usePortfolio";
 import { useAdmin } from "../../lib/useAdmin";
@@ -202,11 +204,17 @@ function Note({ children }: { children: React.ReactNode }) {
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { settings, setSettings } = usePortfolio();
+  const { settings, setSettings, initMode, exitDemo } = usePortfolio();
 
   const admin = useAdmin();
   const [active, setActive] = useState<CategoryKey>("general");
-  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved"
+  >("idle");
+  const saveTimers = useRef<{ saving?: number; hide?: number }>({});
+  const [exitDemoOpen, setExitDemoOpen] = useState(false);
+
+  const demoMode = initMode === "demo";
 
   const [ogCropOpen, setOgCropOpen] = useState(false);
   const [ogCropSource, setOgCropSource] = useState<string | null>(null);
@@ -248,15 +256,30 @@ function SettingsPage() {
   }, [admin, navigate]);
 
   useEffect(() => {
-    if (!saved) return;
+    const timers = saveTimers.current;
 
-    const t = setTimeout(() => setSaved(false), 1600);
-    return () => clearTimeout(t);
-  }, [saved]);
+    return () => {
+      window.clearTimeout(timers.saving);
+      window.clearTimeout(timers.hide);
+    };
+  }, []);
 
   const patch = (partial: Partial<SiteSettings>) => {
     setSettings({ ...settings, ...partial });
-    setSaved(true);
+    setSaveStatus("saving");
+
+    // Cada cambio reinicia el aviso: spinner mientras se edita y check
+    // cuando el usuario deja de escribir.
+    window.clearTimeout(saveTimers.current.saving);
+    window.clearTimeout(saveTimers.current.hide);
+
+    saveTimers.current.saving = window.setTimeout(() => {
+      setSaveStatus("saved");
+      saveTimers.current.hide = window.setTimeout(
+        () => setSaveStatus("idle"),
+        2400,
+      );
+    }, 450);
   };
 
   const patchGroup = (
@@ -266,8 +289,12 @@ function SettingsPage() {
     patch({ [group]: { ...settings[group], ...value } } as Partial<SiteSettings>);
   };
 
+  const handleExitDemo = () => {
+    if (!exitDemo()) setExitDemoOpen(false);
+  };
+
   const activeCategory = useMemo(
-    () => CATEGORIES.find((c) => c.key === active)!,
+    () => CATEGORIES.find((c) => c.key === active) ?? CATEGORIES[0],
     [active],
   );
 
@@ -276,26 +303,37 @@ function SettingsPage() {
   return (
     <main className="px-6 py-16 text-neutral-900 transition-colors dark:text-[#F5F3FF] md:px-10">
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-neutral-400 dark:text-[#6F6A80]">
-              Administrador
-            </p>
-            <h1 className="mt-2 text-4xl font-light tracking-tight md:text-5xl">
-              Configuración
-            </h1>
-          </div>
-
-          <span
-            className={`shrink-0 rounded-full px-4 py-1.5 text-xs transition-opacity ${
-              saved
-                ? "opacity-100 text-green-600 dark:text-green-400"
-                : "opacity-0"
-            }`}
-          >
-            Guardado
-          </span>
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-neutral-400 dark:text-[#6F6A80]">
+            Administrador
+          </p>
+          <h1 className="mt-2 text-4xl font-light tracking-tight md:text-5xl">
+            Configuración
+          </h1>
         </div>
+
+        {demoMode && (
+          <section className="mt-8 flex flex-col gap-4 rounded-3xl border border-neutral-200/70 bg-white/70 p-6 backdrop-blur-2xl dark:border-[#27243A]/70 dark:bg-[#161327]/70 sm:flex-row sm:items-center sm:justify-between md:p-8">
+            <div>
+              <h2 className="text-xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF]">
+                Modo demo
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-neutral-500 dark:text-[#A8A3B8]">
+                Estás explorando el portfolio de ejemplo de Alex Morgan. Al
+                salir se eliminarán los datos de ejemplo y los cambios que hayas
+                realizado sobre ellos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setExitDemoOpen(true)}
+              className="shrink-0 self-start rounded-[var(--visora-btn-radius)] border border-red-300 bg-red-50 px-5 py-2.5 text-sm text-red-700 transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20 sm:self-auto"
+            >
+              Salir de la demo
+            </button>
+          </section>
+        )}
 
         <div className="mt-10 flex flex-col gap-8 lg:flex-row">
           <aside className="lg:w-64 lg:shrink-0">
@@ -947,6 +985,42 @@ function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <SaveToast status={saveStatus === "idle" ? null : saveStatus} />
+
+      <Modal
+        open={exitDemoOpen}
+        onClose={() => setExitDemoOpen(false)}
+        title="¿Salir de la demo?"
+      >
+        <div className="flex flex-col gap-6">
+          <p className="text-sm leading-relaxed text-neutral-600 dark:text-[#A8A3B8]">
+            Si continúas, se eliminarán los datos de ejemplo y los cambios que
+            hayas realizado sobre ellos. Volverás a la pantalla inicial de
+            Visora, donde podrás comenzar desde cero o explorar nuevamente la
+            demo.
+          </p>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setExitDemoOpen(false)}
+              className="rounded-full border border-neutral-200 px-5 py-3 text-sm text-neutral-500 transition-colors hover:border-neutral-400 hover:text-neutral-900 dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-[#4A4468]"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExitDemo}
+              className="rounded-[var(--visora-btn-radius)] border border-red-400/50 bg-red-500/5 px-5 py-3 text-sm text-red-600 transition-colors hover:border-red-400 hover:bg-red-500/10 dark:border-red-400/30 dark:text-red-400 dark:hover:bg-red-400/10"
+            >
+              Salir de la demo
+            </button>
+          </div>
+        </div>
+      </Modal>
     </main>
   );
 }

@@ -49,6 +49,9 @@ function getLayout(count: number) {
 
 function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
   const items = photos.slice(0, 10);
+
+  if (items.length === 0) return null;
+
   const { desktopSpans, desktopCols, mobileSpans } = getLayout(items.length);
 
   const gridStyle = `

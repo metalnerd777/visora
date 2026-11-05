@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
 import { loadJSON, saveJSON } from "../../../lib/storage";
+import { getStoredInitMode } from "../../../lib/initializePortfolio";
 import { usePortfolio } from "../../../lib/usePortfolio";
 import { processImages, type ImageProcessResult } from "../../../lib/image";
 import { useImageDrop } from "../../../lib/useImageDrop";
@@ -48,15 +49,23 @@ function findImageIdByUrl(images: FormImage[], url: string): string | undefined 
 }
 
 function loadAllProjects(): AdminProject[] {
+  const useDemoFallback = getStoredInitMode() !== "empty";
+
   const raw = loadJSON<Array<Record<string, unknown>>>(
     "visora-admin-projects",
-    defaultProjects.map((p) => ({
-      slug: p.slug,
-      title: p.title,
-      description: p.description,
-      cover: p.cover,
-      images: p.photos.map((ph) => ({ id: ph.id, url: ph.url, alt: ph.title })),
-    })),
+    useDemoFallback
+      ? defaultProjects.map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          description: p.description,
+          cover: p.cover,
+          images: p.photos.map((ph) => ({
+            id: ph.id,
+            url: ph.url,
+            alt: ph.title,
+          })),
+        }))
+      : [],
   );
 
   return raw.map((p) => {
@@ -69,7 +78,7 @@ function loadAllProjects(): AdminProject[] {
       alt: (img.alt as string) ?? (img.title as string) ?? "",
     }));
 
-    if (images.length === 0) {
+    if (images.length === 0 && useDemoFallback) {
       const fallback = defaultProjects.find((dp) => dp.slug === slug);
 
       if (fallback) {

@@ -1,5 +1,11 @@
 import { useState, useCallback } from "react";
-import { initializePortfolio } from "./initializePortfolio";
+import {
+  exitDemoMode,
+  getStoredInitMode,
+  hasBeenInitialized,
+  initializePortfolio,
+} from "./initializePortfolio";
+import type { InitMode } from "./initializePortfolio";
 import PortfolioContext from "./PortfolioContext";
 
 import {
@@ -11,6 +17,7 @@ import {
   PROFILE_VERSION,
 } from "../data/portfolio";
 import { defaultSettings, SETTINGS_VERSION } from "../data/settings";
+import { emptyPortfolio } from "../data/emptyPortfolio";
 
 import { loadJSON, saveJSON } from "../lib/storage";
 
@@ -26,42 +33,41 @@ import type {
 const SETTINGS_KEY = "visora-admin-settings";
 const PROFILE_VERSION_KEY = "visora-admin-profile-version";
 
-function loadProfile(): PortfolioProfile {
+interface PortfolioState {
+  profile: PortfolioProfile;
+  projects: Project[];
+  featuredPhotos: Photo[];
+  siteTexts: SiteTexts;
+  blogPosts: BlogPost[];
+  settings: SiteSettings;
+  initialized: boolean;
+  initMode: InitMode | null;
+}
+
+function loadProfile(fallback: PortfolioProfile): PortfolioProfile {
   const stored = loadJSON<PortfolioProfile | null>(
     "visora-admin-profile",
     null,
   );
 
-  if (!stored) return defaultProfile;
+  if (!stored) return fallback;
 
   const storedVersion = loadJSON<number>(PROFILE_VERSION_KEY, 1);
 
   const merged: PortfolioProfile = {
-    ...defaultProfile,
+    ...fallback,
     ...stored,
-    socialLinks: stored.socialLinks ?? defaultProfile.socialLinks,
+    socialLinks: stored.socialLinks ?? fallback.socialLinks,
   };
 
-  if (storedVersion >= PROFILE_VERSION) return merged;
+  // Migración no destructiva: completa campos ausentes y actualiza la versión,
+  // pero conserva el contenido que el usuario ya haya escrito.
+  if (storedVersion < PROFILE_VERSION) {
+    saveJSON("visora-admin-profile", merged);
+    saveJSON(PROFILE_VERSION_KEY, PROFILE_VERSION);
+  }
 
-  const refreshed: PortfolioProfile = {
-    ...merged,
-    name: defaultProfile.name,
-    profession: defaultProfile.profession,
-    description: defaultProfile.description,
-    aboutTitle: defaultProfile.aboutTitle,
-    aboutDescription: defaultProfile.aboutDescription,
-    contactTitle: defaultProfile.contactTitle,
-    contactDescription: defaultProfile.contactDescription,
-    heroPrimaryButton: defaultProfile.heroPrimaryButton,
-    heroSecondaryButton: defaultProfile.heroSecondaryButton,
-    socialLinks: defaultProfile.socialLinks,
-  };
-
-  saveJSON("visora-admin-profile", refreshed);
-  saveJSON(PROFILE_VERSION_KEY, PROFILE_VERSION);
-
-  return refreshed;
+  return merged;
 }
 
 function loadFeatured(projects: Project[], allFeatured: Photo[]): Photo[] {
@@ -82,7 +88,10 @@ function loadFeatured(projects: Project[], allFeatured: Photo[]): Photo[] {
   return result.length > 0 ? result : allFeatured;
 }
 
-function normalizeProjects(raw: unknown[]): Project[] {
+function normalizeProjects(
+  raw: unknown[],
+  fallbackProjects: Project[],
+): Project[] {
   return raw.map((item) => {
     const p = item as Record<string, unknown>;
 
@@ -102,7 +111,7 @@ function normalizeProjects(raw: unknown[]): Project[] {
     }));
 
     if (photos.length === 0) {
-      const fallback = defaultProjects.find((dp) => dp.slug === slug);
+      const fallback = fallbackProjects.find((dp) => dp.slug === slug);
 
       if (fallback) {
         photos = fallback.photos;
@@ -142,46 +151,102 @@ function mergeSettings(
   };
 }
 
-function readState() {
-  initializePortfolio();
-  const profile = loadProfile();
+function readState(): PortfolioState {
+  // Primera visita: todavía no hay elección ni datos. Se devuelve un estado
+  // neutro en memoria para poder mostrar la bienvenida sin escribir nada.
+  if (!hasBeenInitialized()) {
+    return {
+      profile: emptyPortfolio.profile,
+      projects: [],
+      featuredPhotos: [],
+      siteTexts: emptyPortfolio.siteTexts,
+      blogPosts: [],
+      settings: emptyPortfolio.settings,
+      initialized: false,
+      initMode: null,
+    };
+  }
+
+  const initMode = getStoredInitMode();
+
+  // En modo vacío no se usan los datos de la demo como fallback si alguna
+  // clave llegara a faltar. En instalaciones antiguas se mantiene el
+  // comportamiento previo (fallback a la demo).
+  const useDemoFallback = initMode !== "empty";
+
+  const profile = loadProfile(
+    useDemoFallback ? defaultProfile : emptyPortfolio.profile,
+  );
+
+  const fallbackProjects = useDemoFallback ? defaultProjects : [];
 
   const rawProjects = loadJSON<unknown[]>(
     "visora-admin-projects",
-    defaultProjects,
+    fallbackProjects,
   );
 
-  const projects = normalizeProjects(rawProjects);
+  const projects = normalizeProjects(rawProjects, fallbackProjects);
 
-  const featuredPhotos = loadFeatured(projects, defaultFeatured);
+  const featuredPhotos = loadFeatured(
+    projects,
+    useDemoFallback ? defaultFeatured : [],
+  );
 
-  const siteTexts = loadJSON<SiteTexts>("visora-admin-texts", defaultTexts);
+  const siteTexts = loadJSON<SiteTexts>(
+    "visora-admin-texts",
+    useDemoFallback ? defaultTexts : emptyPortfolio.siteTexts,
+  );
 
   const blogPosts = loadJSON<BlogPost[]>(
     "visora-admin-blog-posts",
-    defaultBlogPosts,
+    useDemoFallback ? defaultBlogPosts : [],
   );
 
   const storedSettings = loadJSON<Partial<SiteSettings>>(SETTINGS_KEY, {});
 
-  let settings = mergeSettings(defaultSettings, storedSettings);
+  let settings = mergeSettings(
+    useDemoFallback ? defaultSettings : emptyPortfolio.settings,
+    storedSettings,
+  );
 
+  // Migración no destructiva: solo actualiza la versión; no fuerza la
+  // publicación ni reemplaza preferencias existentes.
   if ((storedSettings.version ?? 1) < SETTINGS_VERSION) {
     settings = {
       ...settings,
       version: SETTINGS_VERSION,
-      site: { ...settings.site, published: true },
     };
     saveJSON(SETTINGS_KEY, settings);
   }
 
-  return { profile, projects, featuredPhotos, siteTexts, blogPosts, settings };
+  return {
+    profile,
+    projects,
+    featuredPhotos,
+    siteTexts,
+    blogPosts,
+    settings,
+    initialized: true,
+    initMode,
+  };
 }
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState(readState);
 
   const refresh = useCallback(() => setState(readState()), []);
+
+  const initialize = useCallback((mode: InitMode) => {
+    initializePortfolio(mode);
+    setState(readState());
+  }, []);
+
+  const exitDemo = useCallback(() => {
+    if (!exitDemoMode()) return false;
+
+    setState(readState());
+    return true;
+  }, []);
 
   const setBlogPosts = useCallback((posts: BlogPost[]) => {
     saveJSON("visora-admin-blog-posts", posts);
@@ -195,7 +260,14 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PortfolioContext.Provider
-      value={{ ...state, refresh, setBlogPosts, setSettings }}
+      value={{
+        ...state,
+        refresh,
+        setBlogPosts,
+        setSettings,
+        initialize,
+        exitDemo,
+      }}
     >
       {children}
     </PortfolioContext.Provider>

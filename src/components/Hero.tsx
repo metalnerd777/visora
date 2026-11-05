@@ -83,17 +83,19 @@ function Hero() {
       {/* Contenido + imagen dentro del mismo ancho que el resto de la página */}
       <div className="relative mx-auto flex h-full w-full max-w-7xl items-center px-6 sm:px-10">
         {/* Imagen de fondo (recortada según el punto de importancia) */}
-        <img
-          src={heroImage}
-          alt=""
-          fetchPriority="high"
-          className={`absolute h-full object-cover ${
-            isPortrait
-              ? "inset-x-0 top-0 w-full left-0 md:bottom-auto md:left-auto md:right-0 md:top-1/2 md:h-[85%] md:w-auto md:-translate-y-1/2"
-              : "inset-x-0 top-0 w-full"
-          }`}
-          style={{ objectPosition: `${focusX}% ${focusY}%`, ...imageMask }}
-        />
+        {heroImage && (
+          <img
+            src={heroImage}
+            alt=""
+            fetchPriority="high"
+            className={`absolute h-full object-cover ${
+              isPortrait
+                ? "inset-x-0 top-0 w-full left-0 md:bottom-auto md:left-auto md:right-0 md:top-1/2 md:h-[85%] md:w-auto md:-translate-y-1/2"
+                : "inset-x-0 top-0 w-full"
+            }`}
+            style={{ objectPosition: `${focusX}% ${focusY}%`, ...imageMask }}
+          />
+        )}
 
         <div className="relative z-10 w-full">
           <div className="max-w-xl">

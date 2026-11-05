@@ -43,19 +43,26 @@ interface HeroConfig {
 }
 
 function loadHero(): HeroConfig {
+  // El perfil guardado es la fuente de verdad para los valores iniciales.
+  // Así el modo vacío no hereda el contenido de la demo.
+  const profile = loadJSON<PortfolioProfile>(
+    "visora-admin-profile",
+    defaultProfile,
+  );
+
   return loadJSON<HeroConfig>("visora-admin-hero", {
-    heroImage: defaultProfile.heroImage,
+    heroImage: profile.heroImage,
     heroImageFocusX: 50,
     heroImageFocusY: 50,
     fadeTop: false,
     fadeBottom: true,
     fadeLeft: false,
     fadeRight: false,
-    title: defaultProfile.name,
-    description: defaultProfile.description,
-    primaryText: defaultProfile.heroPrimaryButton ?? "Ver portfolio",
+    title: profile.name,
+    description: profile.description,
+    primaryText: profile.heroPrimaryButton ?? "Ver portfolio",
     primaryLink: "#projects",
-    secondaryText: defaultProfile.heroSecondaryButton ?? "Contacto",
+    secondaryText: profile.heroSecondaryButton ?? "Contacto",
     secondaryLink: "/contacto",
     showSecondary: true,
     heroGradient: false,

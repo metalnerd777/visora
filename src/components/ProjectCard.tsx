@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-import { siteTexts } from "../data/portfolio";
+import { usePortfolio } from "../lib/usePortfolio";
 import { resizeUrl } from "../lib/image";
 
 import type { Project } from "../types/portfolio";
@@ -11,6 +11,7 @@ interface ProjectCardProps {
 
 function ProjectCard({ project }: ProjectCardProps) {
   const navigate = useNavigate();
+  const { siteTexts } = usePortfolio();
 
   return (
     <button
