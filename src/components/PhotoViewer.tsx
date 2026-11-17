@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { applyWatermark, loadImageWithCors } from "../lib/watermark";
@@ -27,10 +27,22 @@ function PhotoViewer({
   currentIndex,
   totalPhotos,
 }: PhotoViewerProps) {
+  const [zoomedForUrl, setZoomedForUrl] = useState<string | null>(null);
+  const zoomed = zoomedForUrl === imageUrl;
+  const toggleZoom = () =>
+    setZoomedForUrl((prev) => (prev === imageUrl ? null : imageUrl));
+
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        if (zoomed) {
+          setZoomedForUrl(null);
+        } else {
+          onClose();
+        }
       }
 
       if (event.key === "ArrowLeft" && hasPrevious) {
@@ -43,14 +55,13 @@ function PhotoViewer({
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [onClose, onPrevious, onNext, hasPrevious, hasNext]);
+  }, [onClose, onPrevious, onNext, hasPrevious, hasNext, zoomed]);
 
   const { settings } = usePortfolio();
   const {
@@ -91,40 +102,83 @@ function PhotoViewer({
     };
   }, [imageUrl, watermark, watermarkStyle, watermarkOpacity]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (zoomed || e.touches.length !== 1) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (
+      zoomed ||
+      touchStartX.current === null ||
+      touchStartY.current === null ||
+      e.changedTouches.length !== 1
+    ) {
+      return;
+    }
+
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    if (Math.abs(deltaX) > 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      if (deltaX > 0 && hasPrevious) {
+        onPrevious?.();
+      } else if (deltaX < 0 && hasNext) {
+        onNext?.();
+      }
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/96 p-4 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
       role="dialog"
       aria-modal="true"
       aria-label={title || "Visor de imágenes"}
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      {/* Cerrar */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
-        aria-label="Cerrar"
+      {/* Controles superiores (Zoom y Cerrar) */}
+      <div
+        className="absolute right-6 top-6 z-30 flex items-center gap-2.5"
+        onClick={(e) => e.stopPropagation()}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4"
+        <button
+          type="button"
+          onClick={toggleZoom}
+          className="flex h-11 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 text-xs font-medium tracking-wider text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/25 active:scale-95"
+          aria-label={zoomed ? "Alejar imagen" : "Acercar imagen"}
+          title="Doble clic en la imagen para alternar zoom"
         >
-          <path d="M18 6L6 18" />
+          <span>{zoomed ? "1×" : "2×"}</span>
+        </button>
 
-          <path d="M6 6l12 12" />
-        </svg>
-      </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95"
+          aria-label="Cerrar visor"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="M18 6L6 18" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-      {/* Anterior */}
+      {/* Flecha Anterior */}
       {hasPrevious && (
         <button
           type="button"
@@ -132,7 +186,7 @@ function PhotoViewer({
             e.stopPropagation();
             onPrevious?.();
           }}
-          className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          className="absolute left-4 md:left-6 top-1/2 z-30 flex h-12 w-12 md:h-13 md:w-13 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95"
           aria-label="Imagen anterior"
         >
           <svg
@@ -142,34 +196,57 @@ function PhotoViewer({
             strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-5 w-5"
+            className="h-6 w-6"
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
       )}
 
-      {/* Imagen */}
+      {/* Imagen Principal */}
       <div
-        className="flex max-h-full max-w-full flex-col items-center"
+        className="flex max-h-full max-w-full flex-col items-center select-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={watermark && markedUrl ? markedUrl : resizeUrl(imageUrl, 2400)}
-          alt={title || "Imagen"}
-          className="max-h-[82vh] max-w-[90vw] rounded-xl object-contain"
-        />
+        <div
+          className={`overflow-auto rounded-lg transition-all duration-300 ${
+            zoomed ? "max-h-[84vh] max-w-[94vw] cursor-zoom-out" : "cursor-zoom-in"
+          }`}
+          onDoubleClick={toggleZoom}
+        >
+          <img
+            src={watermark && markedUrl ? markedUrl : resizeUrl(imageUrl, 2400)}
+            alt={title || "Imagen"}
+            draggable={settings.privacy.protectImages ? false : undefined}
+            onContextMenu={
+              settings.privacy.protectImages
+                ? (e) => e.preventDefault()
+                : undefined
+            }
+            className={`rounded-lg object-contain shadow-2xl transition-transform duration-300 ${
+              zoomed
+                ? "max-h-none max-w-none w-[160vw] sm:w-[130vw] md:w-[115vw]"
+                : "max-h-[80vh] max-w-[90vw]"
+            }`}
+          />
+        </div>
 
-        <div className="mt-4 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-xs tracking-wider text-white/85 backdrop-blur-md">
-          {title && <span className="mr-3">{title}</span>}
+        {/* Ficha técnica minimalista inferior */}
+        <div className="mt-5 flex items-center gap-4 rounded-full border border-white/15 bg-neutral-900/80 px-6 py-2 text-xs tracking-wider text-white/90 backdrop-blur-xl shadow-lg">
+          {title && (
+            <>
+              <span className="font-light">{title}</span>
+              <span className="h-3 w-px bg-white/20" />
+            </>
+          )}
 
-          <span>
-            {currentIndex + 1} / {totalPhotos}
+          <span className="font-mono text-white/70">
+            {currentIndex + 1} // {totalPhotos}
           </span>
         </div>
       </div>
 
-      {/* Siguiente */}
+      {/* Flecha Siguiente */}
       {hasNext && (
         <button
           type="button"
@@ -177,7 +254,7 @@ function PhotoViewer({
             e.stopPropagation();
             onNext?.();
           }}
-          className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          className="absolute right-4 md:right-6 top-1/2 z-30 flex h-12 w-12 md:h-13 md:w-13 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95"
           aria-label="Siguiente imagen"
         >
           <svg
@@ -187,7 +264,7 @@ function PhotoViewer({
             strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-5 w-5"
+            className="h-6 w-6"
           >
             <path d="M9 6l6 6-6 6" />
           </svg>

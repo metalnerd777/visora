@@ -61,6 +61,11 @@ export const projects: Project[] = [
     slug: "bodas",
     title: "Bodas",
     description: "Momentos únicos de un día especial.",
+    category: "Documental",
+    year: "2026",
+    client: "Archivo Privado",
+    role: "Fotografía Documental",
+    visibility: "public",
     cover:
       "https://images.unsplash.com/photo-1519741497674-611481863552",
     photos: [
@@ -82,6 +87,11 @@ export const projects: Project[] = [
     slug: "retratos",
     title: "Retratos",
     description: "Personas, personalidad e historias.",
+    category: "Editorial",
+    year: "2026",
+    client: "Estudio & Autor",
+    role: "Dirección & Retrato",
+    visibility: "public",
     cover:
       "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce",
     photos: [
@@ -103,6 +113,11 @@ export const projects: Project[] = [
     slug: "paisajes",
     title: "Paisajes",
     description: "Lugares y momentos encontrados.",
+    category: "Naturaleza",
+    year: "2025",
+    client: "Serie Personal",
+    role: "Fotografía de Paisaje",
+    visibility: "public",
     cover:
       "https://images.unsplash.com/photo-1500534623283-312aade485b7",
     photos: [

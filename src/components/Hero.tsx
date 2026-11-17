@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 
 import { usePortfolio } from "../lib/usePortfolio";
-import { loadJSON } from "../lib/storage";
 import { useImageOrientation } from "../lib/useImageOrientation";
 import {
   heroGradientFor,
@@ -9,34 +8,8 @@ import {
   heroImageMask,
 } from "../lib/appearance";
 
-interface HeroConfig {
-  heroImageFocusX?: number;
-  heroImageFocusY?: number;
-  showSecondary?: boolean;
-  heroGradient?: boolean;
-  heroGradientId?: string;
-  heroTransparent?: boolean;
-  fadeTop?: boolean;
-  fadeBottom?: boolean;
-  fadeLeft?: boolean;
-  fadeRight?: boolean;
-  primaryLink?: string;
-  secondaryLink?: string;
-}
-
 function Hero() {
-  const { profile, settings } = usePortfolio();
-  const heroConfig = loadJSON<HeroConfig>("visora-admin-hero", {
-    showSecondary: true,
-    heroImageFocusX: 50,
-    heroImageFocusY: 50,
-    heroGradient: false,
-    heroGradientId: "midnight-violet",
-    fadeTop: false,
-    fadeBottom: true,
-    fadeLeft: false,
-    fadeRight: false,
-  });
+  const { profile, settings, heroConfig } = usePortfolio();
 
   const primaryLink = heroConfig.primaryLink ?? "#projects";
   const secondaryLink = heroConfig.secondaryLink ?? "/contacto";
@@ -65,9 +38,11 @@ function Hero() {
   return (
     <section
       id="home"
-      className={`relative flex h-[70vh] min-h-[520px] max-h-[760px] items-center overflow-hidden text-white ${showDarkBg ? "bg-neutral-950" : ""}`}
+      className={`relative flex min-h-[82vh] md:min-h-[88vh] lg:min-h-[92vh] items-center overflow-hidden text-white ${
+        showDarkBg ? "bg-neutral-950" : ""
+      }`}
     >
-      {/* Fondo degradado (imágenes con transparencia) */}
+      {/* Fondo degradado si está activo para transparencias */}
       {heroConfig.heroGradient && (
         <div
           aria-hidden="true"
@@ -80,49 +55,64 @@ function Hero() {
         />
       )}
 
-      {/* Contenido + imagen dentro del mismo ancho que el resto de la página */}
-      <div className="relative mx-auto flex h-full w-full max-w-7xl items-center px-6 sm:px-10">
-        {/* Imagen de fondo (recortada según el punto de importancia) */}
-        {heroImage && (
+      {/* Imagen de fondo con recorte y velo cinematográfico */}
+      {heroImage && (
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <img
             src={heroImage}
             alt=""
             fetchPriority="high"
-            className={`absolute h-full object-cover ${
+            className={`h-full w-full object-cover transition-transform duration-1000 ${
               isPortrait
-                ? "inset-x-0 top-0 w-full left-0 md:bottom-auto md:left-auto md:right-0 md:top-1/2 md:h-[85%] md:w-auto md:-translate-y-1/2"
-                : "inset-x-0 top-0 w-full"
+                ? "md:left-auto md:right-0 md:top-1/2 md:h-[90%] md:w-auto md:-translate-y-1/2"
+                : ""
             }`}
             style={{ objectPosition: `${focusX}% ${focusY}%`, ...imageMask }}
           />
-        )}
 
-        <div className="relative z-10 w-full">
-          <div className="max-w-xl">
-          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-white/70 [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_3px_10px_rgba(0,0,0,0.75),0_8px_32px_rgba(0,0,0,0.7)] max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_4px_14px_rgba(0,0,0,0.85),0_10px_40px_rgba(0,0,0,0.75)]">
-            {profession}
-          </p>
+          {/* Velo de contraste de alta gama: asegura legibilidad cristalina sin textos con sombras pesadas */}
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/50 to-neutral-950/20 md:via-neutral-950/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-transparent to-neutral-950/30" />
+        </div>
+      )}
 
-          <h1 className="text-5xl font-extralight tracking-tight sm:text-6xl md:text-7xl [text-shadow:0_2px_4px_rgba(0,0,0,0.85),0_6px_18px_rgba(0,0,0,0.8),0_14px_48px_rgba(0,0,0,0.75)] max-md:[text-shadow:0_3px_6px_rgba(0,0,0,0.95),0_8px_22px_rgba(0,0,0,0.85),0_16px_56px_rgba(0,0,0,0.8)]">
+      {/* Contenido Monumental */}
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl items-center px-6 py-20 sm:px-10 lg:py-32">
+        <div className="max-w-3xl">
+          {/* Micro-etiqueta de autor */}
+          <div className="mb-6 flex items-center gap-3">
+            <span className="flex h-2 w-2 rounded-full bg-(--visora-accent) shadow-[0_0_8px_var(--visora-accent)]" />
+            <p className="font-mono text-xs uppercase tracking-[0.32em] text-white/80">
+              {profession} // PORTAFOLIO
+            </p>
+          </div>
+
+          {/* Título de gran escala */}
+          <h1 className="text-5xl font-extralight tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95]">
             {brand}
           </h1>
 
-          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/80 sm:text-base [text-shadow:0_1px_3px_rgba(0,0,0,0.85),0_4px_12px_rgba(0,0,0,0.75),0_10px_32px_rgba(0,0,0,0.7)] max-md:[text-shadow:0_1px_4px_rgba(0,0,0,0.95),0_5px_16px_rgba(0,0,0,0.85),0_12px_40px_rgba(0,0,0,0.75)]">
-            {profile.description}
-          </p>
+          {/* Breve statement */}
+          {profile.description && (
+            <p className="mt-8 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">
+              {profile.description}
+            </p>
+          )}
 
-          <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
+          {/* Acciones principales */}
+          <div className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <HeroLink
               to={primaryLink}
-              className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] bg-white px-7 py-3 text-sm text-black transition-all duration-300 hover:bg-white/90"
+              className="group inline-flex min-w-48 items-center justify-center gap-3 rounded-[var(--visora-btn-radius)] bg-white px-8 py-4 text-sm font-medium text-neutral-950 shadow-xl transition-all duration-300 hover:scale-[1.02] hover:bg-neutral-100 active:scale-95"
             >
-              {profile.heroPrimaryButton ?? "Ver portfolio"}
+              <span>{profile.heroPrimaryButton ?? "Ver portfolio"}</span>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </HeroLink>
 
             {showSecondary && (
               <HeroLink
                 to={secondaryLink}
-                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/40 px-7 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15 max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.7)]"
+                className="inline-flex min-w-44 items-center justify-center rounded-[var(--visora-btn-radius)] border border-white/30 bg-white/5 px-8 py-4 text-sm font-medium text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white/15 active:scale-95"
               >
                 {profile.heroSecondaryButton ?? "Contacto"}
               </HeroLink>
@@ -130,15 +120,15 @@ function Hero() {
           </div>
         </div>
       </div>
-      </div>
 
-      {/* Indicador de scroll */}
+      {/* Indicador de scroll de alta gama */}
       <a
         href="#featured"
         aria-label="Desplazarse hacia abajo"
-        className="absolute bottom-8 left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/80 backdrop-blur-md transition-colors hover:text-white"
+        className="group absolute bottom-8 right-8 z-10 hidden items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-white/60 transition-colors hover:text-white md:flex"
       >
-        <span className="block translate-y-[1px] animate-bounce text-base leading-none">
+        <span>EXPLORAR</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 transition-transform duration-300 group-hover:translate-y-1">
           ↓
         </span>
       </a>

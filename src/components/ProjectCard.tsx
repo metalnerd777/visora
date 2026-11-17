@@ -17,39 +17,70 @@ function ProjectCard({ project }: ProjectCardProps) {
     <button
       type="button"
       onClick={() => navigate(`/proyecto/${project.slug}`)}
-      className="group relative block w-full overflow-hidden text-left"
+      className="group relative block w-full text-left cursor-pointer"
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">
+      <div className="zoom-frame aspect-[16/10] rounded-3xl">
         <img
           src={resizeUrl(project.cover, 1800)}
           alt={project.title}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+          className="zoom-image"
         />
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent transition-colors duration-500 group-hover:via-black/20" />
+        {/* Velo sutil */}
+        <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />
 
-        {/* Información */}
-        <div className="absolute inset-x-4 bottom-4 rounded-2xl text-white">
-          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/80 [text-shadow:0_1px_6px_rgba(0,0,0,0.7)]">
+        {/* Badges de privacidad si el proyecto es privado/oculto */}
+        {(project.visibility === "unlisted" || project.pin) && (
+          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-1.5">
+            {project.visibility === "unlisted" && (
+              <span className="rounded-full bg-neutral-950/75 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-amber-300 backdrop-blur-md">
+                Solo con enlace
+              </span>
+            )}
+            {project.pin && (
+              <span className="rounded-full bg-neutral-950/75 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-white backdrop-blur-md">
+                🔒 PIN
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Información editorial debajo de la obra */}
+      <div className="mt-4 px-1">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.24em] font-medium text-neutral-500 dark:text-neutral-400">
+          <span className="h-px w-3 bg-(--visora-accent)" />
+          {project.category && (
+            <>
+              <span className="text-(--visora-accent)">{project.category}</span>
+              <span>·</span>
+            </>
+          )}
+          <span>
             {project.photos.length}{" "}
             {project.photos.length === 1
               ? siteTexts.workNounSingular
               : siteTexts.workNounPlural}
-          </p>
-
-          <h3 className="text-2xl font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.65)]">
-            {project.title}
-          </h3>
-
-          {project.description && (
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.7)]">
-              {project.description}
-            </p>
+          </span>
+          {project.year && (
+            <>
+              <span>·</span>
+              <span className="font-mono">{project.year}</span>
+            </>
           )}
         </div>
+
+        <h3 className="mt-1.5 text-2xl font-light text-neutral-900 transition-colors duration-300 group-hover:text-(--visora-accent) dark:text-white">
+          {project.title}
+        </h3>
+
+        {project.description && (
+          <p className="mt-1 line-clamp-2 max-w-md text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+            {project.description}
+          </p>
+        )}
       </div>
     </button>
   );

@@ -33,7 +33,7 @@ function HeaderLink({
       to={isAnchor ? "/" : item.href}
       state={isAnchor ? { scrollTo: item.href.slice(1) } : undefined}
       onClick={onClick}
-      className="rounded-full px-4 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F3FF]"
+      className="rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-neutral-600 transition-all hover:bg-neutral-900/5 hover:text-black dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white"
     >
       {item.label}
     </Link>
@@ -86,9 +86,10 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
           {/* Logo */}
           <Link
             to="/"
-            className="text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-60 dark:text-[#F5F3FF]"
+            className="flex items-center gap-2.5 text-sm font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-75 dark:text-white"
           >
-            {brand}
+            <span>{brand}</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-(--visora-accent)" />
           </Link>
 
           {/* Desktop */}
@@ -99,19 +100,47 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
 
             {admin && (
               <>
+                <span className="mx-1 h-4 w-px bg-neutral-300/70 dark:bg-neutral-800" />
+
                 <Link
                   to="/configuracion"
-                  className="rounded-full px-4 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F3FF]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300/80 bg-neutral-100/80 px-3.5 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-neutral-800 transition-all hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-neutral-700/80 dark:bg-white/10 dark:text-white dark:hover:border-(--visora-accent) dark:hover:text-(--visora-accent)"
                 >
-                  Configuración
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                  </svg>
+                  <span>Configuración</span>
                 </Link>
 
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="ml-2 rounded-full border border-red-300/40 bg-red-50/80 px-3 py-1.5 text-xs text-red-500 backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+                  title="Cerrar sesión"
+                  aria-label="Cerrar sesión"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-red-300/50 bg-red-50/80 text-red-500 backdrop-blur-md transition-colors hover:border-red-400 hover:bg-red-100 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                 >
-                  Cerrar sesión
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                  >
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
                 </button>
               </>
             )}
@@ -212,9 +241,21 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
                 <Link
                   to="/configuracion"
                   onClick={() => setOpen(false)}
-                  className="mt-2 rounded-full px-4 py-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-900/5 hover:text-black dark:text-[#A8A3B8] dark:hover:bg-white/5 dark:hover:text-[#F5F3FF]"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-neutral-300/80 bg-neutral-100/80 px-4 py-3 text-xs font-medium uppercase tracking-[0.2em] text-neutral-800 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-neutral-700/80 dark:bg-white/10 dark:text-white"
                 >
-                  Configuración
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                  </svg>
+                  <span>Configuración</span>
                 </Link>
 
                 <button
@@ -223,9 +264,22 @@ function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
                     setOpen(false);
                     handleLogout();
                   }}
-                  className="mt-2 rounded-xl border border-red-300/40 bg-red-50/80 px-3 py-3 text-left text-sm text-red-500 transition-colors hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                  className="mt-2 inline-flex items-center gap-2 rounded-xl border border-red-300/40 bg-red-50/80 px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.2em] text-red-500 transition-colors hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
                 >
-                  Cerrar sesión
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Cerrar sesión</span>
                 </button>
               </>
             )}

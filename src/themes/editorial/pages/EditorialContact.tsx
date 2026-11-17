@@ -1,35 +1,38 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import EditableSection from "../../../pages/admin/edit/EditableSection";
-import EditContactModal from "../../../pages/admin/edit/EditContactModal";
 
 import { usePortfolio } from "../../../lib/usePortfolio";
 import { useAdmin } from "../../../lib/useAdmin";
 import { socialUrl, nonEmptySocials } from "../../../lib/socials";
-import { loadJSON } from "../../../lib/storage";
 import { isSafeUrl } from "../../../lib/validation";
 
+const EditContactModal = lazy(
+  () => import("../../../pages/admin/edit/EditContactModal"),
+);
+
 function EditorialContact() {
-  const { profile, settings } = usePortfolio();
+  const { profile, settings, contactConfig } = usePortfolio();
   const admin = useAdmin();
   const [contactOpen, setContactOpen] = useState(false);
+
+  const [senderName, setSenderName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [inquiryType, setInquiryType] = useState("Comisión Editorial");
+  const [message, setMessage] = useState("");
+  const [sentNotice, setSentNotice] = useState(false);
 
   const rawSocials =
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
   const socials = nonEmptySocials(rawSocials);
 
-  const contactConfig = loadJSON<{
-    whatsappPhone?: string;
-    whatsappMessage?: string;
-    emailSubject?: string;
-  }>("visora-admin-contact", {});
-
   const whatsappPhone = contactConfig?.whatsappPhone ?? "";
   const whatsappMessage = contactConfig?.whatsappMessage?.trim() ?? "";
   const emailSubject =
     contactConfig?.emailSubject?.trim() ?? "Contacto desde el portfolio";
+  const showForm = contactConfig?.showForm ?? true;
 
-  const waPhone = whatsappPhone.replace(/\+/g, "");
+  const waPhone = whatsappPhone.replace(/\D/g, "");
   const whatsappUrl = waPhone
     ? `https://wa.me/${waPhone}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ""}`
     : null;
@@ -64,6 +67,37 @@ function EditorialContact() {
     },
   ].filter((channel) => channel.value);
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    const fullSubject = `${emailSubject} — ${inquiryType} (${senderName || "Cliente"})`;
+    const fullBody = [
+      `Hola ${settings.general.brandName || profile.name},`,
+      "",
+      message.trim(),
+      "",
+      "—",
+      `Nombre: ${senderName || "No especificado"}`,
+      senderEmail ? `Email: ${senderEmail}` : null,
+      `Encargo: ${inquiryType}`,
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
+
+    if (profile.email) {
+      window.location.href = `mailto:${profile.email}?subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(fullBody)}`;
+      setSentNotice(true);
+    } else if (waPhone) {
+      window.open(
+        `https://wa.me/${waPhone}?text=${encodeURIComponent(fullBody)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      setSentNotice(true);
+    }
+  };
+
   return (
     <main>
       {/* Encabezado */}
@@ -82,7 +116,7 @@ function EditorialContact() {
         </div>
       </header>
 
-      {/* Canales */}
+      {/* Canales y Formulario */}
       <section className="px-6 py-14 md:px-10 md:py-20">
         <div className="mx-auto max-w-7xl">
           {channels.length > 0 ? (
@@ -126,6 +160,94 @@ function EditorialContact() {
             </p>
           )}
 
+          {/* Formulario de consulta estilo revista */}
+          {showForm && (profile.email || waPhone) && (
+            <form
+              onSubmit={handleFormSubmit}
+              className="mt-16 border-t border-double border-[#1C1C1F]/20 pt-14 dark:border-[#E9E6DF]/20"
+            >
+              <div className="mb-8 max-w-2xl">
+                <p className="font-mono text-xs uppercase tracking-[0.3em] text-black/45 dark:text-[#F3EFE6]/45">
+                  Correspondencia directa
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold uppercase tracking-tight text-black dark:text-[#F3EFE6] md:text-3xl">
+                  Enviar propuesta o consulta
+                </h2>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="flex flex-col gap-2">
+                  <label className="font-mono text-[11px] uppercase tracking-[0.2em] text-black/50 dark:text-[#F3EFE6]/50">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    placeholder="Nombre completo"
+                    className="border border-black/20 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-black dark:border-[#E9E6DF]/20 dark:bg-[#0B0A14] dark:text-[#F3EFE6] dark:focus:border-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-mono text-[11px] uppercase tracking-[0.2em] text-black/50 dark:text-[#F3EFE6]/50">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    className="border border-black/20 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-black dark:border-[#E9E6DF]/20 dark:bg-[#0B0A14] dark:text-[#F3EFE6] dark:focus:border-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-mono text-[11px] uppercase tracking-[0.2em] text-black/50 dark:text-[#F3EFE6]/50">
+                    Tipo de comisión
+                  </label>
+                  <input
+                    type="text"
+                    value={inquiryType}
+                    onChange={(e) => setInquiryType(e.target.value)}
+                    placeholder="Ej. Editorial, Retrato, Campaña"
+                    className="border border-black/20 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-black dark:border-[#E9E6DF]/20 dark:bg-[#0B0A14] dark:text-[#F3EFE6] dark:focus:border-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-2">
+                <label className="font-mono text-[11px] uppercase tracking-[0.2em] text-black/50 dark:text-[#F3EFE6]/50">
+                  Detalles del proyecto
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Describe tu idea, fechas o requerimientos..."
+                  className="border border-black/20 bg-white px-4 py-3 text-sm leading-relaxed outline-none transition-colors focus:border-black dark:border-[#E9E6DF]/20 dark:bg-[#0B0A14] dark:text-[#F3EFE6] dark:focus:border-white"
+                />
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button
+                  type="submit"
+                  className="bg-black px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.25em] text-white transition-colors hover:bg-neutral-800 dark:bg-[#F3EFE6] dark:text-black dark:hover:bg-white"
+                >
+                  Enviar mensaje →
+                </button>
+
+                {sentNotice && (
+                  <span className="font-mono text-xs text-black/60 dark:text-[#F3EFE6]/60">
+                    ✓ Se abrió tu cliente de correo con el mensaje preparado.
+                  </span>
+                )}
+              </div>
+            </form>
+          )}
+
           {/* Ficha de ubicación */}
           {(settings.privacy.showLocation && profile.location) ||
           (settings.privacy.showEmail && profile.email) ? (
@@ -156,11 +278,13 @@ function EditorialContact() {
         </div>
       </section>
 
-      {admin && (
-        <EditContactModal
-          open={contactOpen}
-          onClose={() => setContactOpen(false)}
-        />
+      {admin && contactOpen && (
+        <Suspense fallback={null}>
+          <EditContactModal
+            open={contactOpen}
+            onClose={() => setContactOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

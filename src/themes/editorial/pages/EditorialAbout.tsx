@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import EditableSection from "../../../pages/admin/edit/EditableSection";
-import EditAboutModal from "../../../pages/admin/edit/EditAboutModal";
 
 import { usePortfolio } from "../../../lib/usePortfolio";
 import { useAdmin } from "../../../lib/useAdmin";
@@ -9,6 +8,10 @@ import { nonEmptySocials, socialLabel, socialUrl } from "../../../lib/socials";
 import { resizeUrl } from "../../../lib/image";
 import SocialIcon from "../../../components/SocialIcon";
 import RichHtml from "../../../components/RichHtml";
+
+const EditAboutModal = lazy(
+  () => import("../../../pages/admin/edit/EditAboutModal"),
+);
 
 function EditorialAbout() {
   const { profile, settings } = usePortfolio();
@@ -143,8 +146,13 @@ function EditorialAbout() {
         </div>
       </section>
 
-      {admin && (
-        <EditAboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      {admin && aboutOpen && (
+        <Suspense fallback={null}>
+          <EditAboutModal
+            open={aboutOpen}
+            onClose={() => setAboutOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

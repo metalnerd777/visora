@@ -48,6 +48,8 @@ export interface Photo {
   title: string;
 }
 
+export type ProjectVisibility = "public" | "unlisted";
+
 export interface Project {
   id: string;
   slug: string;
@@ -55,6 +57,40 @@ export interface Project {
   description: string;
   cover: string;
   photos: Photo[];
+  category?: string;
+  year?: string;
+  client?: string;
+  role?: string;
+  externalUrl?: string;
+  visibility?: ProjectVisibility;
+  pin?: string;
+}
+
+export interface HeroConfig {
+  heroImageFocusX?: number;
+  heroImageFocusY?: number;
+  showSecondary?: boolean;
+  heroGradient?: boolean;
+  heroGradientId?: string;
+  heroTransparent?: boolean;
+  fadeTop?: boolean;
+  fadeBottom?: boolean;
+  fadeLeft?: boolean;
+  fadeRight?: boolean;
+  portraitAlign?: "left" | "center" | "right";
+  primaryLink?: string;
+  secondaryLink?: string;
+}
+
+export interface ContactConfig {
+  title?: string;
+  description?: string;
+  email?: string;
+  emailSubject?: string;
+  location?: string;
+  whatsappPhone?: string;
+  whatsappMessage?: string;
+  showForm?: boolean;
 }
 
 export interface SiteTexts {

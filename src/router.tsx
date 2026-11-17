@@ -1,9 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 
-import AdminLoginPage from "./pages/AdminLogin";
-import SettingsPage from "./pages/admin/Settings";
-
 import { usePortfolio } from "./lib/usePortfolio";
 import { useAdmin } from "./lib/useAdmin";
 import { clearAutosave } from "./lib/blogAutosave";
@@ -11,6 +8,9 @@ import { blogDesignFor } from "./blogDesigns";
 
 import type { ThemePages } from "./themes/types";
 import type { EditorResult } from "./pages/admin/edit/BlogPostEditor";
+
+const AdminLoginPage = lazy(() => import("./pages/AdminLogin"));
+const SettingsPage = lazy(() => import("./pages/admin/Settings"));
 
 const BlogPostEditor = lazy(() =>
   import("./pages/admin/edit/BlogPostEditor").then((m) => ({
@@ -156,25 +156,27 @@ function BlogPostRoute({
 
 function AppRouter({ pages }: { pages: ThemePages }) {
   return (
-    <Routes>
-      <Route path="/" element={<pages.Home />} />
+    <Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<pages.Home />} />
 
-      <Route path="/proyecto/:slug" element={<ProjectRoute pages={pages} />} />
+        <Route path="/proyecto/:slug" element={<ProjectRoute pages={pages} />} />
 
-      <Route path="/sobre-mi" element={<pages.AboutPage />} />
+        <Route path="/sobre-mi" element={<pages.AboutPage />} />
 
-      <Route path="/blog" element={<pages.BlogPage />} />
+        <Route path="/blog" element={<pages.BlogPage />} />
 
-      <Route path="/blog/:slug" element={<BlogPostRoute pages={pages} />} />
+        <Route path="/blog/:slug" element={<BlogPostRoute pages={pages} />} />
 
-      <Route path="/contacto" element={<pages.ContactPage />} />
+        <Route path="/contacto" element={<pages.ContactPage />} />
 
-      <Route path="/admin" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminLoginPage />} />
 
-      <Route path="/configuracion" element={<SettingsPage />} />
+        <Route path="/configuracion" element={<SettingsPage />} />
 
-      <Route path="*" element={<pages.NotFound />} />
-    </Routes>
+        <Route path="*" element={<pages.NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 

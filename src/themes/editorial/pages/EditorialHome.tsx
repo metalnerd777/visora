@@ -1,17 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { Link, useLocation } from "react-router-dom";
 
 import PhotoViewer from "../../../components/PhotoViewer";
 import EditableSection from "../../../pages/admin/edit/EditableSection";
-import EditHeroModal from "../../../pages/admin/edit/EditHeroModal";
-import EditFeaturedModal from "../../../pages/admin/edit/EditFeaturedModal";
-import EditProjectsModal from "../../../pages/admin/edit/EditProjectsModal";
 
 import { usePortfolio } from "../../../lib/usePortfolio";
 import { useAdmin } from "../../../lib/useAdmin";
 import { usePhotoViewer } from "../../../lib/usePhotoViewer";
-import { loadJSON } from "../../../lib/storage";
 import { resizeUrl } from "../../../lib/image";
 import { useImageOrientation } from "../../../lib/useImageOrientation";
 import {
@@ -20,20 +16,15 @@ import {
   heroImageMask,
 } from "../../../lib/appearance";
 
-interface HeroConfig {
-  heroImageFocusX?: number;
-  heroImageFocusY?: number;
-  showSecondary?: boolean;
-  heroGradient?: boolean;
-  heroGradientId?: string;
-  fadeTop?: boolean;
-  fadeBottom?: boolean;
-  fadeLeft?: boolean;
-  fadeRight?: boolean;
-  portraitAlign?: "left" | "center" | "right";
-  primaryLink?: string;
-  secondaryLink?: string;
-}
+const EditHeroModal = lazy(
+  () => import("../../../pages/admin/edit/EditHeroModal"),
+);
+const EditFeaturedModal = lazy(
+  () => import("../../../pages/admin/edit/EditFeaturedModal"),
+);
+const EditProjectsModal = lazy(
+  () => import("../../../pages/admin/edit/EditProjectsModal"),
+);
 
 function getPortraitAlignClass(align: string | undefined): string {
   switch (align) {
@@ -58,6 +49,39 @@ function EditorialHome() {
   const [heroOpen, setHeroOpen] = useState(false);
   const [featuredOpen, setFeaturedOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  const visibleProjects = useMemo(
+    () =>
+      admin
+        ? projects
+        : projects.filter((p) => p.visibility !== "unlisted"),
+    [projects, admin],
+  );
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of visibleProjects) {
+      const cat = p.category?.trim();
+      if (cat) set.add(cat);
+    }
+    return Array.from(set);
+  }, [visibleProjects]);
+
+  const effectiveCategory =
+    activeCategory === "all" || categories.includes(activeCategory)
+      ? activeCategory
+      : "all";
+
+  const filteredProjects = useMemo(
+    () =>
+      effectiveCategory === "all"
+        ? visibleProjects
+        : visibleProjects.filter(
+            (p) => p.category?.trim() === effectiveCategory,
+          ),
+    [visibleProjects, effectiveCategory],
+  );
 
   useEffect(() => {
     const target = (location.state as { scrollTo?: string } | null)?.scrollTo;
@@ -125,17 +149,17 @@ function EditorialHome() {
                 key={photo.id}
                 type="button"
                 onClick={() => openViewer(photo.id)}
-                className="group relative aspect-square overflow-hidden bg-white text-left dark:bg-[#0B0A14]"
+                className="zoom-frame group aspect-square bg-white text-left cursor-pointer dark:bg-[#0B0A14]"
               >
                 <img
                   src={resizeUrl(photo.url, 1200)}
                   alt={photo.title}
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+                  className="zoom-image"
                 />
 
-                <span className="absolute left-3 top-3 bg-white/85 px-2 py-1 text-[10px] tracking-[0.2em] text-black backdrop-blur-sm dark:bg-black/70 dark:text-white">
+                <span className="pointer-events-none absolute left-3 top-3 bg-white/85 px-2 py-1 text-[10px] tracking-[0.2em] text-black backdrop-blur-sm dark:bg-black/70 dark:text-white">
                   {(index + 1).toString().padStart(2, "0")}
                 </span>
               </button>
@@ -173,13 +197,53 @@ function EditorialHome() {
             />
           )}
 
+          {/* Filtros de categoría tipo índice editorial */}
+          {categories.length > 1 && (
+            <div className="mb-8 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("all")}
+                className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
+                  effectiveCategory === "all"
+                    ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
+                    : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
+                }`}
+              >
+                Todos ({visibleProjects.length})
+              </button>
+              {categories.map((cat) => {
+                const count = visibleProjects.filter(
+                  (p) => p.category?.trim() === cat,
+                ).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setActiveCategory(cat)}
+                    className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
+                      effectiveCategory === cat
+                        ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
+                        : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
+                    }`}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="divide-y divide-[#1C1C1F]/15 border-t-2 border-double border-[#1C1C1F]/20 dark:divide-[#E9E6DF]/15 dark:border-[#E9E6DF]/20">
-            {projects.map((project, index) => (
+            {filteredProjects.map((project, index) => (
               <EdProjectRow
                 key={project.id}
                 index={index + 1}
                 cover={project.cover}
                 title={project.title}
+                category={project.category}
+                year={project.year}
+                visibility={project.visibility}
+                hasPin={Boolean(project.pin)}
                 count={project.photos.length}
                 nounSingular={siteTexts.workNounSingular}
                 nounPlural={siteTexts.workNounPlural}
@@ -207,36 +271,30 @@ function EditorialHome() {
 
       {/* Modales admin */}
       {admin && (
-        <>
-          <EditHeroModal open={heroOpen} onClose={() => setHeroOpen(false)} />
-          <EditFeaturedModal
-            open={featuredOpen}
-            onClose={() => setFeaturedOpen(false)}
-          />
-          <EditProjectsModal
-            open={projectsOpen}
-            onClose={() => setProjectsOpen(false)}
-          />
-        </>
+        <Suspense fallback={null}>
+          {heroOpen && (
+            <EditHeroModal open={heroOpen} onClose={() => setHeroOpen(false)} />
+          )}
+          {featuredOpen && (
+            <EditFeaturedModal
+              open={featuredOpen}
+              onClose={() => setFeaturedOpen(false)}
+            />
+          )}
+          {projectsOpen && (
+            <EditProjectsModal
+              open={projectsOpen}
+              onClose={() => setProjectsOpen(false)}
+            />
+          )}
+        </Suspense>
       )}
     </main>
   );
 }
 
 function CoverContent() {
-  const { profile, settings } = usePortfolio();
-  const heroConfig = loadJSON<HeroConfig>("visora-admin-hero", {
-    showSecondary: true,
-    heroImageFocusX: 50,
-    heroImageFocusY: 50,
-    heroGradient: false,
-    heroGradientId: "midnight-violet",
-    fadeTop: false,
-    fadeBottom: true,
-    fadeLeft: false,
-    fadeRight: false,
-    portraitAlign: "center",
-  });
+  const { profile, settings, heroConfig } = usePortfolio();
 
   const brand = settings.general.brandName || profile.name;
   const profession = settings.general.profession || profile.profession;
@@ -532,6 +590,10 @@ function EdProjectRow({
   index,
   cover,
   title,
+  category,
+  year,
+  visibility,
+  hasPin,
   count,
   nounSingular,
   nounPlural,
@@ -540,6 +602,10 @@ function EdProjectRow({
   index: number;
   cover: string;
   title: string;
+  category?: string;
+  year?: string;
+  visibility?: string;
+  hasPin?: boolean;
   count: number;
   nounSingular: string;
   nounPlural: string;
@@ -559,11 +625,30 @@ function EdProjectRow({
         {(index).toString().padStart(2, "0")}
       </span>
 
-      <h3 className="col-span-9 text-2xl font-semibold uppercase tracking-tight text-black transition-colors group-hover:text-black/60 md:col-span-8 dark:text-[#F3EFE6] md:text-3xl dark:group-hover:text-[#F3EFE6]/60">
-        {title}
-      </h3>
+      <div className="col-span-9 md:col-span-7">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-2xl font-semibold uppercase tracking-tight text-black transition-colors group-hover:text-black/60 dark:text-[#F3EFE6] md:text-3xl dark:group-hover:text-[#F3EFE6]/60">
+            {title}
+          </h3>
+          {visibility === "unlisted" && (
+            <span className="border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-amber-700 dark:text-amber-300">
+              Solo con enlace
+            </span>
+          )}
+          {hasPin && (
+            <span className="border border-black/20 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-black/60 dark:border-white/20 dark:text-white/60">
+              🔒 PIN
+            </span>
+          )}
+        </div>
+        {(category || year) && (
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.22em] text-black/45 dark:text-[#F3EFE6]/45">
+            {[category, year].filter(Boolean).join(" · ")}
+          </p>
+        )}
+      </div>
 
-      <span className="col-span-9 col-start-3 text-xs uppercase tracking-[0.2em] text-black/50 md:col-span-2 md:col-start-10 dark:text-[#F3EFE6]/50">
+      <span className="col-span-9 col-start-3 text-xs uppercase tracking-[0.2em] text-black/50 md:col-span-3 md:col-start-9 dark:text-[#F3EFE6]/50">
         {count} {count === 1 ? nounSingular : nounPlural}
       </span>
 

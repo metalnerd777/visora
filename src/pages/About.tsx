@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import About from "../components/About";
 
 import { useAdmin } from "../lib/useAdmin";
 
 import EditableSection from "./admin/edit/EditableSection";
-import EditAboutModal from "./admin/edit/EditAboutModal";
+
+const EditAboutModal = lazy(() => import("./admin/edit/EditAboutModal"));
 
 function AboutPage() {
   const admin = useAdmin();
@@ -26,8 +27,13 @@ function AboutPage() {
         )}
       </div>
 
-      {admin && (
-        <EditAboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      {admin && aboutOpen && (
+        <Suspense fallback={null}>
+          <EditAboutModal
+            open={aboutOpen}
+            onClose={() => setAboutOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

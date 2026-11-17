@@ -28,12 +28,20 @@ import { processImages, type ImageProcessResult } from "../../../lib/image";
 import { useImageDrop } from "../../../lib/useImageDrop";
 
 import { projects as defaultProjects } from "../../../data/portfolio";
+import type { ProjectVisibility } from "../../../types/portfolio";
 
 interface AdminProject {
   slug: string;
   title: string;
   description: string;
   cover: string;
+  category?: string;
+  year?: string;
+  client?: string;
+  role?: string;
+  externalUrl?: string;
+  visibility?: ProjectVisibility;
+  pin?: string;
   images: FormImage[];
 }
 
@@ -59,6 +67,13 @@ function loadAllProjects(): AdminProject[] {
           title: p.title,
           description: p.description,
           cover: p.cover,
+          category: p.category ?? "",
+          year: p.year ?? "",
+          client: p.client ?? "",
+          role: p.role ?? "",
+          externalUrl: p.externalUrl ?? "",
+          visibility: p.visibility ?? "public",
+          pin: p.pin ?? "",
           images: p.photos.map((ph) => ({
             id: ph.id,
             url: ph.url,
@@ -70,6 +85,9 @@ function loadAllProjects(): AdminProject[] {
 
   return raw.map((p) => {
     const slug = (p.slug as string) ?? "";
+    const fallback = useDemoFallback
+      ? defaultProjects.find((dp) => dp.slug === slug)
+      : undefined;
     const imgs = (p.images ?? p.photos ?? []) as Array<Record<string, unknown>>;
 
     let images = imgs.map((img) => ({
@@ -78,16 +96,12 @@ function loadAllProjects(): AdminProject[] {
       alt: (img.alt as string) ?? (img.title as string) ?? "",
     }));
 
-    if (images.length === 0 && useDemoFallback) {
-      const fallback = defaultProjects.find((dp) => dp.slug === slug);
-
-      if (fallback) {
-        images = fallback.photos.map((ph) => ({
-          id: ph.id,
-          url: ph.url,
-          alt: ph.title,
-        }));
-      }
+    if (images.length === 0 && fallback) {
+      images = fallback.photos.map((ph) => ({
+        id: ph.id,
+        url: ph.url,
+        alt: ph.title,
+      }));
     }
 
     return {
@@ -95,6 +109,13 @@ function loadAllProjects(): AdminProject[] {
       title: (p.title as string) ?? "",
       description: (p.description as string) ?? "",
       cover: (p.cover as string) ?? "",
+      category: (p.category as string | undefined) ?? fallback?.category ?? "",
+      year: (p.year as string | undefined) ?? fallback?.year ?? "",
+      client: (p.client as string | undefined) ?? fallback?.client ?? "",
+      role: (p.role as string | undefined) ?? fallback?.role ?? "",
+      externalUrl: (p.externalUrl as string | undefined) ?? fallback?.externalUrl ?? "",
+      visibility: p.visibility === "unlisted" ? "unlisted" : "public",
+      pin: (p.pin as string | undefined) ?? "",
       images,
     };
   });
@@ -169,22 +190,41 @@ function SortableRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{project.title}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-sm font-medium">{project.title}</p>
+          {project.category && (
+            <span className="rounded-md bg-(--visora-accent)/10 px-2 py-0.5 text-[10px] font-medium text-(--visora-accent)">
+              {project.category}
+            </span>
+          )}
+          {project.visibility === "unlisted" && (
+            <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-300">
+              Solo enlace
+            </span>
+          )}
+          {project.pin && (
+            <span className="rounded-md bg-neutral-200/80 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-white/10 dark:text-neutral-300">
+              🔒 PIN
+            </span>
+          )}
+        </div>
         <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
           {project.images.length} imagen{project.images.length !== 1 ? "es" : ""}
+          {project.year ? ` · ${project.year}` : ""}
         </p>
       </div>
 
       <button
         type="button"
         onClick={onEdit}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-[#6F6A80] dark:hover:bg-white/5 dark:hover:text-[#F5F3FF]"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200/80 px-2.5 text-xs font-medium text-neutral-600 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:text-[#A8A3B8] dark:hover:border-(--visora-accent) dark:hover:text-[#F5F3FF]"
         aria-label="Editar"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>
+        <span>Editar</span>
       </button>
 
       <button
@@ -327,6 +367,13 @@ function EditProjectsModal({
   /* form state */
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
+  const [formCategory, setFormCategory] = useState("");
+  const [formYear, setFormYear] = useState("");
+  const [formClient, setFormClient] = useState("");
+  const [formRole, setFormRole] = useState("");
+  const [formExternalUrl, setFormExternalUrl] = useState("");
+  const [formVisibility, setFormVisibility] = useState<ProjectVisibility>("public");
+  const [formPin, setFormPin] = useState("");
   const [formCover, setFormCover] = useState("");
   const [formCoverFile, setFormCoverFile] = useState<File | null>(null);
   const [formImages, setFormImages] = useState<FormImage[]>([]);
@@ -372,6 +419,13 @@ function EditProjectsModal({
     setEditingSlug(null);
     setFormTitle("");
     setFormDesc("");
+    setFormCategory("");
+    setFormYear(new Date().getFullYear().toString());
+    setFormClient("");
+    setFormRole("");
+    setFormExternalUrl("");
+    setFormVisibility("public");
+    setFormPin("");
     setFormCover("");
     setFormCoverFile(null);
     setFormImages([]);
@@ -387,6 +441,13 @@ function EditProjectsModal({
     setEditingSlug(slug);
     setFormTitle(project.title);
     setFormDesc(project.description);
+    setFormCategory(project.category ?? "");
+    setFormYear(project.year ?? "");
+    setFormClient(project.client ?? "");
+    setFormRole(project.role ?? "");
+    setFormExternalUrl(project.externalUrl ?? "");
+    setFormVisibility(project.visibility === "unlisted" ? "unlisted" : "public");
+    setFormPin(project.pin ?? "");
     setFormCover(project.cover);
     setFormCoverFile(null);
     setFormImages([...project.images]);
@@ -467,6 +528,13 @@ function EditProjectsModal({
         slug,
         title: formTitle.trim(),
         description: formDesc.trim(),
+        category: formCategory.trim(),
+        year: formYear.trim(),
+        client: formClient.trim(),
+        role: formRole.trim(),
+        externalUrl: formExternalUrl.trim(),
+        visibility: formVisibility,
+        pin: formPin.trim(),
         cover,
         images: imageData,
       };
@@ -644,6 +712,58 @@ function EditProjectsModal({
                 placeholder="Nombre del proyecto"
               />
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Categoría (elige o escribe una nueva)"
+                  value={formCategory}
+                  onChange={setFormCategory}
+                  placeholder="Escribe una nueva o elige abajo..."
+                />
+
+                <Field
+                  label="Año"
+                  value={formYear}
+                  onChange={setFormYear}
+                  placeholder="Ej. 2026"
+                />
+              </div>
+
+              {/* Selector rápido de categorías existentes o sugeridas */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-[11px] text-neutral-400 dark:text-[#6F6A80]">
+                  Categorías rápidas:
+                </span>
+                {Array.from(
+                  new Set([
+                    ...projects
+                      .map((p) => p.category?.trim())
+                      .filter((c): c is string => Boolean(c)),
+                    "Documental",
+                    "Editorial",
+                    "Retratos",
+                    "Bodas",
+                    "Paisajes",
+                    "Comercial",
+                  ]),
+                ).map((cat) => {
+                  const active = formCategory.trim().toLowerCase() === cat.toLowerCase();
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setFormCategory(active ? "" : cat)}
+                      className={`rounded-full px-3 py-1 text-xs transition-all ${
+                        active
+                          ? "bg-(--visora-accent) font-medium text-white shadow-xs"
+                          : "border border-neutral-200/80 bg-white/60 text-neutral-600 hover:border-(--visora-accent)/50 hover:text-(--visora-accent) dark:border-[#27243A] dark:bg-white/5 dark:text-[#A8A3B8]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
                   Descripción
@@ -656,6 +776,63 @@ function EditProjectsModal({
                   rows={3}
                   className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80]"
                 />
+              </div>
+
+              {/* Ficha técnica opcional */}
+              <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50/60 p-4 dark:border-[#27243A]/70 dark:bg-[#0B0A14]/40">
+                <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500 dark:text-[#A8A3B8]">
+                  Ficha técnica y entrega (opcional)
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Cliente / Encargo"
+                    value={formClient}
+                    onChange={setFormClient}
+                    placeholder="Ej. Revista Vogue / Personal"
+                  />
+
+                  <Field
+                    label="Rol / Disciplina"
+                    value={formRole}
+                    onChange={setFormRole}
+                    placeholder="Ej. Dirección de Fotografía"
+                  />
+                </div>
+
+                <div className="mt-3">
+                  <Field
+                    label="Enlace externo (proyecto en vivo o cliente)"
+                    value={formExternalUrl}
+                    onChange={setFormExternalUrl}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
+                      Visibilidad
+                    </label>
+                    <select
+                      value={formVisibility}
+                      onChange={(e) =>
+                        setFormVisibility(e.target.value as ProjectVisibility)
+                      }
+                      className="rounded-xl border border-neutral-200 bg-white/80 px-3 py-2.5 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:text-[#F5F3FF]"
+                    >
+                      <option value="public">Público en el portafolio</option>
+                      <option value="unlisted">Oculto (solo con enlace directo)</option>
+                    </select>
+                  </div>
+
+                  <Field
+                    label="PIN de acceso (opcional)"
+                    value={formPin}
+                    onChange={setFormPin}
+                    placeholder="Sin PIN = libre"
+                  />
+                </div>
               </div>
 
               {/* Cover */}

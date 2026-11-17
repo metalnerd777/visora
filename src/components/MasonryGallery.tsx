@@ -57,9 +57,9 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
   const gridStyle = `
     .masonry-grid {
       display: grid;
-      gap: 1rem;
+      gap: 1.25rem;
       grid-auto-rows: minmax(0, 1fr);
-      height: clamp(420px, 60vw, 720px);
+      height: clamp(440px, 62vw, 760px);
     }
     .masonry-item { grid-row: span var(--span-mobile); }
     @media (min-width: 768px) {
@@ -80,7 +80,7 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
             key={photo.id}
             type="button"
             onClick={() => onPhotoClick(photo.id)}
-            className="masonry-item group relative min-h-0 overflow-hidden rounded-2xl"
+            className="masonry-item zoom-frame group min-h-0 rounded-2xl cursor-pointer"
             style={{
               ["--span-desktop" as string]: desktopSpans[index],
               ["--span-mobile" as string]: mobileSpans[index],
@@ -91,10 +91,10 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
               alt={photo.title}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              className="zoom-image"
             />
 
-            <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/10" />
+            <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />
           </button>
         ))}
       </div>

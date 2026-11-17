@@ -28,10 +28,35 @@ import type {
   SiteTexts,
   BlogPost,
   SiteSettings,
+  HeroConfig,
+  ContactConfig,
+  ProjectVisibility,
 } from "../types/portfolio";
 
 const SETTINGS_KEY = "visora-admin-settings";
 const PROFILE_VERSION_KEY = "visora-admin-profile-version";
+
+const DEFAULT_HERO_CONFIG: HeroConfig = {
+  showSecondary: true,
+  heroImageFocusX: 50,
+  heroImageFocusY: 50,
+  heroGradient: false,
+  heroGradientId: "midnight-violet",
+  fadeTop: false,
+  fadeBottom: true,
+  fadeLeft: false,
+  fadeRight: false,
+  portraitAlign: "center",
+  primaryLink: "#projects",
+  secondaryLink: "/contacto",
+};
+
+const DEFAULT_CONTACT_CONFIG: ContactConfig = {
+  emailSubject: "Contacto desde el portfolio",
+  whatsappPhone: "",
+  whatsappMessage: "Hola, me interesa tu trabajo. ¿Podemos hablar?",
+  showForm: true,
+};
 
 interface PortfolioState {
   profile: PortfolioProfile;
@@ -40,6 +65,8 @@ interface PortfolioState {
   siteTexts: SiteTexts;
   blogPosts: BlogPost[];
   settings: SiteSettings;
+  heroConfig: HeroConfig;
+  contactConfig: ContactConfig;
   initialized: boolean;
   initMode: InitMode | null;
 }
@@ -60,8 +87,6 @@ function loadProfile(fallback: PortfolioProfile): PortfolioProfile {
     socialLinks: stored.socialLinks ?? fallback.socialLinks,
   };
 
-  // Migración no destructiva: completa campos ausentes y actualiza la versión,
-  // pero conserva el contenido que el usuario ya haya escrito.
   if (storedVersion < PROFILE_VERSION) {
     saveJSON("visora-admin-profile", merged);
     saveJSON(PROFILE_VERSION_KEY, PROFILE_VERSION);
@@ -96,6 +121,7 @@ function normalizeProjects(
     const p = item as Record<string, unknown>;
 
     const slug = (p.slug as string) ?? "";
+    const fallback = fallbackProjects.find((dp) => dp.slug === slug);
 
     const images = (p.images ?? p.photos ?? []) as Array<{
       id?: string;
@@ -110,13 +136,13 @@ function normalizeProjects(
       title: img.title ?? img.alt ?? "",
     }));
 
-    if (photos.length === 0) {
-      const fallback = fallbackProjects.find((dp) => dp.slug === slug);
-
-      if (fallback) {
-        photos = fallback.photos;
-      }
+    if (photos.length === 0 && fallback) {
+      photos = fallback.photos;
     }
+
+    const visibilityRaw = p.visibility as string | undefined;
+    const visibility: ProjectVisibility =
+      visibilityRaw === "unlisted" ? "unlisted" : "public";
 
     return {
       id: (p.id as string) ?? `proj-${slug}`,
@@ -125,6 +151,13 @@ function normalizeProjects(
       description: (p.description as string) ?? "",
       cover: (p.cover as string) ?? "",
       photos,
+      category: (p.category as string | undefined) ?? fallback?.category ?? "",
+      year: (p.year as string | undefined) ?? fallback?.year ?? "",
+      client: (p.client as string | undefined) ?? fallback?.client ?? "",
+      role: (p.role as string | undefined) ?? fallback?.role ?? "",
+      externalUrl: (p.externalUrl as string | undefined) ?? fallback?.externalUrl ?? "",
+      visibility,
+      pin: (p.pin as string | undefined) ?? "",
     };
   });
 }
@@ -152,8 +185,6 @@ function mergeSettings(
 }
 
 function readState(): PortfolioState {
-  // Primera visita: todavía no hay elección ni datos. Se devuelve un estado
-  // neutro en memoria para poder mostrar la bienvenida sin escribir nada.
   if (!hasBeenInitialized()) {
     return {
       profile: emptyPortfolio.profile,
@@ -162,16 +193,14 @@ function readState(): PortfolioState {
       siteTexts: emptyPortfolio.siteTexts,
       blogPosts: [],
       settings: emptyPortfolio.settings,
+      heroConfig: DEFAULT_HERO_CONFIG,
+      contactConfig: DEFAULT_CONTACT_CONFIG,
       initialized: false,
       initMode: null,
     };
   }
 
   const initMode = getStoredInitMode();
-
-  // En modo vacío no se usan los datos de la demo como fallback si alguna
-  // clave llegara a faltar. En instalaciones antiguas se mantiene el
-  // comportamiento previo (fallback a la demo).
   const useDemoFallback = initMode !== "empty";
 
   const profile = loadProfile(
@@ -209,8 +238,6 @@ function readState(): PortfolioState {
     storedSettings,
   );
 
-  // Migración no destructiva: solo actualiza la versión; no fuerza la
-  // publicación ni reemplaza preferencias existentes.
   if ((storedSettings.version ?? 1) < SETTINGS_VERSION) {
     settings = {
       ...settings,
@@ -219,6 +246,18 @@ function readState(): PortfolioState {
     saveJSON(SETTINGS_KEY, settings);
   }
 
+  const storedHero = loadJSON<Partial<HeroConfig>>("visora-admin-hero", {});
+  const heroConfig: HeroConfig = {
+    ...DEFAULT_HERO_CONFIG,
+    ...storedHero,
+  };
+
+  const storedContact = loadJSON<Partial<ContactConfig>>("visora-admin-contact", {});
+  const contactConfig: ContactConfig = {
+    ...DEFAULT_CONTACT_CONFIG,
+    ...storedContact,
+  };
+
   return {
     profile,
     projects,
@@ -226,6 +265,8 @@ function readState(): PortfolioState {
     siteTexts,
     blogPosts,
     settings,
+    heroConfig,
+    contactConfig,
     initialized: true,
     initMode,
   };

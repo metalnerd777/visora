@@ -11,6 +11,7 @@ import SaveToast from "../../components/SaveToast";
 
 import { usePortfolio } from "../../lib/usePortfolio";
 import { useAdmin } from "../../lib/useAdmin";
+import { loadJSON, saveJSON } from "../../lib/storage";
 import { THEME_OPTIONS } from "../../themes";
 import {
   ACCENT_PRESETS,
@@ -204,7 +205,19 @@ function Note({ children }: { children: React.ReactNode }) {
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { settings, setSettings, initMode, exitDemo } = usePortfolio();
+  const {
+    profile,
+    projects,
+    siteTexts,
+    blogPosts,
+    settings,
+    heroConfig,
+    contactConfig,
+    setSettings,
+    refresh,
+    initMode,
+    exitDemo,
+  } = usePortfolio();
 
   const admin = useAdmin();
   const [active, setActive] = useState<CategoryKey>("general");
@@ -213,8 +226,90 @@ function SettingsPage() {
   >("idle");
   const saveTimers = useRef<{ saving?: number; hide?: number }>({});
   const [exitDemoOpen, setExitDemoOpen] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<{
+    type: "ok" | "error";
+    text: string;
+  } | null>(null);
 
   const demoMode = initMode === "demo";
+
+  const handleExportBackup = () => {
+    const payload = {
+      schema: "visora-backup-v1",
+      exportedAt: new Date().toISOString(),
+      data: {
+        profile,
+        heroConfig,
+        contactConfig,
+        projects: loadJSON("visora-admin-projects", projects),
+        featured: loadJSON("visora-admin-featured", []),
+        siteTexts,
+        blogPosts,
+        settings,
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `visora-backup-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupMessage({
+      type: "ok",
+      text: "Respaldo descargado correctamente.",
+    });
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result)) as {
+          schema?: string;
+          data?: Record<string, unknown>;
+        };
+
+        if (!parsed || typeof parsed !== "object" || !parsed.data) {
+          setBackupMessage({
+            type: "error",
+            text: "El archivo no tiene un formato de respaldo válido.",
+          });
+          return;
+        }
+
+        const { data } = parsed;
+        if (data.profile) saveJSON("visora-admin-profile", data.profile);
+        if (data.heroConfig) saveJSON("visora-admin-hero", data.heroConfig);
+        if (data.contactConfig) saveJSON("visora-admin-contact", data.contactConfig);
+        if (Array.isArray(data.projects)) saveJSON("visora-admin-projects", data.projects);
+        if (Array.isArray(data.featured)) saveJSON("visora-admin-featured", data.featured);
+        if (data.siteTexts) saveJSON("visora-admin-texts", data.siteTexts);
+        if (Array.isArray(data.blogPosts)) saveJSON("visora-admin-blog-posts", data.blogPosts);
+        if (data.settings) saveJSON("visora-admin-settings", data.settings);
+
+        refresh();
+        setBackupMessage({
+          type: "ok",
+          text: "Respaldo restaurado con éxito.",
+        });
+      } catch {
+        setBackupMessage({
+          type: "error",
+          text: "No se pudo leer el archivo JSON.",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const [ogCropOpen, setOgCropOpen] = useState(false);
   const [ogCropSource, setOgCropSource] = useState<string | null>(null);
@@ -968,19 +1063,62 @@ function SettingsPage() {
             )}
 
             {activeCategory.key === "site" && (
-              <SectionCard
-                title="Publicación"
-                description="Visibilidad del sitio para los visitantes."
-              >
-                <FieldGroup>
-                  <SettingToggle
-                    label="Publicado"
-                    hint="Si lo desactivas, solo tú (admin) podrás ver el sitio; los visitantes verán 'Sitio en construcción'. Útil mientras montas o entregas el portfolio."
-                    checked={settings.site.published}
-                    onChange={(v) => patchGroup("site", { published: v })}
-                  />
-                </FieldGroup>
-              </SectionCard>
+              <div className="flex flex-col gap-6">
+                <SectionCard
+                  title="Publicación"
+                  description="Visibilidad del sitio para los visitantes."
+                >
+                  <FieldGroup>
+                    <SettingToggle
+                      label="Publicado"
+                      hint="Si lo desactivas, solo tú (admin) podrás ver el sitio; los visitantes verán 'Sitio en construcción'. Útil mientras montas o entregas el portfolio."
+                      checked={settings.site.published}
+                      onChange={(v) => patchGroup("site", { published: v })}
+                    />
+                  </FieldGroup>
+                </SectionCard>
+
+                <SectionCard
+                  title="Respaldo y Portabilidad"
+                  description="Descarga una copia completa de tu portafolio en formato JSON o restaura un respaldo previo."
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleExportBackup}
+                      className="inline-flex items-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-(--visora-accent) dark:bg-white dark:text-neutral-950 dark:hover:bg-(--visora-accent) dark:hover:text-white"
+                    >
+                      <span>↓ Exportar respaldo (.json)</span>
+                    </button>
+
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--visora-btn-radius)] border border-neutral-200 bg-white/80 px-5 py-3 text-sm font-medium text-neutral-800 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#27243A] dark:bg-[#0B0A14]/60 dark:text-[#F5F3FF]">
+                      <span>↑ Importar respaldo (.json)</span>
+                      <input
+                        type="file"
+                        accept="application/json,.json"
+                        className="hidden"
+                        onChange={handleImportBackup}
+                      />
+                    </label>
+                  </div>
+
+                  {backupMessage && (
+                    <p
+                      className={`text-xs ${
+                        backupMessage.type === "ok"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {backupMessage.text}
+                    </p>
+                  )}
+
+                  <Note>
+                    Este archivo incluye textos, configuración visual, proyectos y entradas del blog para que puedas guardar copias de seguridad o migrar tu configuración.
+                  </Note>
+                </SectionCard>
+              </div>
             )}
           </div>
         </div>

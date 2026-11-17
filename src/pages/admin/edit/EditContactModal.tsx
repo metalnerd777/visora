@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import Modal from "../../../components/Modal";
 import Field from "../../../components/Field";
+import Toggle from "../../../components/Toggle";
 import SocialLinksEditor from "../../../components/SocialLinksEditor";
 import SaveButton from "../../../components/SaveButton";
 
@@ -14,7 +15,7 @@ import { isEmail, isNonEmpty, sanitizeText } from "../../../lib/validation";
 
 import type { PortfolioProfile } from "../../../types/portfolio";
 
-interface ContactConfig {
+interface ContactFormState {
   title: string;
   description: string;
   email: string;
@@ -22,19 +23,18 @@ interface ContactConfig {
   location: string;
   whatsappPhone: string;
   whatsappMessage: string;
+  showForm: boolean;
 }
 
-const WHATSAPP_MESSAGE_MAX = 100;
-const WHATSAPP_DIGITS = 8;
+const WHATSAPP_MESSAGE_MAX = 120;
 
-function extractWhatsAppDigits(saved: string): string {
+function normalizeInternationalPhone(saved: string): string {
   const digits = saved.replace(/\D/g, "");
-  return digits.length > WHATSAPP_DIGITS
-    ? digits.slice(-WHATSAPP_DIGITS)
-    : digits;
+  if (!digits) return "";
+  return `+${digits}`;
 }
 
-function loadContact(): ContactConfig {
+function loadContact(): ContactFormState {
   const profile = loadJSON<PortfolioProfile>(
     "visora-admin-profile",
     defaultProfile,
@@ -44,6 +44,7 @@ function loadContact(): ContactConfig {
     emailSubject?: string;
     whatsappPhone?: string;
     whatsappMessage?: string;
+    showForm?: boolean;
   }>("visora-admin-contact", {});
 
   return {
@@ -52,8 +53,11 @@ function loadContact(): ContactConfig {
     email: profile.email,
     emailSubject: existing.emailSubject ?? "Contacto desde el portfolio",
     location: profile.location,
-    whatsappPhone: extractWhatsAppDigits(existing.whatsappPhone ?? ""),
-    whatsappMessage: existing.whatsappMessage ?? "Hola, me interesa tu trabajo. ¿Podemos hablar?",
+    whatsappPhone: normalizeInternationalPhone(existing.whatsappPhone ?? ""),
+    whatsappMessage:
+      existing.whatsappMessage ??
+      "Hola, me interesa tu trabajo. ¿Podemos hablar?",
+    showForm: existing.showForm ?? true,
   };
 }
 
@@ -65,7 +69,7 @@ function EditContactModal({
   onClose: () => void;
 }) {
   const { refresh, settings, setSettings } = usePortfolio();
-  const [config, setConfig] = useState<ContactConfig>(loadContact);
+  const [config, setConfig] = useState<ContactFormState>(loadContact);
   const [errors, setErrors] = useState<{
     title?: string;
     email?: string;
@@ -73,7 +77,7 @@ function EditContactModal({
     whatsappMessage?: string;
   }>({});
 
-  const update = (patch: Partial<ContactConfig>) => {
+  const update = (patch: Partial<ContactFormState>) => {
     setConfig((prev) => ({ ...prev, ...patch }));
   };
 
@@ -83,8 +87,10 @@ function EditContactModal({
     if (!isNonEmpty(config.title)) nextErrors.title = "El título es obligatorio.";
     if (!isEmail(config.email)) nextErrors.email = "Ingresa un correo válido.";
 
-    if (config.whatsappPhone && config.whatsappPhone.length !== WHATSAPP_DIGITS) {
-      nextErrors.whatsappPhone = `Ingresa ${WHATSAPP_DIGITS} números después del prefijo.`;
+    const phoneDigits = config.whatsappPhone.replace(/\D/g, "");
+    if (phoneDigits.length > 0 && (phoneDigits.length < 8 || phoneDigits.length > 15)) {
+      nextErrors.whatsappPhone =
+        "Ingresa el número con código de país (entre 8 y 15 dígitos, ej. +56912345678 o +34600123456).";
     }
 
     if (config.whatsappMessage.trim().length > WHATSAPP_MESSAGE_MAX) {
@@ -102,10 +108,9 @@ function EditContactModal({
       email: config.email.trim(),
       emailSubject: sanitizeText(config.emailSubject).trim(),
       location: sanitizeText(config.location).trim(),
-      whatsappPhone: config.whatsappPhone
-        ? `+569${config.whatsappPhone}`
-        : "",
+      whatsappPhone: phoneDigits ? `+${phoneDigits}` : "",
       whatsappMessage: sanitizeText(config.whatsappMessage).trim(),
+      showForm: config.showForm,
     });
 
     const profile = loadJSON<PortfolioProfile>(
@@ -125,10 +130,11 @@ function EditContactModal({
     onClose();
   };
 
-  const waPhone = config.whatsappPhone;
-  const waUrl = waPhone
-    ? `https://wa.me/569${waPhone}${config.whatsappMessage.trim() ? `?text=${encodeURIComponent(config.whatsappMessage.trim())}` : ""}`
-    : null;
+  const waDigits = config.whatsappPhone.replace(/\D/g, "");
+  const waUrl =
+    waDigits.length >= 8
+      ? `https://wa.me/${waDigits}${config.whatsappMessage.trim() ? `?text=${encodeURIComponent(config.whatsappMessage.trim())}` : ""}`
+      : null;
 
   return (
     <Modal
@@ -175,39 +181,31 @@ function EditContactModal({
         </div>
 
         <div className="flex flex-col gap-3 border-t border-neutral-100 pt-5 dark:border-[#27243A]">
-          <label className="text-sm font-medium">WhatsApp</label>
+          <label className="text-sm font-medium">WhatsApp (Internacional)</label>
 
           <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
             <div className="flex flex-col gap-2">
               <label className="text-sm text-neutral-600 dark:text-[#A8A3B8]">
-                Número de teléfono
+                Número con código de país
               </label>
 
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400 dark:text-[#6F6A80]">
-                  +56 9
-                </span>
-
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={config.whatsappPhone}
-                  onChange={(e) => {
-                    const v = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, WHATSAPP_DIGITS);
-                    update({ whatsappPhone: v });
-                    setErrors((er) => ({ ...er, whatsappPhone: undefined }));
-                  }}
-                  placeholder="12345678"
-                  aria-invalid={errors.whatsappPhone ? true : undefined}
-                  className={`w-full rounded-xl border bg-white/80 py-3 pl-[4.5rem] pr-4 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
-                    errors.whatsappPhone
-                      ? "border-red-400 dark:border-red-500"
-                      : "border-neutral-200 dark:border-[#27243A]"
-                  }`}
-                />
-              </div>
+              <input
+                type="tel"
+                value={config.whatsappPhone}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const digits = raw.replace(/\D/g, "").slice(0, 15);
+                  update({ whatsappPhone: digits ? `+${digits}` : "" });
+                  setErrors((er) => ({ ...er, whatsappPhone: undefined }));
+                }}
+                placeholder="+56912345678 / +34600123456"
+                aria-invalid={errors.whatsappPhone ? true : undefined}
+                className={`w-full rounded-xl border bg-white/80 px-4 py-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-(--visora-accent) dark:bg-[#0B0A14]/60 dark:placeholder:text-[#6F6A80] ${
+                  errors.whatsappPhone
+                    ? "border-red-400 dark:border-red-500"
+                    : "border-neutral-200 dark:border-[#27243A]"
+                }`}
+              />
 
               <p
                 className={`text-xs ${
@@ -217,11 +215,11 @@ function EditContactModal({
                 }`}
               >
                 {errors.whatsappPhone ??
-                  "Formato: +56 9 + 8 números (ej. +569 1234 5678)."}
+                  "Incluye el código de país (ej. +56 Chile, +34 España, +52 México, +54 Argentina)."}
               </p>
               <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
                 {waUrl
-                  ? `El botón abrirá wa.me/569${waPhone} con el mensaje predefinido.`
+                  ? `Abriría wa.me/${waDigits} con el mensaje predefinido.`
                   : "Sin número configurado. El botón de WhatsApp no se mostrará."}
               </p>
             </div>
@@ -261,8 +259,6 @@ function EditContactModal({
                   {config.whatsappMessage.trim().length} / {WHATSAPP_MESSAGE_MAX}
                 </p>
               </div>
-
-              
             </div>
           </div>
         </div>
@@ -289,6 +285,17 @@ function EditContactModal({
           />
         </div>
 
+        <div className="border-t border-neutral-100 pt-5 dark:border-[#27243A]">
+          <Toggle
+            label="Mostrar formulario de consulta directa en la página"
+            checked={config.showForm}
+            onChange={(v) => update({ showForm: v })}
+          />
+          <p className="mt-1 text-xs text-neutral-400 dark:text-[#6F6A80]">
+            Permite que el cliente redacte su propuesta directamente en la página antes de enviarla por correo o WhatsApp.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-2 border-t border-neutral-100 pt-5 dark:border-[#27243A]">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Redes sociales</label>
@@ -300,7 +307,7 @@ function EditContactModal({
 
           <SocialLinksEditor
             links={settings.socials}
-            onChange={(links) => setSettings({ ...settings, socials: links })}
+            onChange={(socials) => setSettings({ ...settings, socials })}
           />
         </div>
       </div>

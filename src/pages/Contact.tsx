@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import { usePortfolio } from "../lib/usePortfolio";
 import { socialUrl, socialLabel, nonEmptySocials } from "../lib/socials";
-import { loadJSON } from "../lib/storage";
 import { useAdmin } from "../lib/useAdmin";
 import { isSafeUrl } from "../lib/validation";
 
 import EditableSection from "./admin/edit/EditableSection";
-import EditContactModal from "./admin/edit/EditContactModal";
+
+const EditContactModal = lazy(() => import("./admin/edit/EditContactModal"));
 
 function InstagramIcon() {
   return (
@@ -43,26 +43,28 @@ function EnvelopeIcon() {
 }
 
 function ContactPage() {
-  const { profile, settings } = usePortfolio();
+  const { profile, settings, contactConfig } = usePortfolio();
   const admin = useAdmin();
   const [contactOpen, setContactOpen] = useState(false);
+
+  // Estado del formulario rápido
+  const [senderName, setSenderName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [inquiryType, setInquiryType] = useState("Proyecto / Sesión");
+  const [message, setMessage] = useState("");
+  const [sentNotice, setSentNotice] = useState(false);
 
   const rawSocials =
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
   const socials = nonEmptySocials(rawSocials);
 
-  const contactConfig = loadJSON<{
-    whatsappPhone?: string;
-    whatsappMessage?: string;
-    emailSubject?: string;
-  }>("visora-admin-contact", {});
-
   const whatsappPhone = contactConfig?.whatsappPhone ?? "";
   const whatsappMessage = contactConfig?.whatsappMessage?.trim() ?? "";
   const emailSubject =
     contactConfig?.emailSubject?.trim() ?? "Contacto desde el portfolio";
+  const showForm = contactConfig?.showForm ?? true;
 
-  const waPhone = whatsappPhone.replace(/\+/g, "");
+  const waPhone = whatsappPhone.replace(/\D/g, "");
   const whatsappUrl = waPhone
     ? `https://wa.me/${waPhone}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ""}`
     : null;
@@ -78,17 +80,51 @@ function ContactPage() {
       : "";
   const safeInstagramUrl = isSafeUrl(instagramUrl);
 
-  const header = (
-    <header className="max-w-3xl pt-16 md:pt-24">
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500 dark:text-[#A8A3B8]">
-        Contacto
-      </p>
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
 
-      <h1 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-6xl">
+    const fullSubject = `${emailSubject} — ${inquiryType} (${senderName || "Cliente"})`;
+    const fullBody = [
+      `Hola ${settings.general.brandName || profile.name},`,
+      "",
+      message.trim(),
+      "",
+      "—",
+      `Nombre: ${senderName || "No especificado"}`,
+      senderEmail ? `Email: ${senderEmail}` : null,
+      `Interés: ${inquiryType}`,
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
+
+    if (profile.email) {
+      window.location.href = `mailto:${profile.email}?subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(fullBody)}`;
+      setSentNotice(true);
+    } else if (waPhone) {
+      window.open(
+        `https://wa.me/${waPhone}?text=${encodeURIComponent(fullBody)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      setSentNotice(true);
+    }
+  };
+
+  const header = (
+    <header className="max-w-3xl pt-12 md:pt-20">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="h-px w-6 bg-(--visora-accent)" />
+        <p className="font-mono text-xs uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+          Contacto
+        </p>
+      </div>
+
+      <h1 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-white md:text-6xl">
         {profile.contactTitle ?? "Hablemos."}
       </h1>
 
-      <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
+      <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
         {profile.contactDescription}
       </p>
     </header>
@@ -108,52 +144,142 @@ function ContactPage() {
           header
         )}
 
-        {/* Botones de contacto */}
-        <div className="mt-14 grid gap-12 md:grid-cols-2">
-          <div className="flex flex-col gap-4">
-            {safeInstagramUrl && (
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-8 py-4 text-sm text-white shadow-lg shadow-neutral-900/10 transition-all duration-300 hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:shadow-black/30 dark:hover:bg-(--visora-accent) dark:hover:text-white"
+        <div className="mt-14 grid gap-12 lg:grid-cols-12">
+          {/* Columna izquierda: Formulario directo o Botones */}
+          <div className="flex flex-col gap-8 lg:col-span-7">
+            {showForm && (profile.email || waPhone) && (
+              <form
+                onSubmit={handleFormSubmit}
+                className="rounded-3xl border border-neutral-200/70 bg-white/60 p-6 backdrop-blur-xl dark:border-neutral-800/80 dark:bg-neutral-900/50 md:p-8"
               >
-                <InstagramIcon />
-                Envíame un mensaje por Instagram
-              </a>
+                <h2 className="text-xl font-light text-neutral-900 dark:text-white">
+                  Cuéntame sobre tu proyecto
+                </h2>
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  Completa los detalles y envía tu consulta directa.
+                </p>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                      Tu nombre
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="Nombre y apellido"
+                      className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-950/70 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                      Tu email
+                    </label>
+                    <input
+                      type="email"
+                      value={senderEmail}
+                      onChange={(e) => setSenderEmail(e.target.value)}
+                      placeholder="nombre@ejemplo.com"
+                      className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-950/70 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    Tipo de encargo
+                  </label>
+                  <input
+                    type="text"
+                    value={inquiryType}
+                    onChange={(e) => setInquiryType(e.target.value)}
+                    placeholder="Ej. Sesión editorial, Campaña, Evento, Retrato..."
+                    className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm outline-none transition-colors focus:border-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-950/70 dark:text-white"
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    Mensaje
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Fechas aproximadas, idea o consulta..."
+                    className="rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-sm leading-relaxed outline-none transition-colors focus:border-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-950/70 dark:text-white"
+                  />
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-8 py-3.5 text-sm font-medium text-white transition-all hover:bg-(--visora-accent) dark:bg-white dark:text-neutral-950 dark:hover:bg-(--visora-accent) dark:hover:text-white"
+                  >
+                    <span>Enviar consulta</span>
+                    <span>→</span>
+                  </button>
+
+                  {sentNotice && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                      ✓ Se abrió tu cliente de mensajería con el mensaje listo.
+                    </span>
+                  )}
+                </div>
+              </form>
             )}
 
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-8 py-4 text-sm text-white shadow-lg shadow-neutral-900/10 transition-all duration-300 hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:shadow-black/30 dark:hover:bg-(--visora-accent) dark:hover:text-white"
-              >
-                <WhatsAppIcon />
-                Escríbeme por WhatsApp
-              </a>
-            )}
+            {/* Botones rápidos de canal */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {safeInstagramUrl && (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-w-44 flex-1 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] border border-neutral-200/80 bg-white/80 px-6 py-4 text-sm font-medium text-neutral-900 transition-all duration-300 hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-900/80 dark:text-white dark:hover:border-(--visora-accent)"
+                >
+                  <InstagramIcon />
+                  Instagram
+                </a>
+              )}
 
-            {settings.privacy.showEmail && emailUrl && (
-              <a
-                href={emailUrl}
-                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] bg-neutral-900 px-8 py-4 text-sm text-white shadow-lg shadow-neutral-900/10 transition-all duration-300 hover:bg-(--visora-accent) dark:bg-[#F5F3FF] dark:text-black dark:shadow-black/30 dark:hover:bg-(--visora-accent) dark:hover:text-white"
-              >
-                <EnvelopeIcon />
-                Escríbeme un correo
-              </a>
-            )}
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-w-44 flex-1 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] border border-neutral-200/80 bg-white/80 px-6 py-4 text-sm font-medium text-neutral-900 transition-all duration-300 hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-900/80 dark:text-white dark:hover:border-(--visora-accent)"
+                >
+                  <WhatsAppIcon />
+                  WhatsApp
+                </a>
+              )}
+
+              {settings.privacy.showEmail && emailUrl && (
+                <a
+                  href={emailUrl}
+                  className="inline-flex min-w-44 flex-1 items-center justify-center gap-2 rounded-[var(--visora-btn-radius)] border border-neutral-200/80 bg-white/80 px-6 py-4 text-sm font-medium text-neutral-900 transition-all duration-300 hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-neutral-800 dark:bg-neutral-900/80 dark:text-white dark:hover:border-(--visora-accent)"
+                >
+                  <EnvelopeIcon />
+                  Correo directo
+                </a>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-6 md:items-end md:text-right">
+          {/* Columna derecha: Datos y Redes */}
+          <div className="flex flex-col gap-6 lg:col-span-5 lg:items-end lg:text-right">
             {settings.privacy.showLocation && profile.location && (
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
                   Ubicación
                 </p>
 
-                <p className="mt-2 text-sm text-neutral-600 dark:text-[#C9C4D8]">
+                <p className="mt-2 text-base text-neutral-700 dark:text-neutral-200">
                   {profile.location}
                 </p>
               </div>
@@ -161,13 +287,13 @@ function ContactPage() {
 
             {settings.privacy.showEmail && profile.email && (
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
                   Email
                 </p>
 
                 <a
                   href={`mailto:${profile.email}`}
-                  className="mt-2 inline-block text-sm text-neutral-600 transition-colors hover:text-(--visora-accent) dark:text-[#C9C4D8]"
+                  className="mt-2 inline-block text-base text-neutral-700 transition-colors hover:text-(--visora-accent) dark:text-neutral-200"
                 >
                   {profile.email}
                 </a>
@@ -176,7 +302,7 @@ function ContactPage() {
 
             {socials.map((link) => (
               <div key={link.platform}>
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-[#6F6A80]">
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
                   {socialLabel(link.platform)}
                 </p>
 
@@ -184,7 +310,7 @@ function ContactPage() {
                   href={socialUrl(link.platform, link.handle)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 block text-sm text-neutral-600 transition-colors hover:text-(--visora-accent) dark:text-[#C9C4D8]"
+                  className="mt-2 block text-base text-neutral-700 transition-colors hover:text-(--visora-accent) dark:text-neutral-200"
                 >
                   {link.handle}
                 </a>
@@ -194,11 +320,13 @@ function ContactPage() {
         </div>
       </div>
 
-      {admin && (
-        <EditContactModal
-          open={contactOpen}
-          onClose={() => setContactOpen(false)}
-        />
+      {admin && contactOpen && (
+        <Suspense fallback={null}>
+          <EditContactModal
+            open={contactOpen}
+            onClose={() => setContactOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

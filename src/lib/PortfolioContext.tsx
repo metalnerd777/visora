@@ -9,6 +9,8 @@ import type {
   SiteTexts,
   BlogPost,
   SiteSettings,
+  HeroConfig,
+  ContactConfig,
 } from "../types/portfolio";
 
 export interface PortfolioContextType {
@@ -18,6 +20,8 @@ export interface PortfolioContextType {
   siteTexts: SiteTexts;
   blogPosts: BlogPost[];
   settings: SiteSettings;
+  heroConfig: HeroConfig;
+  contactConfig: ContactConfig;
   initialized: boolean;
   initMode: InitMode | null;
   initialize: (mode: InitMode) => void;

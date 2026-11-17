@@ -16,16 +16,28 @@ function formatDate(date: string): string {
   });
 }
 
+function getReadingTime(blocks?: BlogPost["blocks"]): number {
+  if (!blocks || blocks.length === 0) return 2;
+  let wordCount = 0;
+  for (const block of blocks) {
+    if (block.type === "text" && block.text) {
+      wordCount += block.text.trim().split(/\s+/).length;
+    }
+  }
+  return Math.max(2, Math.ceil(wordCount / 180));
+}
+
 function BlogCard({ post }: BlogCardProps) {
   const navigate = useNavigate();
+  const readingMinutes = getReadingTime(post.blocks);
 
   return (
     <button
       type="button"
       onClick={() => navigate(`/blog/${post.slug}`)}
-      className="group text-left"
+      className="group relative block w-full text-left cursor-pointer"
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-3xl">
+      <div className="zoom-frame aspect-[16/10] rounded-3xl">
         {post.cover ? (
           <>
             <img
@@ -36,31 +48,43 @@ function BlogCard({ post }: BlogCardProps) {
               style={{
                 objectPosition: `${post.coverFocusX ?? 50}% ${post.coverFocusY ?? 50}%`,
               }}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+              className="zoom-image"
             />
 
-            {/* Fecha en pill de cristal */}
-            <p className="absolute left-4 top-4 rounded-full bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.15em] text-white/90 backdrop-blur-md">
-              {formatDate(post.date)}
-            </p>
+            <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />
+
+            {/* Fecha y tiempo de lectura */}
+            <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2">
+              <p className="rounded-full bg-neutral-950/70 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                {formatDate(post.date)}
+              </p>
+            </div>
           </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-(--visora-accent)/10 p-6 text-center transition-colors group-hover:bg-(--visora-accent)/15">
-            <h3 className="text-2xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] md:text-3xl">
+          <div className="flex h-full w-full items-center justify-center bg-(--visora-accent)/10 p-8 text-center transition-colors group-hover:bg-(--visora-accent)/15">
+            <h3 className="text-2xl font-light tracking-tight text-neutral-900 dark:text-white md:text-3xl">
               {post.title}
             </h3>
           </div>
         )}
       </div>
 
-      <div className="mt-6">
-        <h3 className="text-xl font-light tracking-tight text-neutral-900 transition-colors group-hover:text-(--visora-accent) dark:text-[#F5F3FF] md:text-2xl">
+      <div className="mt-5 px-1">
+        <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-(--visora-accent)">
+          <span>Ensayo</span>
+          <span>·</span>
+          <span>{readingMinutes} min de lectura</span>
+        </div>
+
+        <h3 className="mt-1.5 text-2xl font-light tracking-tight text-neutral-900 transition-colors duration-300 group-hover:text-(--visora-accent) dark:text-white md:text-2xl">
           {post.title}
         </h3>
 
-        <p className="mt-3 leading-relaxed text-neutral-500 dark:text-[#A8A3B8]">
-          {post.excerpt}
-        </p>
+        {post.excerpt && (
+          <p className="mt-2 line-clamp-2 leading-relaxed text-neutral-600 dark:text-neutral-400 text-sm">
+            {post.excerpt}
+          </p>
+        )}
       </div>
     </button>
   );
