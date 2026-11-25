@@ -110,6 +110,29 @@ function DocumentHead() {
     }
 
     setLink("canonical", canon ? canon.replace(/\/+/g, "/") : null);
+
+    // Google Analytics 4 (si el usuario ingresó su ID de medición G-XXXXX)
+    const analyticsId = settings.seo.analyticsId?.trim();
+    if (analyticsId && !isLocalhost && /^G-[A-Z0-9]+$/i.test(analyticsId)) {
+      let script = document.getElementById("visora-gtag") as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "visora-gtag";
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
+        document.head.appendChild(script);
+
+        const inline = document.createElement("script");
+        inline.id = "visora-gtag-inline";
+        inline.innerHTML = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${analyticsId}');
+        `;
+        document.head.appendChild(inline);
+      }
+    }
   }, [settings, pageTitle, pageDescription, pageOgImage, ogType, path]);
 
   return null;

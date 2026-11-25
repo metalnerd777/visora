@@ -14,6 +14,28 @@ export interface SocialLink {
   handle: string;
 }
 
+export interface ClientItem {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  url?: string;
+}
+
+export interface TestimonialItem {
+  id: string;
+  quote: string;
+  author: string;
+  role?: string;
+  company?: string;
+  avatarUrl?: string;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface PortfolioProfile {
   name: string;
   profession: string;
@@ -40,6 +62,11 @@ export interface PortfolioProfile {
   email: string;
   location: string;
   socialLinks: SocialLink[];
+
+  clients?: ClientItem[];
+  testimonials?: TestimonialItem[];
+  dossierUrl?: string;
+  dossierLabel?: string;
 }
 
 export interface Photo {
@@ -91,6 +118,8 @@ export interface ContactConfig {
   whatsappPhone?: string;
   whatsappMessage?: string;
   showForm?: boolean;
+  faqs?: FaqItem[];
+  showFaqs?: boolean;
 }
 
 export interface SiteTexts {
@@ -149,6 +178,7 @@ export interface SiteSettings {
     description: string;
     ogImage: string;
     noindex: boolean;
+    analyticsId?: string;
   };
   appearance: {
     theme: ThemeId;

@@ -29,13 +29,17 @@ import { profile as defaultProfile } from "../../../data/portfolio";
 
 import { isNonEmpty, sanitizeText } from "../../../lib/validation";
 
-import type { PortfolioProfile } from "../../../types/portfolio";
+import type { ClientItem, PortfolioProfile, TestimonialItem } from "../../../types/portfolio";
 
 interface AboutConfig {
   title: string;
   description: string;
   image?: string;
   aspect: number | null;
+  dossierUrl?: string;
+  dossierLabel?: string;
+  clients: ClientItem[];
+  testimonials: TestimonialItem[];
 }
 
 const IMAGE_FORMATS: { label: string; value: number | null }[] = [
@@ -65,6 +69,10 @@ function loadAboutData(): AboutConfig {
     description: toSafeHtml(stored.description ?? profile.aboutDescription),
     image: stored.image ?? profile.aboutImage,
     aspect: savedAspect === undefined ? 4 / 5 : savedAspect,
+    dossierUrl: profile.dossierUrl ?? "",
+    dossierLabel: profile.dossierLabel ?? "Descargar Dossier & Tarifas (PDF)",
+    clients: profile.clients ? [...profile.clients] : [],
+    testimonials: profile.testimonials ? [...profile.testimonials] : [],
   };
 }
 
@@ -228,6 +236,10 @@ function EditAboutModal({
         aboutDescription: description,
         aboutImage: image,
         aboutImageAspect: config.aspect,
+        dossierUrl: config.dossierUrl?.trim() || undefined,
+        dossierLabel: config.dossierLabel?.trim() || undefined,
+        clients: config.clients,
+        testimonials: config.testimonials,
       });
 
       setSource(image);
@@ -444,6 +456,197 @@ function EditAboutModal({
                 </p>
               )}
             </div>
+          </div>
+        </AboutSection>
+
+        {/* Dossier descargable */}
+        <AboutSection
+          title="Dossier & Tarifas (PDF)"
+          description="Enlaza tu dossier o PDF de tarifas (Dropbox, Google Drive, Cloudinary u otro servicio de alojamiento)."
+        >
+          <div className="flex flex-col gap-4">
+            <Field
+              label="URL del archivo PDF"
+              value={config.dossierUrl ?? ""}
+              onChange={(v) => update({ dossierUrl: v })}
+              placeholder="https://ejemplo.com/dossier.pdf"
+            />
+            <Field
+              label="Texto del botón"
+              value={config.dossierLabel ?? ""}
+              onChange={(v) => update({ dossierLabel: v })}
+              placeholder="Descargar Dossier & Tarifas (PDF)"
+            />
+          </div>
+        </AboutSection>
+
+        {/* Marcas y Clientes Destacados */}
+        <AboutSection
+          title="Clientes y Publicaciones"
+          description="Marcas, revistas o clientes con los que has colaborado para generar confianza."
+        >
+          <div className="flex flex-col gap-3">
+            {config.clients.map((client, idx) => (
+              <div
+                key={client.id}
+                className="flex items-center gap-3 rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 dark:border-[#2A273F] dark:bg-white/5"
+              >
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={client.name}
+                    onChange={(e) => {
+                      const next = [...config.clients];
+                      next[idx] = { ...next[idx], name: e.target.value };
+                      update({ clients: next });
+                    }}
+                    placeholder="Nombre del cliente o revista"
+                    className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                  />
+                  <input
+                    type="url"
+                    value={client.url ?? ""}
+                    onChange={(e) => {
+                      const next = [...config.clients];
+                      next[idx] = { ...next[idx], url: e.target.value };
+                      update({ clients: next });
+                    }}
+                    placeholder="https://sitio.com (opcional)"
+                    className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    update({
+                      clients: config.clients.filter((_, i) => i !== idx),
+                    });
+                  }}
+                  className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  title="Eliminar cliente"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                update({
+                  clients: [
+                    ...config.clients,
+                    { id: `c-${Date.now()}`, name: "", url: "" },
+                  ],
+                });
+              }}
+              className="mt-1 self-start rounded-xl border border-dashed border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#2A273F] dark:text-[#A8A3B8]"
+            >
+              + Agregar cliente o marca
+            </button>
+          </div>
+        </AboutSection>
+
+        {/* Testimonios */}
+        <AboutSection
+          title="Testimonios de Clientes"
+          description="Citas de directores de arte, clientes o colaboradores sobre tu trabajo."
+        >
+          <div className="flex flex-col gap-4">
+            {config.testimonials.map((t, idx) => (
+              <div
+                key={t.id}
+                className="flex flex-col gap-3 rounded-2xl border border-neutral-200/70 bg-neutral-50/50 p-4 dark:border-[#2A273F] dark:bg-white/5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-semibold text-neutral-400">
+                    Testimonio #{idx + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update({
+                        testimonials: config.testimonials.filter(
+                          (_, i) => i !== idx,
+                        ),
+                      });
+                    }}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+
+                <textarea
+                  value={t.quote}
+                  onChange={(e) => {
+                    const next = [...config.testimonials];
+                    next[idx] = { ...next[idx], quote: e.target.value };
+                    update({ testimonials: next });
+                  }}
+                  placeholder="&ldquo;Cita del cliente sobre tu trabajo...&rdquo;"
+                  rows={2}
+                  className="w-full rounded-lg border border-neutral-200 bg-white p-2.5 text-xs italic outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                />
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <input
+                    type="text"
+                    value={t.author}
+                    onChange={(e) => {
+                      const next = [...config.testimonials];
+                      next[idx] = { ...next[idx], author: e.target.value };
+                      update({ testimonials: next });
+                    }}
+                    placeholder="Nombre (ej. María López)"
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={t.role ?? ""}
+                    onChange={(e) => {
+                      const next = [...config.testimonials];
+                      next[idx] = { ...next[idx], role: e.target.value };
+                      update({ testimonials: next });
+                    }}
+                    placeholder="Cargo (ej. Directora Creativa)"
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={t.company ?? ""}
+                    onChange={(e) => {
+                      const next = [...config.testimonials];
+                      next[idx] = { ...next[idx], company: e.target.value };
+                      update({ testimonials: next });
+                    }}
+                    placeholder="Empresa (ej. Studio Norte)"
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                  />
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                update({
+                  testimonials: [
+                    ...config.testimonials,
+                    {
+                      id: `t-${Date.now()}`,
+                      quote: "",
+                      author: "",
+                      role: "",
+                      company: "",
+                    },
+                  ],
+                });
+              }}
+              className="mt-1 self-start rounded-xl border border-dashed border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#2A273F] dark:text-[#A8A3B8]"
+            >
+              + Agregar testimonio
+            </button>
           </div>
         </AboutSection>
       </div>

@@ -614,6 +614,18 @@ function SettingsPage() {
                     checked={settings.seo.noindex}
                     onChange={(v) => patchGroup("seo", { noindex: v })}
                   />
+
+                  <div className="border-t border-neutral-100 pt-5 dark:border-[#27243A]">
+                    <Field
+                      label="ID de Google Analytics 4 (opcional)"
+                      value={settings.seo.analyticsId ?? ""}
+                      onChange={(v) => patchGroup("seo", { analyticsId: v })}
+                      placeholder="G-XXXXXXXXXX"
+                    />
+                    <p className="mt-1 text-xs text-neutral-400 dark:text-[#6F6A80]">
+                      Permite medir visitas y rendimiento en tiempo real en producción.
+                    </p>
+                  </div>
                 </FieldGroup>
               </SectionCard>
             )}

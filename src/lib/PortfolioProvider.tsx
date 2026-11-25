@@ -5,7 +5,7 @@ import {
   hasBeenInitialized,
   initializePortfolio,
 } from "./initializePortfolio";
-import type { InitMode } from "./initializePortfolio";
+import type { InitMode, InitialSetupData } from "./initializePortfolio";
 import PortfolioContext from "./PortfolioContext";
 
 import {
@@ -56,6 +56,24 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
   whatsappPhone: "",
   whatsappMessage: "Hola, me interesa tu trabajo. ¿Podemos hablar?",
   showForm: true,
+  showFaqs: true,
+  faqs: [
+    {
+      id: "faq-1",
+      question: "¿Cuál es tu proceso de trabajo y plazos de entrega?",
+      answer: "Tras definir el concepto y realizar la sesión, entrego una selección inicial en 48 horas para revisión. La galería final editada en alta resolución se entrega en un plazo de 7 a 14 días laborables.",
+    },
+    {
+      id: "faq-2",
+      question: "¿Realizas encargos fuera de tu ciudad o en el extranjero?",
+      answer: "Sí, estoy disponible para proyectos editoriales, documentales y comerciales a nivel nacional e internacional. Los viáticos y logística se detallan de forma transparente en el presupuesto.",
+    },
+    {
+      id: "faq-3",
+      question: "¿Qué derechos de uso comercial se incluyen?",
+      answer: "Todas las entregas comerciales incluyen licencia de uso para medios digitales, web y redes sociales. Para campañas impresas de gran tiraje o publicidad masiva, acordamos la cesión adecuada.",
+    },
+  ],
 };
 
 interface PortfolioState {
@@ -277,10 +295,13 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(() => setState(readState()), []);
 
-  const initialize = useCallback((mode: InitMode) => {
-    initializePortfolio(mode);
-    setState(readState());
-  }, []);
+  const initialize = useCallback(
+    (mode: InitMode, setupData?: InitialSetupData) => {
+      initializePortfolio(mode, setupData);
+      setState(readState());
+    },
+    [],
+  );
 
   const exitDemo = useCallback(() => {
     if (!exitDemoMode()) return false;

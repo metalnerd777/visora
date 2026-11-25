@@ -32,6 +32,11 @@ export const emptyProfile: PortfolioProfile = {
   location: "",
 
   socialLinks: [],
+
+  clients: [],
+  testimonials: [],
+  dossierUrl: "",
+  dossierLabel: "Descargar Dossier (PDF)",
 };
 
 export const emptySiteTexts: SiteTexts = {

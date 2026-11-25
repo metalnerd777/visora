@@ -144,6 +144,79 @@ function EditorialAbout() {
             </div>
           </aside>
         </div>
+
+        {/* Marcas y Clientes Destacados */}
+        {profile.clients && profile.clients.length > 0 && (
+          <div className="mt-24 border-t-2 border-black/20 pt-16 dark:border-[#F3EFE6]/20">
+            <div className="flex items-baseline justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50 dark:text-[#F3EFE6]/50">
+                Archivo & Publicaciones
+              </p>
+              <span className="text-xs uppercase tracking-[0.2em] text-black/40 dark:text-[#F3EFE6]/40">
+                Selección de Clientes
+              </span>
+            </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+              {profile.clients.map((client, idx) => (
+                <div
+                  key={client.id}
+                  className="flex flex-col justify-between border-t border-[#1C1C1F]/15 py-4 dark:border-[#E9E6DF]/15"
+                >
+                  <span className="text-[10px] font-mono text-black/30 dark:text-[#F3EFE6]/30">
+                    {(idx + 1).toString().padStart(2, "0")}
+                  </span>
+                  {client.url ? (
+                    <a
+                      href={client.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 text-sm font-medium uppercase tracking-wider text-black/85 transition-colors hover:text-black hover:underline dark:text-[#F3EFE6]/85 dark:hover:text-white"
+                    >
+                      {client.name}
+                    </a>
+                  ) : (
+                    <span className="mt-3 text-sm font-medium uppercase tracking-wider text-black/85 dark:text-[#F3EFE6]/85">
+                      {client.name}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Testimonios */}
+        {profile.testimonials && profile.testimonials.length > 0 && (
+          <div className="mt-20 border-t-2 border-black/20 pt-16 dark:border-[#F3EFE6]/20">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50 dark:text-[#F3EFE6]/50">
+              Críticas & Reseñas
+            </p>
+
+            <div className="mt-8 grid gap-10 md:grid-cols-2">
+              {profile.testimonials.map((t) => (
+                <blockquote
+                  key={t.id}
+                  className="flex flex-col justify-between border-l-2 border-black/30 pl-6 dark:border-[#F3EFE6]/30"
+                >
+                  <p className="text-base italic leading-relaxed text-black/75 dark:text-[#F3EFE6]/75">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <footer className="mt-6">
+                    <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-black dark:text-[#F3EFE6]">
+                      {t.author}
+                    </span>
+                    {(t.role || t.company) && (
+                      <span className="block text-xs uppercase tracking-[0.15em] text-black/40 dark:text-[#F3EFE6]/40">
+                        {[t.role, t.company].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </footer>
+                </blockquote>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {admin && aboutOpen && (
@@ -199,6 +272,20 @@ function AboutBody() {
         html={profile.aboutDescription}
         className="about-rich about-rich--editorial about-rich--dropcap text-sm leading-loose text-black/70 dark:text-[#F3EFE6]/70 md:text-lg md:leading-loose"
       />
+
+      {profile.dossierUrl && (
+        <div className="mt-10 border-t border-black/15 pt-6 dark:border-[#F3EFE6]/15">
+          <a
+            href={profile.dossierUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 border-2 border-black/80 px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-black transition-all hover:bg-black hover:text-white dark:border-[#F3EFE6]/80 dark:text-[#F3EFE6] dark:hover:bg-[#F3EFE6] dark:hover:text-black"
+          >
+            <span>↓</span>
+            <span>{profile.dossierLabel || "Descargar Dossier & Tarifas (PDF)"}</span>
+          </a>
+        </div>
+      )}
     </article>
   );
 }

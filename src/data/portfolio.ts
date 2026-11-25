@@ -38,6 +38,34 @@ export const profile: PortfolioProfile = {
     { platform: "instagram", handle: "@alexmorgan" },
     { platform: "behance", handle: "alexmorgan" },
   ],
+
+  clients: [
+    { id: "c1", name: "Vogue Latinoamérica", url: "https://vogue.mx" },
+    { id: "c2", name: "Architectural Digest", url: "https://admagazine.com" },
+    { id: "c3", name: "Sony Alpha Imaging", url: "https://sony.com" },
+    { id: "c4", name: "Kinfolk Magazine", url: "https://kinfolk.com" },
+    { id: "c5", name: "Studio Minimal", url: "https://example.com" },
+  ],
+
+  testimonials: [
+    {
+      id: "t1",
+      quote: "Alex tiene una sensibilidad única para captar la luz natural y la espontaneidad sin artificios. Trabajar con él fue la mejor decisión para nuestra campaña editorial.",
+      author: "Camila Valenzuela",
+      role: "Directora de Arte",
+      company: "Estudio Austral",
+    },
+    {
+      id: "t2",
+      quote: "El nivel de detalle y entrega superó todas nuestras expectativas. Las fotografías tienen un peso cinematográfico innegable.",
+      author: "Matías Correa",
+      role: "Fundador",
+      company: "Atelier 94",
+    },
+  ],
+
+  dossierUrl: "https://example.com/alex-morgan-dossier-2026.pdf",
+  dossierLabel: "Descargar Dossier & Tarifas (PDF)",
 };
 
 export const siteTexts: SiteTexts = {

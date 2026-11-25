@@ -50,6 +50,7 @@ function EditorialHome() {
   const [featuredOpen, setFeaturedOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const visibleProjects = useMemo(
     () =>
@@ -73,15 +74,28 @@ function EditorialHome() {
       ? activeCategory
       : "all";
 
-  const filteredProjects = useMemo(
-    () =>
+  const filteredProjects = useMemo(() => {
+    let list =
       effectiveCategory === "all"
         ? visibleProjects
         : visibleProjects.filter(
             (p) => p.category?.trim() === effectiveCategory,
-          ),
-    [visibleProjects, effectiveCategory],
-  );
+          );
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.client && p.client.toLowerCase().includes(q)) ||
+          (p.year && p.year.includes(q)),
+      );
+    }
+
+    return list;
+  }, [visibleProjects, effectiveCategory, searchQuery]);
 
   useEffect(() => {
     const target = (location.state as { scrollTo?: string } | null)?.scrollTo;
@@ -197,59 +211,98 @@ function EditorialHome() {
             />
           )}
 
-          {/* Filtros de categoría tipo índice editorial */}
-          {categories.length > 1 && (
-            <div className="mb-8 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveCategory("all")}
-                className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
-                  effectiveCategory === "all"
-                    ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
-                    : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
-                }`}
-              >
-                Todos ({visibleProjects.length})
-              </button>
-              {categories.map((cat) => {
-                const count = visibleProjects.filter(
-                  (p) => p.category?.trim() === cat,
-                ).length;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setActiveCategory(cat)}
-                    className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
-                      effectiveCategory === cat
-                        ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
-                        : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
-                    }`}
-                  >
-                    {cat} ({count})
-                  </button>
-                );
-              })}
+          {/* Filtros de categoría y buscador editorial */}
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {categories.length > 1 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("all")}
+                  className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
+                    effectiveCategory === "all"
+                      ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
+                      : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
+                  }`}
+                >
+                  Todos ({visibleProjects.length})
+                </button>
+                {categories.map((cat) => {
+                  const count = visibleProjects.filter(
+                    (p) => p.category?.trim() === cat,
+                  ).length;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setActiveCategory(cat)}
+                      className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors ${
+                        effectiveCategory === cat
+                          ? "border-black bg-black text-white dark:border-[#F3EFE6] dark:bg-[#F3EFE6] dark:text-black"
+                          : "border-black/20 text-black/60 hover:border-black hover:text-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6]/60 dark:hover:border-[#F3EFE6] dark:hover:text-white"
+                      }`}
+                    >
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            ) : <div />}
+
+            <div className="relative w-full sm:w-60">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="BUSCAR EN ARCHIVO..."
+                className="w-full border border-black/20 bg-transparent py-1.5 pl-3 pr-7 font-mono text-[11px] uppercase tracking-wider text-black placeholder:text-black/30 outline-none transition-colors focus:border-black dark:border-[#F3EFE6]/20 dark:text-[#F3EFE6] dark:placeholder:text-[#F3EFE6]/30 dark:focus:border-white"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1.5 text-xs text-black/40 hover:text-black dark:text-[#F3EFE6]/40 dark:hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="divide-y divide-[#1C1C1F]/15 border-t-2 border-double border-[#1C1C1F]/20 dark:divide-[#E9E6DF]/15 dark:border-[#E9E6DF]/20">
-            {filteredProjects.map((project, index) => (
-              <EdProjectRow
-                key={project.id}
-                index={index + 1}
-                cover={project.cover}
-                title={project.title}
-                category={project.category}
-                year={project.year}
-                visibility={project.visibility}
-                hasPin={Boolean(project.pin)}
-                count={project.photos.length}
-                nounSingular={siteTexts.workNounSingular}
-                nounPlural={siteTexts.workNounPlural}
-                slug={project.slug}
-              />
-            ))}
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map((project, index) => (
+                <EdProjectRow
+                  key={project.id}
+                  index={index + 1}
+                  cover={project.cover}
+                  title={project.title}
+                  category={project.category}
+                  year={project.year}
+                  visibility={project.visibility}
+                  hasPin={Boolean(project.pin)}
+                  count={project.photos.length}
+                  nounSingular={siteTexts.workNounSingular}
+                  nounPlural={siteTexts.workNounPlural}
+                  slug={project.slug}
+                />
+              ))
+            ) : (
+              <div className="py-16 text-center">
+                <p className="font-mono text-xs uppercase tracking-widest text-black/50 dark:text-[#F3EFE6]/50">
+                  Sin resultados para &ldquo;{searchQuery}&rdquo;
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveCategory("all");
+                  }}
+                  className="mt-3 text-[11px] uppercase tracking-widest underline text-black dark:text-[#F3EFE6]"
+                >
+                  Restablecer índice
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

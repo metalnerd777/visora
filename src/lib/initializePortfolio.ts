@@ -4,9 +4,20 @@ import { PROFILE_VERSION } from "../data/portfolio";
 import { SETTINGS_VERSION } from "../data/settings";
 import { loadJSON, saveJSON } from "./storage";
 
-import type { SiteSettings } from "../types/portfolio";
+import type { SiteSettings, ThemeId, ThemeMode } from "../types/portfolio";
 
 export type InitMode = "demo" | "empty";
+
+export interface InitialSetupData {
+  brandName?: string;
+  profession?: string;
+  location?: string;
+  email?: string;
+  whatsappPhone?: string;
+  theme?: ThemeId;
+  mode?: ThemeMode;
+  primaryColor?: string;
+}
 
 const INIT_MODE_KEY = "visora-init-mode";
 const LEGACY_INITIALIZED_KEY = "visora-initialized";
@@ -104,7 +115,10 @@ function loadAppearancePreferences(): Partial<SiteSettings["appearance"]> | null
  * Inicializa Visora con el modo elegido.
  * Escribe solo claves ausentes: nunca reemplaza datos existentes.
  */
-export function initializePortfolio(mode: InitMode): void {
+export function initializePortfolio(
+  mode: InitMode,
+  setupData?: InitialSetupData,
+): void {
   try {
     // Nunca se inicializa por encima de datos existentes ni de una elección
     // previa: ambas cosas indican que Visora ya fue configurada.
@@ -126,9 +140,55 @@ export function initializePortfolio(mode: InitMode): void {
             },
           },
         }
-      : source.settings;
+      : { ...source.settings };
 
-    writeIfAbsent("visora-admin-profile", source.profile);
+    const profile = { ...source.profile };
+
+    if (mode === "empty" && setupData) {
+      if (setupData.brandName?.trim()) {
+        profile.name = setupData.brandName.trim();
+        settings.general = {
+          ...settings.general,
+          brandName: setupData.brandName.trim(),
+        };
+      }
+      if (setupData.profession?.trim()) {
+        profile.profession = setupData.profession.trim();
+        settings.general = {
+          ...settings.general,
+          profession: setupData.profession.trim(),
+        };
+      }
+      if (setupData.location?.trim()) {
+        profile.location = setupData.location.trim();
+      }
+      if (setupData.email?.trim()) {
+        profile.email = setupData.email.trim();
+      }
+      if (setupData.theme) {
+        settings.appearance = {
+          ...settings.appearance,
+          theme: setupData.theme,
+        };
+      }
+      if (setupData.mode) {
+        settings.appearance = {
+          ...settings.appearance,
+          mode: setupData.mode,
+        };
+      }
+      if (setupData.primaryColor) {
+        settings.appearance = {
+          ...settings.appearance,
+          primaryColor: setupData.primaryColor,
+        };
+      }
+
+      // Auto-iniciar sesión de administrador para el comprador
+      writeStorage("visora-admin-auth", "true");
+    }
+
+    writeIfAbsent("visora-admin-profile", profile);
     writeIfAbsent("visora-admin-profile-version", PROFILE_VERSION);
     writeIfAbsent("visora-admin-projects", source.projects);
     writeIfAbsent("visora-admin-featured", []);
@@ -138,6 +198,16 @@ export function initializePortfolio(mode: InitMode): void {
       ...settings,
       version: SETTINGS_VERSION,
     });
+
+    if (setupData?.whatsappPhone?.trim() || setupData?.email?.trim()) {
+      writeIfAbsent("visora-admin-contact", {
+        emailSubject: "Contacto desde el portfolio",
+        whatsappPhone: setupData?.whatsappPhone?.trim() ?? "",
+        whatsappMessage: "Hola, me interesa tu trabajo. ¿Podemos hablar?",
+        showForm: true,
+        showFaqs: true,
+      });
+    }
 
     writeStorage(INIT_MODE_KEY, mode);
     writeStorage(LEGACY_INITIALIZED_KEY, "true");

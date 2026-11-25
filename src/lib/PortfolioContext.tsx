@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { InitMode } from "./initializePortfolio";
+import type { InitMode, InitialSetupData } from "./initializePortfolio";
 
 import type {
   PortfolioProfile,
@@ -24,7 +24,7 @@ export interface PortfolioContextType {
   contactConfig: ContactConfig;
   initialized: boolean;
   initMode: InitMode | null;
-  initialize: (mode: InitMode) => void;
+  initialize: (mode: InitMode, setupData?: InitialSetupData) => void;
   exitDemo: () => boolean;
   refresh: () => void;
   setBlogPosts: (posts: BlogPost[]) => void;

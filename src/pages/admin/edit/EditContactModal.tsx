@@ -13,7 +13,7 @@ import { profile as defaultProfile } from "../../../data/portfolio";
 
 import { isEmail, isNonEmpty, sanitizeText } from "../../../lib/validation";
 
-import type { PortfolioProfile } from "../../../types/portfolio";
+import type { FaqItem, PortfolioProfile } from "../../../types/portfolio";
 
 interface ContactFormState {
   title: string;
@@ -24,6 +24,8 @@ interface ContactFormState {
   whatsappPhone: string;
   whatsappMessage: string;
   showForm: boolean;
+  faqs: FaqItem[];
+  showFaqs: boolean;
 }
 
 const WHATSAPP_MESSAGE_MAX = 120;
@@ -45,6 +47,8 @@ function loadContact(): ContactFormState {
     whatsappPhone?: string;
     whatsappMessage?: string;
     showForm?: boolean;
+    faqs?: FaqItem[];
+    showFaqs?: boolean;
   }>("visora-admin-contact", {});
 
   return {
@@ -58,6 +62,8 @@ function loadContact(): ContactFormState {
       existing.whatsappMessage ??
       "Hola, me interesa tu trabajo. ¿Podemos hablar?",
     showForm: existing.showForm ?? true,
+    faqs: existing.faqs ?? [],
+    showFaqs: existing.showFaqs ?? true,
   };
 }
 
@@ -111,6 +117,8 @@ function EditContactModal({
       whatsappPhone: phoneDigits ? `+${phoneDigits}` : "",
       whatsappMessage: sanitizeText(config.whatsappMessage).trim(),
       showForm: config.showForm,
+      faqs: config.faqs,
+      showFaqs: config.showFaqs,
     });
 
     const profile = loadJSON<PortfolioProfile>(
@@ -309,6 +317,92 @@ function EditContactModal({
             links={settings.socials}
             onChange={(socials) => setSettings({ ...settings, socials })}
           />
+        </div>
+
+        {/* Sección de Preguntas Frecuentes */}
+        <div className="flex flex-col gap-4 border-t border-neutral-100 pt-5 dark:border-[#27243A]">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium">Preguntas Frecuentes (FAQ)</label>
+              <p className="text-xs text-neutral-400 dark:text-[#6F6A80]">
+                Responde dudas habituales sobre tus tarifas, plazos y metodología.
+              </p>
+            </div>
+            <Toggle
+              label="Mostrar en la web"
+              checked={config.showFaqs}
+              onChange={(v) => update({ showFaqs: v })}
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {config.faqs.map((faq, idx) => (
+              <div
+                key={faq.id}
+                className="flex flex-col gap-2 rounded-2xl border border-neutral-200/70 bg-neutral-50/50 p-4 dark:border-[#2A273F] dark:bg-white/5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-neutral-400">
+                    Pregunta #{idx + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update({
+                        faqs: config.faqs.filter((_, i) => i !== idx),
+                      });
+                    }}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  value={faq.question}
+                  onChange={(e) => {
+                    const next = [...config.faqs];
+                    next[idx] = { ...next[idx], question: e.target.value };
+                    update({ faqs: next });
+                  }}
+                  placeholder="Pregunta (ej. ¿Cuál es el plazo de entrega?)"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                />
+
+                <textarea
+                  value={faq.answer}
+                  onChange={(e) => {
+                    const next = [...config.faqs];
+                    next[idx] = { ...next[idx], answer: e.target.value };
+                    update({ faqs: next });
+                  }}
+                  placeholder="Respuesta detallada..."
+                  rows={2}
+                  className="rounded-lg border border-neutral-200 bg-white p-2.5 text-xs outline-none focus:border-(--visora-accent) dark:border-[#2A273F] dark:bg-[#161327] dark:text-white"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                update({
+                  faqs: [
+                    ...config.faqs,
+                    {
+                      id: `faq-${Date.now()}`,
+                      question: "",
+                      answer: "",
+                    },
+                  ],
+                });
+              }}
+              className="mt-1 self-start rounded-xl border border-dashed border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-(--visora-accent) hover:text-(--visora-accent) dark:border-[#2A273F] dark:text-[#A8A3B8]"
+            >
+              + Agregar pregunta frecuente
+            </button>
+          </div>
         </div>
       </div>
     </Modal>

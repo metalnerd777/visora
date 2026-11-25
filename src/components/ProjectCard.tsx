@@ -11,13 +11,17 @@ interface ProjectCardProps {
 
 function ProjectCard({ project }: ProjectCardProps) {
   const navigate = useNavigate();
-  const { siteTexts } = usePortfolio();
+  const { siteTexts, settings } = usePortfolio();
+  const isProtected = settings.privacy.protectImages;
 
   return (
     <button
       type="button"
       onClick={() => navigate(`/proyecto/${project.slug}`)}
-      className="group relative block w-full text-left cursor-pointer"
+      onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+      className={`group relative block w-full text-left cursor-pointer ${
+        isProtected ? "select-none" : ""
+      }`}
     >
       <div className="zoom-frame aspect-[16/10] rounded-3xl">
         <img
@@ -25,7 +29,8 @@ function ProjectCard({ project }: ProjectCardProps) {
           alt={project.title}
           loading="lazy"
           decoding="async"
-          className="zoom-image"
+          draggable={!isProtected}
+          className="zoom-image pointer-events-none"
         />
 
         {/* Velo sutil */}

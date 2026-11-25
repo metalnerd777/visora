@@ -27,6 +27,7 @@ function Home() {
   const [featuredOpen, setFeaturedOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Los visitantes solo ven los proyectos públicos; el admin ve también los ocultos
   const visibleProjects = useMemo(
@@ -52,15 +53,28 @@ function Home() {
       ? activeCategory
       : "all";
 
-  const filteredProjects = useMemo(
-    () =>
+  const filteredProjects = useMemo(() => {
+    let list =
       effectiveCategory === "all"
         ? visibleProjects
         : visibleProjects.filter(
             (p) => p.category?.trim() === effectiveCategory,
-          ),
-    [visibleProjects, effectiveCategory],
-  );
+          );
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.client && p.client.toLowerCase().includes(q)) ||
+          (p.year && p.year.includes(q)),
+      );
+    }
+
+    return list;
+  }, [visibleProjects, effectiveCategory, searchQuery]);
 
   useEffect(() => {
     const target = (location.state as { scrollTo?: string } | null)
@@ -203,48 +217,98 @@ function Home() {
             </div>
           )}
 
-          {/* Pestañas de filtro por categoría */}
-          {categories.length > 1 && (
-            <div className="mb-10 flex flex-wrap items-center gap-2">
+          {/* Filtros por categoría y barra de búsqueda rápida */}
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {categories.length > 1 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("all")}
+                  className={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] transition-all ${
+                    effectiveCategory === "all"
+                      ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-950"
+                      : "border border-neutral-200/80 bg-white/50 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
+                  }`}
+                >
+                  Todos ({visibleProjects.length})
+                </button>
+                {categories.map((cat) => {
+                  const count = visibleProjects.filter(
+                    (p) => p.category?.trim() === cat,
+                  ).length;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setActiveCategory(cat)}
+                      className={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] transition-all ${
+                        effectiveCategory === cat
+                          ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-950"
+                          : "border border-neutral-200/80 bg-white/50 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
+                      }`}
+                    >
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            ) : <div />}
+
+            {/* Buscador en vivo */}
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por serie o cliente..."
+                className="w-full rounded-full border border-neutral-200/80 bg-white/60 py-2 pl-9 pr-8 text-xs text-neutral-800 placeholder-neutral-400 outline-none backdrop-blur-sm transition-all focus:border-(--visora-accent) focus:ring-1 focus:ring-(--visora-accent)/20 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200"
+              />
+              <svg
+                className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-neutral-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="8" strokeWidth={2} />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" strokeWidth={2} />
+              </svg>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-2 text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-white"
+                  title="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grid de proyectos amplio y equilibrado o estado vacío */}
+          {filteredProjects.length > 0 ? (
+            <div className="grid gap-10 sm:grid-cols-2 lg:gap-14">
+              {filteredProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <div className="py-20 text-center">
+              <p className="text-base text-neutral-500 dark:text-neutral-400">
+                No se encontraron álbumes que coincidan con &ldquo;{searchQuery}&rdquo;
+              </p>
               <button
                 type="button"
-                onClick={() => setActiveCategory("all")}
-                className={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] transition-all ${
-                  effectiveCategory === "all"
-                    ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-950"
-                    : "border border-neutral-200/80 bg-white/50 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
-                }`}
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveCategory("all");
+                }}
+                className="mt-3 text-xs uppercase tracking-wider text-(--visora-accent) underline"
               >
-                Todos ({visibleProjects.length})
+                Restablecer filtros
               </button>
-              {categories.map((cat) => {
-                const count = visibleProjects.filter(
-                  (p) => p.category?.trim() === cat,
-                ).length;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setActiveCategory(cat)}
-                    className={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] transition-all ${
-                      effectiveCategory === cat
-                        ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-950"
-                        : "border border-neutral-200/80 bg-white/50 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
-                    }`}
-                  >
-                    {cat} ({count})
-                  </button>
-                );
-              })}
             </div>
           )}
-
-          {/* Grid de proyectos amplio y equilibrado */}
-          <div className="grid gap-10 sm:grid-cols-2 lg:gap-14">
-            {filteredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
         </div>
       </section>
 

@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useThemeShell } from "../lib/useThemeShell";
+import { usePortfolio } from "../lib/usePortfolio";
 
 import ScrollToTop from "../components/ScrollToTop";
 import CookieBanner from "../components/CookieBanner";
@@ -11,6 +13,37 @@ import type { ThemeDefinition } from "./types";
 function ThemeShell({ theme }: { theme: ThemeDefinition }) {
   const { effectiveDark, publicLocked, onToggleDarkMode } =
     useThemeShell();
+  const { settings } = usePortfolio();
+
+  useEffect(() => {
+    if (!settings.privacy.protectImages) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "IMG" ||
+          target.closest("img") ||
+          target.classList.contains("zoom-frame"))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "IMG" || target.closest("img"))) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("dragstart", handleDragStart);
+    return () => {
+      window.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("dragstart", handleDragStart);
+    };
+  }, [settings.privacy.protectImages]);
 
   const Header = theme.Header;
   const Footer = theme.Footer;

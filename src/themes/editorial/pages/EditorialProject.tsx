@@ -25,7 +25,8 @@ function isPinUnlocked(slug: string, pin?: string): boolean {
 }
 
 function EditorialProject({ project, onBack }: ProjectPageProps) {
-  const { projects, siteTexts } = usePortfolio();
+  const { projects, siteTexts, settings } = usePortfolio();
+  const isProtected = settings.privacy.protectImages;
   const admin = useAdmin();
   const [layoutMode, setLayoutMode] = useState<"masonry" | "grid">("masonry");
   const [pinInput, setPinInput] = useState("");
@@ -281,7 +282,10 @@ function EditorialProject({ project, onBack }: ProjectPageProps) {
                       key={photo.id}
                       type="button"
                       onClick={() => openViewer(photo.id)}
-                      className="zoom-frame group mb-8 block w-full break-inside-avoid border border-[#1C1C1F]/15 bg-white text-left cursor-pointer dark:border-[#E9E6DF]/15 dark:bg-[#0B0A14]"
+                      onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+                      className={`zoom-frame group mb-8 block w-full break-inside-avoid border border-[#1C1C1F]/15 bg-white text-left cursor-pointer dark:border-[#E9E6DF]/15 dark:bg-[#0B0A14] ${
+                        isProtected ? "select-none" : ""
+                      }`}
                     >
                       <div className="overflow-hidden">
                         <img
@@ -289,7 +293,8 @@ function EditorialProject({ project, onBack }: ProjectPageProps) {
                           alt={photo.title}
                           loading="lazy"
                           decoding="async"
-                          className="zoom-image h-auto"
+                          draggable={!isProtected}
+                          className="zoom-image h-auto pointer-events-none"
                         />
                       </div>
 
@@ -314,14 +319,18 @@ function EditorialProject({ project, onBack }: ProjectPageProps) {
                       key={photo.id}
                       type="button"
                       onClick={() => openViewer(photo.id)}
-                      className="zoom-frame group aspect-[4/3] bg-white text-left cursor-pointer dark:bg-[#0B0A14]"
+                      onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+                      className={`zoom-frame group aspect-[4/3] bg-white text-left cursor-pointer dark:bg-[#0B0A14] ${
+                        isProtected ? "select-none" : ""
+                      }`}
                     >
                       <img
                         src={resizeUrl(photo.url, 1600)}
                         alt={photo.title}
                         loading="lazy"
                         decoding="async"
-                        className="zoom-image"
+                        draggable={!isProtected}
+                        className="zoom-image pointer-events-none"
                       />
 
                       <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/15" />

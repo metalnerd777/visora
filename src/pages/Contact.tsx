@@ -53,6 +53,17 @@ function ContactPage() {
   const [inquiryType, setInquiryType] = useState("Proyecto / Sesión");
   const [message, setMessage] = useState("");
   const [sentNotice, setSentNotice] = useState(false);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    try {
+      void navigator.clipboard.writeText(text);
+      setCopiedItem(label);
+      setTimeout(() => setCopiedItem(null), 2500);
+    } catch {
+      // ignore
+    }
+  };
 
   const rawSocials =
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
@@ -287,9 +298,25 @@ function ContactPage() {
 
             {settings.privacy.showEmail && profile.email && (
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
-                  Email
-                </p>
+                <div className="flex items-center gap-2 lg:justify-end">
+                  <p className="font-mono text-xs uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
+                    Email
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(profile.email, "email")}
+                    className="text-xs text-neutral-400 transition-colors hover:text-(--visora-accent) dark:text-neutral-500"
+                    title="Copiar email al portapapeles"
+                  >
+                    {copiedItem === "email" ? (
+                      <span className="font-sans font-medium text-(--visora-accent)">
+                        ✓ Copiado
+                      </span>
+                    ) : (
+                      "Copiar"
+                    )}
+                  </button>
+                </div>
 
                 <a
                   href={`mailto:${profile.email}`}
@@ -318,6 +345,41 @@ function ContactPage() {
             ))}
           </div>
         </div>
+
+        {/* Acordeón de Preguntas Frecuentes */}
+        {contactConfig?.showFaqs !== false &&
+          contactConfig?.faqs &&
+          contactConfig.faqs.length > 0 && (
+            <div className="mt-24 border-t border-neutral-200/70 pt-16 dark:border-white/10">
+              <header className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.25em] text-neutral-400 dark:text-[#6F6A80]">
+                  Respuestas Rápidas
+                </p>
+                <h3 className="mt-2 text-2xl font-light tracking-tight text-neutral-900 dark:text-[#F5F3FF] sm:text-3xl">
+                  Preguntas frecuentes antes de contratar
+                </h3>
+              </header>
+
+              <div className="mt-8 divide-y divide-neutral-200/60 dark:divide-white/10">
+                {contactConfig.faqs.map((faq) => (
+                  <details
+                    key={faq.id}
+                    className="group py-5 text-left [&_summary::-webkit-details-marker]:hidden"
+                  >
+                    <summary className="flex cursor-pointer items-center justify-between text-base font-medium text-neutral-900 dark:text-neutral-100">
+                      <span>{faq.question}</span>
+                      <span className="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-xs text-neutral-500 transition-transform duration-200 group-open:rotate-45 dark:border-white/20 dark:text-neutral-400">
+                        +
+                      </span>
+                    </summary>
+                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
       </div>
 
       {admin && contactOpen && (

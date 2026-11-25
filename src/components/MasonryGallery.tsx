@@ -1,5 +1,6 @@
 import type { Photo } from "../types/portfolio";
 import { resizeUrl } from "../lib/image";
+import { usePortfolio } from "../lib/usePortfolio";
 
 interface MasonryGalleryProps {
   photos: Photo[];
@@ -48,11 +49,13 @@ function getLayout(count: number) {
 }
 
 function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
+  const { settings } = usePortfolio();
   const items = photos.slice(0, 10);
 
   if (items.length === 0) return null;
 
   const { desktopSpans, desktopCols, mobileSpans } = getLayout(items.length);
+  const isProtected = settings.privacy.protectImages;
 
   const gridStyle = `
     .masonry-grid {
@@ -80,7 +83,10 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
             key={photo.id}
             type="button"
             onClick={() => onPhotoClick(photo.id)}
-            className="masonry-item zoom-frame group min-h-0 rounded-2xl cursor-pointer"
+            onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+            className={`masonry-item zoom-frame group min-h-0 rounded-2xl cursor-pointer ${
+              isProtected ? "select-none" : ""
+            }`}
             style={{
               ["--span-desktop" as string]: desktopSpans[index],
               ["--span-mobile" as string]: mobileSpans[index],
@@ -91,7 +97,8 @@ function MasonryGallery({ photos, onPhotoClick }: MasonryGalleryProps) {
               alt={photo.title}
               loading="lazy"
               decoding="async"
-              className="zoom-image"
+              draggable={!isProtected}
+              className="zoom-image pointer-events-none"
             />
 
             <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />

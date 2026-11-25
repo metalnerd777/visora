@@ -30,7 +30,8 @@ function isPinUnlocked(slug: string, pin?: string): boolean {
 }
 
 function ProjectPage({ project, onBack }: ProjectPageProps) {
-  const { projects, siteTexts } = usePortfolio();
+  const { projects, siteTexts, settings } = usePortfolio();
+  const isProtected = settings.privacy.protectImages;
   const admin = useAdmin();
   const [layoutMode, setLayoutMode] = useState<"masonry" | "grid">("masonry");
   const [pinInput, setPinInput] = useState("");
@@ -268,14 +269,18 @@ function ProjectPage({ project, onBack }: ProjectPageProps) {
                 key={photo.id}
                 type="button"
                 onClick={() => openViewer(photo.id)}
-                className="zoom-frame group mb-6 block w-full break-inside-avoid rounded-2xl text-left cursor-pointer"
+                onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+                className={`zoom-frame group mb-6 block w-full break-inside-avoid rounded-2xl text-left cursor-pointer ${
+                  isProtected ? "select-none" : ""
+                }`}
               >
                 <img
                   src={resizeUrl(photo.url, 1600)}
                   alt={photo.title}
                   loading="lazy"
                   decoding="async"
-                  className="zoom-image h-auto"
+                  draggable={!isProtected}
+                  className="zoom-image h-auto pointer-events-none"
                 />
 
                 <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />
@@ -290,14 +295,18 @@ function ProjectPage({ project, onBack }: ProjectPageProps) {
                 key={photo.id}
                 type="button"
                 onClick={() => openViewer(photo.id)}
-                className="zoom-frame group aspect-[4/3] rounded-2xl text-left cursor-pointer"
+                onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+                className={`zoom-frame group aspect-[4/3] rounded-2xl text-left cursor-pointer ${
+                  isProtected ? "select-none" : ""
+                }`}
               >
                 <img
                   src={resizeUrl(photo.url, 1600)}
                   alt={photo.title}
                   loading="lazy"
                   decoding="async"
-                  className="zoom-image"
+                  draggable={!isProtected}
+                  className="zoom-image pointer-events-none"
                 />
 
                 <div className="pointer-events-none absolute inset-0 bg-neutral-950/0 transition-colors duration-500 group-hover:bg-neutral-950/15" />

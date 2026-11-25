@@ -21,6 +21,17 @@ function EditorialContact() {
   const [inquiryType, setInquiryType] = useState("Comisión Editorial");
   const [message, setMessage] = useState("");
   const [sentNotice, setSentNotice] = useState(false);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    try {
+      void navigator.clipboard.writeText(text);
+      setCopiedItem(label);
+      setTimeout(() => setCopiedItem(null), 2500);
+    } catch {
+      // ignore
+    }
+  };
 
   const rawSocials =
     settings.socials.length > 0 ? settings.socials : profile.socialLinks;
@@ -265,9 +276,18 @@ function EditorialContact() {
 
               {settings.privacy.showEmail && profile.email && (
                 <div>
-                  <p className="mb-3 text-xs uppercase tracking-[0.3em] text-black/40 dark:text-[#F3EFE6]/40">
-                    Disponibilidad
-                  </p>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.3em] text-black/40 dark:text-[#F3EFE6]/40">
+                      Disponibilidad
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(profile.email, "email")}
+                      className="text-xs uppercase tracking-wider text-black/50 hover:text-black dark:text-[#F3EFE6]/50 dark:hover:text-white"
+                    >
+                      {copiedItem === "email" ? "✓ Copiado" : "Copiar email"}
+                    </button>
+                  </div>
                   <p className="text-sm text-black/75 dark:text-[#F3EFE6]/75">
                     Respondo normalmente en menos de 24 horas.
                   </p>
@@ -275,6 +295,46 @@ function EditorialContact() {
               )}
             </div>
           ) : null}
+
+          {/* Acordeón de FAQ Editorial */}
+          {contactConfig?.showFaqs !== false &&
+            contactConfig?.faqs &&
+            contactConfig.faqs.length > 0 && (
+              <div className="mt-24 border-t-2 border-double border-[#1C1C1F]/20 pt-16 dark:border-[#E9E6DF]/20">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-black/50 dark:text-[#F3EFE6]/50">
+                    Preguntas Frecuentes
+                  </p>
+                  <span className="text-xs uppercase tracking-[0.2em] text-black/40 dark:text-[#F3EFE6]/40">
+                    Condiciones & Entrega
+                  </span>
+                </div>
+
+                <div className="mt-8 divide-y divide-[#1C1C1F]/15 dark:divide-[#E9E6DF]/15">
+                  {contactConfig.faqs.map((faq, idx) => (
+                    <details
+                      key={faq.id}
+                      className="group py-6 text-left [&_summary::-webkit-details-marker]:hidden"
+                    >
+                      <summary className="flex cursor-pointer items-center justify-between">
+                        <span className="flex items-center gap-4 text-base font-semibold uppercase tracking-tight text-black dark:text-[#F3EFE6]">
+                          <span className="text-xs font-mono text-black/40 dark:text-[#F3EFE6]/40">
+                            {(idx + 1).toString().padStart(2, "0")}
+                          </span>
+                          <span>{faq.question}</span>
+                        </span>
+                        <span className="text-sm text-black/40 transition-transform duration-200 group-open:rotate-90 dark:text-[#F3EFE6]/40">
+                          →
+                        </span>
+                      </summary>
+                      <p className="mt-4 max-w-2xl pl-8 text-sm leading-relaxed text-black/70 dark:text-[#F3EFE6]/70">
+                        {faq.answer}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
       </section>
 
